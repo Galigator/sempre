@@ -80,11 +80,10 @@ Please refer to the [project page](https://nlp.stanford.edu/software/sempre/) fo
 
 You must have the following already installed on your system.
 
-- Java 8 (not 7)
-- Ant 1.8.2
-- Ruby 1.8.7 or 1.9
+- Java 8
+- maven 3.5.2
 - wget
-- make (for compiling fig and Virtuoso)
+- make (for compiling Virtuoso)
 - zip (for unzip downloaded dependencies)
 
 Other dependencies will be downloaded as you need them.  SEMPRE has been tested
@@ -95,7 +94,7 @@ similar your system is.
 
 1. Clone the GitHub repository:
 
-        git clone https://github.com/percyliang/sempre
+        git clone https://github.com/Galigator/sempre
 
 2. Download the minimal core dependencies (all dependencies will be placed in `lib`):
 
@@ -103,11 +102,19 @@ similar your system is.
 
 3. Compile the source code (this produces `libsempre/sempre-core.jar`):
 
-        ant core
+        mvn clean install
 
 4. Run an interactive shell:
 
-        ./run @mode=simple
+        mvn exec:java -Dexec.mainClass=edu.stanford.nlp.sempre.Main -Dexec.args=-Main.interactive
+        
+         # optional modules : "-Dmodules=core,tables,corenlp,freebase"
+         # executor='freebase.SparqlExecutor'
+         # executor='tables.lambdadcs.LambdaDCSExecutor'
+         # FeatureExtractor.featureDomains='denotation lexAlign joinPos skipPos'
+         # LanguageAnalyzer.languageAnalyzer='corenlp.CoreNLPAnalyzer'
+         # SparqlExecutor.endpointUrl=lambda{|e| 'http://'+e[:sparqlserver]+'/sparql'
+        
 
     You should be able to type the following into the shell and get the answer `(number 7)`:
 
