@@ -9,10 +9,10 @@ public class CallTypeInfo
 	public final List<SemType> argTypes;
 	public final SemType retType;
 
-	public CallTypeInfo(final String func, final List<SemType> argTypes, final SemType retType)
+	public CallTypeInfo(final String func_, final List<SemType> argTypes_, final SemType retType_)
 	{
-		this.func = func;
-		this.argTypes = argTypes;
-		this.retType = retType;
+		func = func_;
+		argTypes = argTypes_;
+		retType = retType_;
 	}
 }

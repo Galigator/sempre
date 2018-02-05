@@ -16,15 +16,15 @@ public class ChildDerivationsGroup
 {
 	public final List<Derivation> derivations1, derivations2;
 
-	public ChildDerivationsGroup(final List<Derivation> derivations1)
+	public ChildDerivationsGroup(final List<Derivation> derivations1_)
 	{
-		this.derivations1 = derivations1;
+		derivations1 = derivations1_;
 		derivations2 = null;
 	}
 
-	public ChildDerivationsGroup(final List<Derivation> derivations1, final List<Derivation> derivations2)
+	public ChildDerivationsGroup(final List<Derivation> derivations1_, final List<Derivation> derivations2_)
 	{
-		this.derivations1 = derivations1;
-		this.derivations2 = derivations2;
+		derivations1 = derivations1_;
+		derivations2 = derivations2_;
 	}
 }

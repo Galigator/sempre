@@ -29,9 +29,9 @@ public class CoarseParser
 	ArrayList<Rule> catUnaryRules; // Unary rules with category on RHS
 	Map<String, List<Rule>> terminalsToRulesList = new HashMap<>();
 
-	public CoarseParser(final Grammar grammar)
+	public CoarseParser(final Grammar grammar_)
 	{
-		this.grammar = grammar;
+		grammar = grammar_;
 		catUnaryRules = new ArrayList<>();
 		rhsToLhsMap = new HashMap<>();
 

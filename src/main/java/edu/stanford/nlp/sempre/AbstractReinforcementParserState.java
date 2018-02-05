@@ -18,16 +18,16 @@ import java.util.Set;
 abstract class AbstractReinforcementParserState extends ChartParserState
 {
 
-	protected final ReinforcementParser parser;
+	protected final ReinforcementParser _parser;
 	protected final CoarseParser coarseParser;
 	protected CoarseParser.CoarseParserState coarseParserState;
 	protected static final double EPSILON = 10e-20; // used to break ties between agenda items
 
-	public AbstractReinforcementParserState(final ReinforcementParser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
+	public AbstractReinforcementParserState(final ReinforcementParser parser_, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
-		super(parser, params, ex, computeExpectedCounts);
-		this.parser = parser;
-		coarseParser = parser.coarseParser;
+		super(parser_, params, ex, computeExpectedCounts);
+		_parser = parser_;
+		coarseParser = parser_.coarseParser;
 	}
 
 	protected abstract void addToAgenda(DerivationStream derivationStream);
@@ -67,9 +67,9 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 
 	private void expandDerivRightwards(final Derivation leftChild)
 	{
-		if (parser.verbose(6))
+		if (_parser.verbose(6))
 			LogInfo.begin_track("Expanding rightward");
-		final Map<String, List<Rule>> rhsCategoriesToRules = parser.leftToRightSiblingMap.get(leftChild.cat);
+		final Map<String, List<Rule>> rhsCategoriesToRules = _parser.leftToRightSiblingMap.get(leftChild.cat);
 		if (rhsCategoriesToRules != null)
 		{
 			for (int i = 1; leftChild.end + i <= numTokens; ++i)
@@ -87,15 +87,15 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 			if (leftChild.end < numTokens)
 				handleTerminalExpansion(leftChild, false, rhsCategoriesToRules);
 		}
-		if (parser.verbose(6))
+		if (_parser.verbose(6))
 			LogInfo.end_track();
 	}
 
 	private void expandDerivLeftwards(final Derivation rightChild)
 	{
-		if (parser.verbose(5))
+		if (_parser.verbose(5))
 			LogInfo.begin_track("Expanding leftward");
-		final Map<String, List<Rule>> lhsCategorisToRules = parser.rightToLeftSiblingMap.get(rightChild.cat);
+		final Map<String, List<Rule>> lhsCategorisToRules = _parser.rightToLeftSiblingMap.get(rightChild.cat);
 		if (lhsCategorisToRules != null)
 		{
 			for (int i = 1; rightChild.start - i >= 0; ++i)
@@ -113,7 +113,7 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 			if (rightChild.start > 0)
 				handleTerminalExpansion(rightChild, true, lhsCategorisToRules);
 		}
-		if (parser.verbose(5))
+		if (_parser.verbose(5))
 			LogInfo.end_track();
 	}
 
@@ -172,9 +172,9 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 
 	private void applyCatUnaryRules(final Derivation deriv)
 	{
-		if (parser.verbose(4))
+		if (_parser.verbose(4))
 			LogInfo.begin_track("Category unary rules");
-		for (final Rule rule : parser.catUnaryRules)
+		for (final Rule rule : _parser.catUnaryRules)
 		{
 			if (!coarseAllows(rule.lhs, deriv.start, deriv.end))
 				continue;
@@ -184,7 +184,7 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 				addToAgenda(resDerivations);
 			}
 		}
-		if (parser.verbose(4))
+		if (_parser.verbose(4))
 			LogInfo.end_track();
 	}
 
@@ -195,7 +195,7 @@ abstract class AbstractReinforcementParserState extends ChartParserState
 
 		for (int i = 0; i < numTokens; i++)
 			for (int j = i + 1; j <= numTokens; j++)
-				for (final Rule rule : MapUtils.get(parser.terminalsToRulesList, phrases[i][j], Collections.<Rule> emptyList()))
+				for (final Rule rule : MapUtils.get(_parser.terminalsToRulesList, phrases[i][j], Collections.<Rule> emptyList()))
 				{
 					if (!coarseAllows(rule.lhs, i, j))
 						continue;

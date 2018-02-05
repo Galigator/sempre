@@ -130,8 +130,10 @@ public class CustomGrammar extends Grammar
 	// Private methods
 	// ============================================================
 
-	private static String safeReplace(String formula, String target, final String replacement)
+	private static String safeReplace(final String formula_, final String target_, final String replacement)
 	{
+		String formula = formula_;
+		String target = target_;
 		// (argmin 1 1 ...) and (argmax 1 1 ...) are troublesome
 		final String before = formula, targetBefore = target;
 		formula = formula.replace("(argmin (number 1) (number 1)", "(ARGMIN");
@@ -149,6 +151,9 @@ public class CustomGrammar extends Grammar
 
 	/**
 	 * Cache the symbols in deriv.tempState[cprune].treeSymbols
+	 * 
+	 * @param deriv todo
+	 * @return derivinfo
 	 */
 	private static CPruneDerivInfo aggregateSymbols(final Derivation deriv)
 	{

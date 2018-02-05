@@ -34,6 +34,7 @@ public abstract class Formula
 	// Apply to formulas.  If |func| returns an empty set or |alwaysRecurse|, then recurse on children.
 	public abstract List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse);
 
+	@Override
 	@JsonValue
 	public String toString()
 	{
@@ -61,18 +62,19 @@ public abstract class Formula
 
 	public static Formula nullFormula = new PrimitiveFormula()
 	{
+		@Override
 		public LispTree toLispTree()
 		{
 			return LispTree.proto.newLeaf("null");
 		}
 
-		@SuppressWarnings({ "equalshashcode" })
 		@Override
 		public boolean equals(final Object o)
 		{
 			return this == o;
 		}
 
+		@Override
 		public int computeHashCode()
 		{
 			return 0;

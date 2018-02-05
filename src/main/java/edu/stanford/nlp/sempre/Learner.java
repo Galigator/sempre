@@ -72,14 +72,14 @@ public class Learner
 	private final PrintWriter eventsOut; // For printing a machine-readable log
 	private final List<SemanticFn> semFuncsToUpdate;
 
-	public Learner(final Parser parser, final Params params, final Dataset dataset)
+	public Learner(final Parser parser_, final Params params_, final Dataset dataset_)
 	{
-		this.parser = parser;
-		this.params = params;
-		this.dataset = dataset;
+		parser = parser_;
+		params = params_;
+		dataset = dataset_;
 		eventsOut = IOUtils.openOutAppendEasy(Execution.getFile("learner.events"));
-		if (opts.initialization != null && this.params.isEmpty())
-			this.params.init(opts.initialization);
+		if (opts.initialization != null && params.isEmpty())
+			params.init(opts.initialization);
 
 		// Collect all semantic functions to update.
 		semFuncsToUpdate = new ArrayList<>();
@@ -104,6 +104,7 @@ public class Learner
 	}
 
 	/**
+	 * @param numIters number of iteration
 	 * @param evaluations Evaluations per iteration per group.
 	 */
 	public void learn(final int numIters, final Map<String, List<Evaluation>> evaluations)
@@ -302,10 +303,10 @@ public class Learner
 			semFn.addFeedback(ex);
 	}
 
-	private ParserState parseExample(final Params params, final Example ex, final boolean computeExpectedCounts)
+	private ParserState parseExample(final Params params_, final Example ex, final boolean computeExpectedCounts)
 	{
 		StopWatchSet.begin("Parser.parse");
-		final ParserState res = parser.parse(params, ex, computeExpectedCounts);
+		final ParserState res = parser.parse(params_, ex, computeExpectedCounts);
 		StopWatchSet.end();
 		return res;
 	}

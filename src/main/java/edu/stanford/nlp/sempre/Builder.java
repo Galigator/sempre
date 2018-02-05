@@ -97,12 +97,12 @@ public class Builder
 				}
 				catch (final ClassNotFoundException e1)
 				{
-					throw new RuntimeException("Illegal parser: " + opts.parser);
+					throw new SempreError("Illegal parser: " + opts.parser + "\n" + e1.getMessage());
 				}
 				catch (final Exception e)
 				{
 					e.printStackTrace();
-					throw new RuntimeException("Error while instantiating parser: " + opts.parser + "\n" + e);
+					throw new SempreError("Error while instantiating parser: " + opts.parser + "\n" + e);
 				}
 		}
 	}

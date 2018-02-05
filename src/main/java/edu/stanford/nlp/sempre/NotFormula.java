@@ -13,11 +13,12 @@ public class NotFormula extends Formula
 {
 	public final Formula child;
 
-	public NotFormula(final Formula child)
+	public NotFormula(final Formula child_)
 	{
-		this.child = child;
+		child = child_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -49,7 +50,6 @@ public class NotFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -61,6 +61,7 @@ public class NotFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

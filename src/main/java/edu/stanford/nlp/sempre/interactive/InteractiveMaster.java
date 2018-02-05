@@ -54,9 +54,9 @@ public class InteractiveMaster extends Master
 
 	public static Options opts = new Options();
 
-	public InteractiveMaster(final Builder builder)
+	public InteractiveMaster(final Builder builder_)
 	{
-		super(builder);
+		super(builder_);
 	}
 
 	@Override
@@ -80,12 +80,12 @@ public class InteractiveMaster extends Master
 	}
 
 	@Override
-	public Response processQuery(final Session session, String line)
+	public synchronized Response processQuery(final Session session, final String line_)
 	{
 		LogInfo.begin_track("InteractiveMaster.handleQuery");
 		LogInfo.logs("session %s", session.id);
-		LogInfo.logs("query %s", line);
-		line = line.trim();
+		LogInfo.logs("query %s", line_);
+		final String line = line_.trim();
 		final Response response = new Response();
 		if (line.startsWith("(:"))
 			handleCommand(session, line, response);
@@ -242,12 +242,11 @@ public class InteractiveMaster extends Master
 									// builder.parser.parse(builder.params, refExHead.value, false);
 									// write out the grammar
 									if (session.isWritingGrammar())
-									{
-										final PrintWriter out = IOUtils.openOutAppendHard(Paths.get(InteractiveMaster.opts.intOutputPath, "grammar.log.json").toString());
-										for (final Rule rule : inducedRules)
-											out.println(rule.toJson());
-										out.close();
-									}
+										try (final PrintWriter out = IOUtils.openOutAppendHard(Paths.get(InteractiveMaster.opts.intOutputPath, "grammar.log.json").toString()))
+										{
+											for (final Rule rule : inducedRules)
+												out.println(rule.toJson());
+										}
 								}
 								else
 									LogInfo.logs("No rule induced for head %s", head);
@@ -260,10 +259,11 @@ public class InteractiveMaster extends Master
 							{
 								LogInfo.logs("Printing and overriding grammar and parameters...");
 								builder.params.write(Paths.get(InteractiveMaster.opts.intOutputPath, "params.params").toString());
-								final PrintWriter out = IOUtils.openOutAppendHard(Paths.get(InteractiveMaster.opts.intOutputPath + "grammar.final.json").toString());
-								for (final Rule rule : builder.grammar.getRules())
-									out.println(rule.toJson());
-								out.close();
+								try (final PrintWriter out = IOUtils.openOutAppendHard(Paths.get(InteractiveMaster.opts.intOutputPath + "grammar.final.json").toString()))
+								{
+									for (final Rule rule : builder.grammar.getRules())
+										out.println(rule.toJson());
+								}
 								LogInfo.logs("Done printing and overriding grammar and parameters...");
 							}
 							else
@@ -292,7 +292,7 @@ public class InteractiveMaster extends Master
 		return ex;
 	}
 
-	public static List<Rule> induceRulesHelper(final String command, final String head, final String jsonDef, final Parser parser, final Params params, final Session session, final Ref<Response> refResponse) throws BadInteractionException
+	public static List<Rule> induceRulesHelper(@SuppressWarnings("unused") final String command, final String head, final String jsonDef, final Parser parser, final Params params, final Session session, final Ref<Response> refResponse) throws BadInteractionException
 	{
 		final Example exHead = exampleFromUtterance(head, session);
 		LogInfo.logs("head: %s", exHead.getTokens());

@@ -14,17 +14,18 @@ public class AggregateFormula extends Formula
 	public enum Mode
 	{
 		count, sum, avg, min, max
-	};
+	}
 
 	public final Mode mode;
 	public final Formula child;
 
-	public AggregateFormula(final Mode mode, final Formula child)
+	public AggregateFormula(final Mode mode_, final Formula child_)
 	{
-		this.mode = mode;
-		this.child = child;
+		mode = mode_;
+		child = child_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -71,7 +72,6 @@ public class AggregateFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -85,6 +85,7 @@ public class AggregateFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

@@ -15,17 +15,18 @@ public class CallFormula extends Formula
 	public final Formula func;
 	public final List<Formula> args;
 
-	public CallFormula(final String func, final List<Formula> args)
+	public CallFormula(final String func_, final List<Formula> args_)
 	{
-		this(Formulas.newNameFormula(func), args);
+		this(Formulas.newNameFormula(func_), args_);
 	}
 
-	public CallFormula(final Formula func, final List<Formula> args)
+	public CallFormula(final Formula func_, final List<Formula> args_)
 	{
-		this.func = func;
-		this.args = args;
+		func = func_;
+		args = args_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -37,13 +38,13 @@ public class CallFormula extends Formula
 	}
 
 	@Override
-	public void forEach(final Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func_)
 	{
-		if (!func.apply(this))
+		if (!func_.apply(this))
 		{
-			this.func.forEach(func);
+			func.forEach(func_);
 			for (final Formula arg : args)
-				arg.forEach(func);
+				arg.forEach(func_);
 		}
 	}
 
@@ -73,7 +74,6 @@ public class CallFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -87,6 +87,7 @@ public class CallFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

@@ -27,6 +27,7 @@ public class FreebaseValueEvaluator implements ValueEvaluator
 
 	public static final Options opts = new Options();
 
+	@Override
 	public double getCompatibility(final Value target, final Value pred)
 	{
 		final double f1 = getF1(target, pred);

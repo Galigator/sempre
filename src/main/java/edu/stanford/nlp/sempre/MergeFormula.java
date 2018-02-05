@@ -14,19 +14,20 @@ public class MergeFormula extends Formula
 	public enum Mode
 	{
 		and, or
-	};
+	}
 
 	public final Mode mode;
 	public final Formula child1;
 	public final Formula child2;
 
-	public MergeFormula(final Mode mode, final Formula child1, final Formula child2)
+	public MergeFormula(final Mode mode_, final Formula child1_, final Formula child2_)
 	{
-		this.mode = mode;
-		this.child1 = child1;
-		this.child2 = child2;
+		mode = mode_;
+		child1 = child1_;
+		child2 = child2_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -74,7 +75,6 @@ public class MergeFormula extends Formula
 		return null;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -90,6 +90,7 @@ public class MergeFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

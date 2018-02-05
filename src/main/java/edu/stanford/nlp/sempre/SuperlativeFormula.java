@@ -14,7 +14,7 @@ public class SuperlativeFormula extends Formula
 	public enum Mode
 	{
 		argmin, argmax
-	};
+	}
 
 	public final Mode mode;
 	public final Formula rank; // rank-th item
@@ -22,13 +22,13 @@ public class SuperlativeFormula extends Formula
 	public final Formula head;
 	public final Formula relation; // Apply relation(head, degree) and sort by degree.
 
-	public SuperlativeFormula(final Mode mode, final Formula rank, final Formula count, final Formula head, final Formula relation)
+	public SuperlativeFormula(final Mode mode_, final Formula rank_, final Formula count_, final Formula head_, final Formula relation_)
 	{
-		this.mode = mode;
-		this.rank = rank;
-		this.count = count;
-		this.head = head;
-		this.relation = relation;
+		mode = mode_;
+		rank = rank_;
+		count = count_;
+		head = head_;
+		relation = relation_;
 	}
 
 	public static Mode parseMode(final String mode)
@@ -40,6 +40,7 @@ public class SuperlativeFormula extends Formula
 		return null;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -84,7 +85,6 @@ public class SuperlativeFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -104,6 +104,7 @@ public class SuperlativeFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

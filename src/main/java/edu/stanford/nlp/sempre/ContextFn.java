@@ -30,6 +30,7 @@ public class ContextFn extends SemanticFn
 	// except the forbidden one(s).
 	private final Set<SemType> forbiddenTypes = new HashSet<>();
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -49,6 +50,7 @@ public class ContextFn extends SemanticFn
 		}
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new MultipleDerivationStream()
@@ -56,6 +58,7 @@ public class ContextFn extends SemanticFn
 			int index = 0;
 			List<Formula> formulas;
 
+			@Override
 			public Derivation createDerivation()
 			{
 				if (ex.context == null)

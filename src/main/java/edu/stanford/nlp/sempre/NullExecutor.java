@@ -7,6 +7,7 @@ package edu.stanford.nlp.sempre;
  */
 public class NullExecutor extends Executor
 {
+	@Override
 	public Response execute(final Formula formula, final ContextValue context)
 	{
 		return new Response(null);

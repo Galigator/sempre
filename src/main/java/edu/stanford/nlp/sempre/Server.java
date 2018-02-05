@@ -89,6 +89,7 @@ public class Server
 
 	class Handler implements HttpHandler
 	{
+		@Override
 		public void handle(final HttpExchange exchange)
 		{
 			try
@@ -735,9 +736,9 @@ public class Server
 		}
 	}
 
-	public Server(final Master master)
+	public Server(final Master master_)
 	{
-		this.master = master;
+		master = master_;
 	}
 
 	void run()

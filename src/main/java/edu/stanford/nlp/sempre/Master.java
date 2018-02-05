@@ -120,11 +120,11 @@ public class Master
 
 	protected Builder builder;
 	protected Learner learner;
-	protected HashMap<String, Session> sessions = new LinkedHashMap<>();
+	protected Map<String, Session> sessions = new LinkedHashMap<>();
 
-	public Master(final Builder builder)
+	public Master(final Builder builder_)
 	{
-		this.builder = builder;
+		builder = builder_;
 		learner = new Learner(builder.parser, builder.params, new Dataset());
 	}
 
@@ -174,8 +174,7 @@ public class Master
 
 	public void runServer()
 	{
-		final Server server = new Server(this);
-		server.run();;
+		(new Server(this)).run();
 	}
 
 	public void runInteractivePrompt()
@@ -184,9 +183,8 @@ public class Master
 
 		if (opts.printHelp)
 			printHelp();
-		try
+		try (final ConsoleReader reader = new ConsoleReader())
 		{
-			final ConsoleReader reader = new ConsoleReader();
 			reader.setPrompt("> ");
 			String line;
 			while ((line = reader.readLine()) != null)
@@ -225,9 +223,9 @@ public class Master
 	// Currently, synchronize a very crude level.
 	// In the future, refine this.
 	// Currently need the synchronization because of writing to stdout.
-	public synchronized Response processQuery(final Session session, String line)
+	public synchronized Response processQuery(final Session session, final String line_)
 	{
-		line = line.trim();
+		final String line = line_.trim();
 		final Response response = new Response();
 
 		// Capture log output and put it into response.
@@ -248,11 +246,10 @@ public class Master
 
 		// Log interaction to disk
 		if (!Strings.isNullOrEmpty(opts.logPath))
-		{
-			final PrintWriter out = IOUtils.openOutAppendHard(opts.logPath);
-			out.println(Joiner.on("\t").join(Lists.newArrayList("date=" + new Date().toString(), "sessionId=" + session.id, "remote=" + session.remoteHost, "format=" + session.format, "query=" + line, "response=" + summaryString(response))));
-			out.close();
-		}
+			try (final PrintWriter out = IOUtils.openOutAppendHard(opts.logPath))
+			{
+				out.println(Joiner.on("\t").join(Lists.newArrayList("date=" + new Date().toString(), "sessionId=" + session.id, "remote=" + session.remoteHost, "format=" + session.format, "query=" + line, "response=" + summaryString(response))));
+			}
 
 		return response;
 	}
@@ -524,7 +521,7 @@ public class Master
 			final String[] tokens = line.split(" ");
 			if (tokens.length != 2)
 				throw new RuntimeException("Invalid: " + line);
-			final String module = tokens[0];
+			//final String module = tokens[0];
 			final String className = tokens[1];
 			if (!modules.contains(tokens[0]))
 				continue;
@@ -534,14 +531,14 @@ public class Master
 			final String group = classNameTokens[classNameTokens.length - 1];
 
 			// Object (e.g., Grammar.opts)
-			Object opts = null;
+			Object localOpts = null;
 			try
 			{
-				for (final Field field : Class.forName(className).getDeclaredFields())
+				for (final Field field : Class.forName(className).getDeclaredFields()) // XXX Introspection.
 				{
 					if (!"opts".equals(field.getName()))
 						continue;
-					opts = field.get(null);
+					localOpts = field.get(null);
 				}
 			}
 			catch (final Throwable t)
@@ -550,10 +547,10 @@ public class Master
 				throw new RuntimeException(t);
 			}
 
-			if (opts != null)
+			if (localOpts != null)
 			{
 				args.add(group);
-				args.add(opts);
+				args.add(localOpts);
 			}
 		}
 

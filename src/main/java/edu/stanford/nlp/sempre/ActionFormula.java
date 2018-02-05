@@ -35,9 +35,9 @@ public class ActionFormula extends Formula
 
 		private final String value;
 
-		Mode(final String value)
+		Mode(final String value_)
 		{
-			this.value = value;
+			value = value_;
 		}
 
 		@Override
@@ -45,15 +45,15 @@ public class ActionFormula extends Formula
 		{
 			return value;
 		}
-	};
+	}
 
 	public final Mode mode;
 	public final List<Formula> args;
 
-	public ActionFormula(final Mode mode, final List<Formula> args)
+	public ActionFormula(final Mode mode_, final List<Formula> args_)
 	{
-		this.mode = mode;
-		this.args = args;
+		mode = mode_;
+		args = args_;
 	}
 
 	public static Mode parseMode(final String mode)
@@ -110,7 +110,6 @@ public class ActionFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{

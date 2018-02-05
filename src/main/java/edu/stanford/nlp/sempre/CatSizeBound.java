@@ -30,14 +30,14 @@ public class CatSizeBound
 	private final int maxFormulaSize;
 	private final Map<String, Integer> bound = new HashMap<>();
 
-	public CatSizeBound(final int maxFormulaSize, final Grammar grammar)
+	public CatSizeBound(final int maxFormulaSize_, final Grammar grammar)
 	{
-		this(maxFormulaSize, grammar.getRules());
+		this(maxFormulaSize_, grammar.getRules());
 	}
 
-	public CatSizeBound(final int maxFormulaSize, final List<Rule> rules)
+	public CatSizeBound(final int maxFormulaSize_, final List<Rule> rules)
 	{
-		this.maxFormulaSize = maxFormulaSize;
+		maxFormulaSize = maxFormulaSize_;
 		if (!FloatingParser.opts.useSizeInsteadOfDepth)
 		{
 			LogInfo.warnings("Currently CatSizeBound is usable only when useSizeInsteadOfDepth = true.");

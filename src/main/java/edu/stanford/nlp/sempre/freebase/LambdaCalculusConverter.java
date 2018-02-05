@@ -85,6 +85,7 @@ public class LambdaCalculusConverter implements Runnable
 	// Use this to later sort the valid examples
 	List<Integer> validExampleLengths = new ArrayList<>();
 
+	@Override
 	public void run()
 	{
 		readPrereqs();
@@ -482,8 +483,9 @@ public class LambdaCalculusConverter implements Runnable
 				countTokens(child, counts);
 	}
 
-	String preprocessPredicates(String lispLine, final String utterance)
+	String preprocessPredicates(final String lisp, final String utterance)
 	{
+		String lispLine = lisp;
 		// Replacements
 		boolean replaced = false;
 		if (replaceMap.containsKey(lispLine))
@@ -519,58 +521,59 @@ public class LambdaCalculusConverter implements Runnable
 		try
 		{
 			Example.Builder ex = null;
-			final BufferedReader in = IOUtils.openIn(opts.inPath);
-			boolean gotUtterance = false;
-			int newId = 0;
-			String utterance = "";
-
-			while ((line = in.readLine()) != null)
+			try (final BufferedReader in = IOUtils.openIn(opts.inPath))
 			{
-				if (line.equals("") || line.startsWith("//"))
-					continue;
-				if (ex == null)
-				{
-					newId++;
-					ex = new Example.Builder();
-					ex.setId("" + newId);
-					gotUtterance = false;
-				}
+				boolean gotUtterance = false;
+				int newId = 0;
+				String utterance = "";
 
-				if (!gotUtterance)
+				while ((line = in.readLine()) != null)
 				{
-					ex.setUtterance(line);
-					utterance = line;
-					gotUtterance = true;
-				}
-				else
-				{
-					if (runInd > 0 && newId != runInd)
-					{
-						ex = null;
+					if (line.equals("") || line.startsWith("//"))
 						continue;
+					if (ex == null)
+					{
+						newId++;
+						ex = new Example.Builder();
+						ex.setId("" + newId);
+						gotUtterance = false;
 					}
 
-					final LispTree tree = LispTree.proto.parseFromString(preprocessPredicates(line, utterance));
-					LogInfo.logs(color.colorize("IN [%d]: %s", "blue"), newId, utterance);
-					LogInfo.logs(color.colorize("IN [%d]: %s", "purple"), newId, tree);
-					final ArrayList<String> existsVars = new ArrayList<>();
-
-					if (manualConversionsMap.containsKey(line))
+					if (!gotUtterance)
 					{
-						LogInfo.logs("MANUAL CONVERSION=%s", line);
-						ex.setTargetFormula(Formula.fromString(manualConversionsMap.get(line)));
+						ex.setUtterance(line);
+						utterance = line;
+						gotUtterance = true;
 					}
 					else
 					{
-						LogInfo.log("AUTOMATIC CONVERSION");
-						ex.setTargetFormula(toFormula(tree, null, existsVars));
+						if (runInd > 0 && newId != runInd)
+						{
+							ex = null;
+							continue;
+						}
+
+						final LispTree tree = LispTree.proto.parseFromString(preprocessPredicates(line, utterance));
+						LogInfo.logs(color.colorize("IN [%d]: %s", "blue"), newId, utterance);
+						LogInfo.logs(color.colorize("IN [%d]: %s", "purple"), newId, tree);
+						final ArrayList<String> existsVars = new ArrayList<>();
+
+						if (manualConversionsMap.containsKey(line))
+						{
+							LogInfo.logs("MANUAL CONVERSION=%s", line);
+							ex.setTargetFormula(Formula.fromString(manualConversionsMap.get(line)));
+						}
+						else
+						{
+							LogInfo.log("AUTOMATIC CONVERSION");
+							ex.setTargetFormula(toFormula(tree, null, existsVars));
+						}
+						LogInfo.logs(color.colorize("OUT [%d]: %s", "yellow"), newId, ex.createExample().targetFormula.toLispTree());
+						examples.add(ex.createExample());
+						ex = null;
 					}
-					LogInfo.logs(color.colorize("OUT [%d]: %s", "yellow"), newId, ex.createExample().targetFormula.toLispTree());
-					examples.add(ex.createExample());
-					ex = null;
 				}
 			}
-			in.close();
 		}
 		catch (final IOException e)
 		{
@@ -624,20 +627,21 @@ public class LambdaCalculusConverter implements Runnable
 		//      }
 		//    });
 
-		final PrintWriter out = IOUtils.openOutHard(opts.outPath);
-		out.println("["); // Print out as a list
-		final String indent = "  ";
-		for (int k = 0; k < validExampleIds.size(); k++)
+		try (final PrintWriter out = IOUtils.openOutHard(opts.outPath))
 		{
-			final int j = validExampleIds.get(k) - 1;
-			final Example ex = examples.get(j);
-			if (k < validExampleIds.size() - 1)
-				out.println(indent + ex.toJson() + ",");
-			else
-				out.println(indent + ex.toJson());
+			out.println("["); // Print out as a list
+			final String indent = "  ";
+			for (int k = 0; k < validExampleIds.size(); k++)
+			{
+				final int j = validExampleIds.get(k) - 1;
+				final Example ex = examples.get(j);
+				if (k < validExampleIds.size() - 1)
+					out.println(indent + ex.toJson() + ",");
+				else
+					out.println(indent + ex.toJson());
+			}
+			out.println("]"); // Print out as a list
 		}
-		out.println("]"); // Print out as a list
-		out.close();
 	}
 
 	void printSummary()
@@ -652,7 +656,7 @@ public class LambdaCalculusConverter implements Runnable
 		}
 	}
 
-	public static void main(final String[] args) throws InterruptedException
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new LambdaCalculusConverter(), "lcc", LambdaCalculusConverter.opts);
 	}

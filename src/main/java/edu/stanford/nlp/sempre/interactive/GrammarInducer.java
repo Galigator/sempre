@@ -232,10 +232,10 @@ public class GrammarInducer
 		List<Derivation> packing;
 		double score;
 
-		public Packing(final double score, final List<Derivation> packing)
+		public Packing(final double score_, final List<Derivation> packing_)
 		{
-			this.score = score;
-			this.packing = packing;
+			score = score_;
+			packing = packing_;
 		}
 
 		@Override

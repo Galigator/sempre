@@ -46,11 +46,12 @@ public class ErrorValue extends Value
 		type = tree.child(1).value;
 	}
 
-	public ErrorValue(final String type)
+	public ErrorValue(final String type_)
 	{
-		this.type = type;
+		type = type_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();

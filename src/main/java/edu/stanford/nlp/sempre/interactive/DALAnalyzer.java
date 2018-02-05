@@ -26,8 +26,9 @@ public class DALAnalyzer extends LanguageAnalyzer
 	private static final String[] numbers = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten" };
 
 	@Override
-	public LanguageInfo analyze(String utterance)
+	public LanguageInfo analyze(final String utterance_)
 	{
+		String utterance = utterance_;
 		final LanguageInfo languageInfo = new LanguageInfo();
 
 		// Clear these so that analyze can hypothetically be called
@@ -117,7 +118,7 @@ public class DALAnalyzer extends LanguageAnalyzer
 					languageInfo.nerTags.add("NUMBER");
 					languageInfo.nerValues.add(token);
 				}
-				catch (final NumberFormatException e)
+				catch (@SuppressWarnings("unused") final NumberFormatException e) // SuppressWarnings, because the initial conversion isn't done context-free so it can be wrong and the error miss-placed.
 				{
 					// Guess that capitalized nouns are proper
 					if (Character.isUpperCase(token.charAt(0)))

@@ -69,39 +69,39 @@ public class Example
 		private Value targetValue;
 		private LanguageInfo languageInfo;
 
-		public Builder setId(final String id)
+		public Builder setId(final String id_)
 		{
-			this.id = id;
+			id = id_;
 			return this;
 		}
 
-		public Builder setUtterance(final String utterance)
+		public Builder setUtterance(final String utterance_)
 		{
-			this.utterance = utterance;
+			utterance = utterance_;
 			return this;
 		}
 
-		public Builder setContext(final ContextValue context)
+		public Builder setContext(final ContextValue context_)
 		{
-			this.context = context;
+			context = context_;
 			return this;
 		}
 
-		public Builder setTargetFormula(final Formula targetFormula)
+		public Builder setTargetFormula(final Formula targetFormula_)
 		{
-			this.targetFormula = targetFormula;
+			targetFormula = targetFormula_;
 			return this;
 		}
 
-		public Builder setTargetValue(final Value targetValue)
+		public Builder setTargetValue(final Value targetValue_)
 		{
-			this.targetValue = targetValue;
+			targetValue = targetValue_;
 			return this;
 		}
 
-		public Builder setLanguageInfo(final LanguageInfo languageInfo)
+		public Builder setLanguageInfo(final LanguageInfo languageInfo_)
 		{
-			this.languageInfo = languageInfo;
+			languageInfo = languageInfo_;
 			return this;
 		}
 
@@ -122,14 +122,14 @@ public class Example
 	}
 
 	@JsonCreator
-	public Example(@JsonProperty("id") final String id, @JsonProperty("utterance") final String utterance, @JsonProperty("context") final ContextValue context, @JsonProperty("targetFormula") final Formula targetFormula, @JsonProperty("targetValue") final Value targetValue, @JsonProperty("languageInfo") final LanguageInfo languageInfo)
+	public Example(@JsonProperty("id") final String id_, @JsonProperty("utterance") final String utterance_, @JsonProperty("context") final ContextValue context_, @JsonProperty("targetFormula") final Formula targetFormula_, @JsonProperty("targetValue") final Value targetValue_, @JsonProperty("languageInfo") final LanguageInfo languageInfo_)
 	{
-		this.id = id;
-		this.utterance = utterance;
-		this.context = context;
-		this.targetFormula = targetFormula;
-		this.targetValue = targetValue;
-		this.languageInfo = languageInfo;
+		id = id_;
+		utterance = utterance_;
+		context = context_;
+		targetFormula = targetFormula_;
+		targetValue = targetValue_;
+		languageInfo = languageInfo_;
 	}
 
 	// Accessors
@@ -153,19 +153,19 @@ public class Example
 		return predDerivations;
 	}
 
-	public void setContext(final ContextValue context)
+	public void setContext(final ContextValue context_)
 	{
-		this.context = context;
+		context = context_;
 	}
 
-	public void setTargetFormula(final Formula targetFormula)
+	public void setTargetFormula(final Formula targetFormula_)
 	{
-		this.targetFormula = targetFormula;
+		targetFormula = targetFormula_;
 	}
 
-	public void setAlternativeFormulas(final List<Formula> alternativeFormulas)
+	public void setAlternativeFormulas(final List<Formula> alternativeFormulas_)
 	{
-		this.alternativeFormulas = alternativeFormulas;
+		alternativeFormulas = alternativeFormulas_;
 	}
 
 	public void addAlternativeFormula(final Formula alternativeFormula)
@@ -175,9 +175,9 @@ public class Example
 		alternativeFormulas.add(alternativeFormula);
 	}
 
-	public void setTargetValue(final Value targetValue)
+	public void setTargetValue(final Value targetValue_)
 	{
-		this.targetValue = targetValue;
+		targetValue = targetValue_;
 	}
 
 	public String spanString(final int start, final int end)
@@ -418,6 +418,9 @@ public class Example
 	/**
 	 * Parse a featurized derivation. Format: ({compatibility} {prob} {score} {value|null} {formula} {features}) where {features} = (({key} {value}) ({key}
 	 * {value}) ...)
+	 * 
+	 * @param item is a lisp/sparql formula.
+	 * @return a Derivation from the parse
 	 */
 	public static Derivation derivationFromLispTree(final LispTree item)
 	{
@@ -468,8 +471,8 @@ public class Example
 	 * Parse a LispTree with the format created by deriv.toLispTree(). Due to the complexity, rules and children are not parsed. Format: (derivation [(formula
 	 * {formula})] [(value {value})] [(type {type})] [(canonicalUtterance {canonicalUtterance})])
 	 * 
-	 * @param item
-	 * @return
+	 * @param item todo
+	 * @return todo
 	 */
 	public static Derivation rawDerivationFromLispTree(final LispTree item)
 	{

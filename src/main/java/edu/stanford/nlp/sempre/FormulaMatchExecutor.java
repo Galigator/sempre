@@ -5,12 +5,15 @@ package edu.stanford.nlp.sempre;
  */
 public class FormulaMatchExecutor extends Executor
 {
-	public Response execute(Formula formula, final ContextValue context)
+	@SuppressWarnings("unchecked")
+	@Override
+	public Response execute(final Formula formula_, final ContextValue context)
 	{
+		Formula formula = formula_;
 		formula = Formulas.betaReduction(formula);
 		Value value;
 		if (formula instanceof ValueFormula)
-			value = ((ValueFormula) formula).value;
+			value = ((ValueFormula<Value>) formula).value;
 		else
 			value = new StringValue(formula.toLispTree().toString());
 		return new Response(value);

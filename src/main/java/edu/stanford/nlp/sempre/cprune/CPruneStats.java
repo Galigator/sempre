@@ -11,9 +11,9 @@ public class CPruneStats
 	public int totalExploit = 0;
 	public int successfulExploit = 0;
 
-	public void reset(final String iter)
+	public void reset(final String iter_)
 	{
-		this.iter = iter;
+		iter = iter_;
 		totalExplore = 0;
 		successfulExplore = 0;
 		totalExploit = 0;

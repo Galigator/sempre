@@ -18,6 +18,7 @@ public class Main implements Runnable
 	@Option
 	public String masterType = "edu.stanford.nlp.sempre.Master";
 
+	@Override
 	public void run()
 	{
 		final Builder builder = new Builder();
@@ -39,19 +40,18 @@ public class Main implements Runnable
 		}
 	}
 
-	public Master createMaster(final String masterType, final Builder builder)
+	public Master createMaster(final String masterType_, final Builder builder)
 	{
 		try
 		{
-			final Class<?> masterClass = Class.forName(masterType);
+			final Class<?> masterClass = Class.forName(masterType_);
 			final Constructor<?> constructor = masterClass.getConstructor(Builder.class);
 			return (Master) constructor.newInstance(builder);
 		}
 		catch (final Throwable t)
 		{
-			t.printStackTrace();
+			throw new SempreError(t);
 		}
-		return null;
 	}
 
 	public static void main(final String[] args)

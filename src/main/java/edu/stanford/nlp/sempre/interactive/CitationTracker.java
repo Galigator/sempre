@@ -31,10 +31,10 @@ public class CitationTracker
 	String uid = "undefined";
 	Example ex;
 
-	public CitationTracker(final String uid, final Example ex)
+	public CitationTracker(final String uid_, final Example ex_)
 	{
-		this.uid = uid;
-		this.ex = ex;
+		uid = uid_;
+		ex = ex_;
 	}
 
 	public synchronized void citeRule(final Rule rule)
@@ -79,9 +79,10 @@ public class CitationTracker
 			e.printStackTrace();
 		}
 		final String jsonStr = Json.writeValueAsStringHard(summary);
-		final PrintWriter out = IOUtils.openOutHard(file);
-		out.println(jsonStr);
-		out.close();
+		try (final PrintWriter out = IOUtils.openOutHard(file))
+		{
+			out.println(jsonStr);
+		}
 	}
 
 	private Map<String, Object> defaultMap(final Rule rule)
@@ -112,9 +113,10 @@ public class CitationTracker
 		jsonMap.put("author", author);
 
 		final String jsonStr = Json.writeValueAsStringHard(jsonMap);
-		final PrintWriter out = IOUtils.openOutAppendHard(file);
-		out.println(jsonStr);
-		out.close();
+		try (final PrintWriter out = IOUtils.openOutAppendHard(file))
+		{
+			out.println(jsonStr);
+		}
 	}
 
 	public void citeAll(final Derivation deriv)

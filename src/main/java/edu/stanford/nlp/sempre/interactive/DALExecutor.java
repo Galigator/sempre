@@ -70,8 +70,9 @@ public class DALExecutor extends Executor
 	public static Options opts = new Options();
 
 	@Override
-	public Response execute(Formula formula, final ContextValue context)
+	public Response execute(final Formula formula_, final ContextValue context)
 	{
+		Formula formula = formula_;
 		// We can do beta reduction here since macro substitution preserves the
 		// denotation (unlike for lambda DCS).
 		final World world = World.fromContext(opts.worldType, context);
@@ -270,7 +271,7 @@ public class DALExecutor extends Executor
 										// globally marked object
 		static String Previous = "prev"; // global variable for selected
 		static String Selected = "selected"; // global variable for selected
-	};
+	}
 
 	// a subset of lambda dcs. no types, and no marks
 	// if this gets any more complicated, you should consider the

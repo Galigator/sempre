@@ -24,6 +24,7 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 
 	private static final String[] numbers = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten" };
 
+	@Override
 	public LanguageInfo analyze(String utterance)
 	{
 		final LanguageInfo languageInfo = new LanguageInfo();
