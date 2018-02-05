@@ -1,16 +1,16 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
 import edu.stanford.nlp.sempre.tables.StringNormalizationUtils;
 import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
 import edu.stanford.nlp.sempre.tables.serialize.TableWriter;
 import fig.basic.IOUtils;
 import fig.basic.LogInfo;
 import fig.basic.Option;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TableAltererCache
 {
@@ -36,19 +36,19 @@ public class TableAltererCache
 		}
 	}
 
-	public boolean existsSaveDir(String id)
+	public boolean existsSaveDir(final String id)
 	{
-		return opts.alteredTablesConcatCache != null || (opts.baseAlteredTablesDir != null && new File(opts.baseAlteredTablesDir, id).isDirectory());
+		return opts.alteredTablesConcatCache != null || opts.baseAlteredTablesDir != null && new File(opts.baseAlteredTablesDir, id).isDirectory();
 	}
 
-	public TableKnowledgeGraph load(String id, int alteredTableIndex)
+	public TableKnowledgeGraph load(final String id, final int alteredTableIndex)
 	{
 		return load(id, "" + alteredTableIndex);
 	}
 
 	// Load table from |baseAlteredTablesDir|/nt-??/??.tsv
 	// or the next chunk of |alteredTablesConcatCache|
-	public TableKnowledgeGraph load(String id, String alteredTableIndex)
+	public TableKnowledgeGraph load(final String id, final String alteredTableIndex)
 	{
 		if (opts.baseAlteredTablesDir == null)
 		{
@@ -57,24 +57,24 @@ public class TableAltererCache
 			try
 			{
 				String line = concatCache.readLine();
-				String[] metadata = line.split("\t");
+				final String[] metadata = line.split("\t");
 				if (metadata.length != 3 || !id.equals(metadata[0]) || !alteredTableIndex.equals(metadata[1]))
 					throw new RuntimeException("Incorrect metadata. Expected " + id + " " + alteredTableIndex + " ___; found " + line);
-				int numLines = Integer.parseInt(metadata[2]);
+				final int numLines = Integer.parseInt(metadata[2]);
 				if (BatchTableAlterer.opts.verbose >= 1)
 					LogInfo.logs("Reading %d lines from %s", numLines, opts.alteredTablesConcatCache);
-				List<String[]> data = new ArrayList<>();
+				final List<String[]> data = new ArrayList<>();
 				for (int i = 0; i < numLines; i++)
 				{
 					line = concatCache.readLine();
-					String[] fields = line.split("\t", -1); // Include trailing spaces
+					final String[] fields = line.split("\t", -1); // Include trailing spaces
 					for (int j = 0; j < fields.length; j++)
 						fields[j] = StringNormalizationUtils.unescapeTSV(fields[j]);
 					data.add(fields);
 				}
 				return new TableKnowledgeGraph(id + "/" + alteredTableIndex + ".tsv", data);
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				e.printStackTrace();
 				throw new RuntimeException("Error reading " + opts.alteredTablesConcatCache);
@@ -82,7 +82,7 @@ public class TableAltererCache
 		}
 		else
 		{
-			File tablePath = new File(new File(opts.baseAlteredTablesDir, id), alteredTableIndex + ".tsv");
+			final File tablePath = new File(new File(opts.baseAlteredTablesDir, id), alteredTableIndex + ".tsv");
 			if (!tablePath.exists())
 				return null;
 			if (BatchTableAlterer.opts.verbose >= 1)
@@ -91,7 +91,7 @@ public class TableAltererCache
 			{
 				return TableKnowledgeGraph.fromRootedFilename(tablePath.getPath());
 			}
-			catch (Exception e)
+			catch (final Exception e)
 			{
 				LogInfo.warnings("Error reading %s: %s", tablePath.getPath(), e);
 				return null;
@@ -99,28 +99,26 @@ public class TableAltererCache
 		}
 	}
 
-	public void dump(TableKnowledgeGraph graph, String id, int alteredTableIndex)
+	public void dump(final TableKnowledgeGraph graph, final String id, final int alteredTableIndex)
 	{
 		dump(graph, id, "" + alteredTableIndex);
 	}
 
 	// Dump table to |baseAlteredTablesDir|/nt-??/??.tsv
-	public void dump(TableKnowledgeGraph graph, String id, String alteredTableIndex)
+	public void dump(final TableKnowledgeGraph graph, final String id, final String alteredTableIndex)
 	{
 		if (opts.baseAlteredTablesDir == null)
 			throw new RuntimeException("cannot dump if baseAlteredTablesDir = null");
-		File outDir = new File(opts.baseAlteredTablesDir, id);
+		final File outDir = new File(opts.baseAlteredTablesDir, id);
 		outDir.mkdirs();
 		new TableWriter(graph).writeTSV(new File(outDir, alteredTableIndex + ".tsv").getPath());
 	}
 
 	// Dump tables to |baseAlteredTablesDir|/nt-??/??.tsv
-	public void dump(List<TableKnowledgeGraph> graphs, String id)
+	public void dump(final List<TableKnowledgeGraph> graphs, final String id)
 	{
 		for (int i = 0; i < graphs.size(); i++)
-		{
 			dump(graphs.get(i), id, i);
-		}
 	}
 
 }

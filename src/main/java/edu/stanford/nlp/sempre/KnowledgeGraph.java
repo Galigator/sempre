@@ -1,9 +1,12 @@
 package edu.stanford.nlp.sempre;
 
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Pair;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-
-import fig.basic.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Represents a small knowledge graph (much smaller than Freebase). A KnowledgeGraph can be created from either - a list of triples, or - other data format
@@ -14,20 +17,19 @@ import fig.basic.*;
 public abstract class KnowledgeGraph
 {
 
-	public static KnowledgeGraph fromLispTree(LispTree tree)
+	public static KnowledgeGraph fromLispTree(final LispTree tree)
 	{
 		if ("graph".equals(tree.child(0).value))
 		{
 			if (tree.children.size() > 1 && tree.child(1).isLeaf())
-			{
 				// Use a specific subclass of KnowledgeGraph
 				try
 				{
-					String className = tree.child(1).value;
-					Class<?> classObject = Class.forName(SempreUtils.resolveClassName(className));
+					final String className = tree.child(1).value;
+					final Class<?> classObject = Class.forName(SempreUtils.resolveClassName(className));
 					return (KnowledgeGraph) classObject.getDeclaredMethod("fromLispTree", LispTree.class).invoke(null, tree);
 				}
-				catch (InvocationTargetException e)
+				catch (final InvocationTargetException e)
 				{
 					e.getCause().printStackTrace();
 					LogInfo.fail(e.getCause());
@@ -38,17 +40,12 @@ public abstract class KnowledgeGraph
 					e.printStackTrace();
 					throw new RuntimeException(e);
 				}
-			}
 			else
-			{
 				// (graph (a1 r1 b1) (a2 r2 b2) ...) -- explicit triples
 				return NaiveKnowledgeGraph.fromLispTree(tree);
-			}
 		}
 		else
-		{
 			throw new RuntimeException("Cannot convert " + tree + " to KnowledgeGraph.");
-		}
 	}
 
 	// ============================================================
@@ -56,10 +53,10 @@ public abstract class KnowledgeGraph
 	// ============================================================
 
 	/** Reverse the pairs */
-	public static List<Pair<Value, Value>> getReversedPairs(Collection<Pair<Value, Value>> pairs)
+	public static List<Pair<Value, Value>> getReversedPairs(final Collection<Pair<Value, Value>> pairs)
 	{
-		List<Pair<Value, Value>> reversed = new ArrayList<>();
-		for (Pair<Value, Value> pair : pairs)
+		final List<Pair<Value, Value>> reversed = new ArrayList<>();
+		for (final Pair<Value, Value> pair : pairs)
 			reversed.add(new Pair<>(pair.getSecond(), pair.getFirst()));
 		return reversed;
 	}

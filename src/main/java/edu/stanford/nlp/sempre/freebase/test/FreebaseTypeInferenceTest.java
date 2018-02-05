@@ -2,10 +2,11 @@ package edu.stanford.nlp.sempre.freebase.test;
 
 import static org.testng.AssertJUnit.assertEquals;
 
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.freebase.FreebaseTypeLookup;
 import org.testng.annotations.Test;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.freebase.*;
 
 /**
  * Test type inference on Freebase schema.
@@ -15,22 +16,22 @@ import edu.stanford.nlp.sempre.freebase.*;
 public class FreebaseTypeInferenceTest
 {
 	// For testing
-	private static Formula F(String str)
+	private static Formula F(final String str)
 	{
 		return Formula.fromString(str);
 	}
 
-	private static SemType T(String str)
+	private static SemType T(final String str)
 	{
 		return SemType.fromString(str);
 	}
 
-	private static SemType FT(String str)
+	private static SemType FT(final String str)
 	{
 		return TypeInference.inferType(F(str));
 	}
 
-	void check(String fstr, String tstr)
+	void check(final String fstr, final String tstr)
 	{
 		System.out.println("check " + fstr + " " + tstr);
 		assertEquals(T(tstr).toString(), FT(fstr).toString());
@@ -102,7 +103,7 @@ public class FreebaseTypeInferenceTest
 		check("(lambda x (call .length (var x)))", "(-> fb:type.text fb:type.int)");
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		new FreebaseTypeInferenceTest().simpleSemType();
 	}

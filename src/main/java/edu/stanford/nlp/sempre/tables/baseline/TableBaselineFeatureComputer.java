@@ -1,11 +1,24 @@
 package edu.stanford.nlp.sempre.tables.baseline;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.*;
-import edu.stanford.nlp.sempre.tables.features.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FeatureComputer;
+import edu.stanford.nlp.sempre.FeatureExtractor;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
+import edu.stanford.nlp.sempre.tables.TableTypeSystem;
+import edu.stanford.nlp.sempre.tables.features.PhraseInfo;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Compute features for BaselineParser
@@ -23,64 +36,54 @@ public class TableBaselineFeatureComputer implements FeatureComputer
 	public static Options opts = new Options();
 
 	@Override
-	public void extractLocal(Example ex, Derivation deriv)
+	public void extractLocal(final Example ex, final Derivation deriv)
 	{
 		if (!deriv.isRoot(ex.numTokens()))
 			return;
 		if (!FeatureExtractor.containsDomain("table-baseline"))
 			return;
-		List<PhraseInfo> phraseInfos = PhraseInfo.getPhraseInfos(ex);
+		final List<PhraseInfo> phraseInfos = PhraseInfo.getPhraseInfos(ex);
 		// Find the list of all entities mentioned in the question
-		Set<String> mentionedEntities = new HashSet<>(), mentionedProperties = new HashSet<>();
-		for (PhraseInfo phraseInfo : phraseInfos)
-		{
-			for (String s : phraseInfo.fuzzyMatchedPredicates)
+		final Set<String> mentionedEntities = new HashSet<>(), mentionedProperties = new HashSet<>();
+		for (final PhraseInfo phraseInfo : phraseInfos)
+			for (final String s : phraseInfo.fuzzyMatchedPredicates)
 			{
 				// s is either an ENTITY or a BINARY
-				SemType entityType = TableTypeSystem.getEntityTypeFromId(s);
-				SemType propertyType = TableTypeSystem.getPropertyTypeFromId(s);
+				final SemType entityType = TableTypeSystem.getEntityTypeFromId(s);
+				final SemType propertyType = TableTypeSystem.getPropertyTypeFromId(s);
 				if (entityType != null)
 					mentionedEntities.add(s);
 				if (propertyType != null)
 					mentionedProperties.add(s);
 			}
-		}
 		// Find the base cell(s)
-		TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
+		final TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
 		List<Value> values = ((ListValue) deriv.value).values;
 		if (opts.verbosity >= 2)
 			LogInfo.logs("%s", values);
 		if (values.get(0) instanceof NumberValue)
-		{
 			values = graph.joinSecond(TableTypeSystem.CELL_NUMBER_VALUE, values);
-		}
 		else
 			if (values.get(0) instanceof DateValue)
-			{
 				values = graph.joinSecond(TableTypeSystem.CELL_DATE_VALUE, values);
-			}
 			else
-			{
 				values = new ArrayList<>(values);
-			}
 		if (opts.verbosity >= 2)
 			LogInfo.logs("%s", values);
-		List<String> predictedEntities = new ArrayList<>();
-		for (Value value : values)
-		{
+		final List<String> predictedEntities = new ArrayList<>();
+		for (final Value value : values)
 			predictedEntities.add(((NameValue) value).id);
-		}
 		// Define features
-		for (String predicted : predictedEntities)
+		for (final String predicted : predictedEntities)
 		{
-			String pProp = TableTypeSystem.getPropertyOfEntity(predicted);
-			List<Integer> pRows = graph.getRowsOfCellId(predicted);
+			final String pProp = TableTypeSystem.getPropertyOfEntity(predicted);
+			final List<Integer> pRows = graph.getRowsOfCellId(predicted);
 			if (opts.verbosity >= 2)
 				LogInfo.logs("[p] %s %s %s", predicted, pProp, pRows);
-			for (String mentioned : mentionedEntities)
+			for (final String mentioned : mentionedEntities)
 			{
-				String mProp = TableTypeSystem.getPropertyOfEntity(mentioned);
-				List<Integer> mRows = graph.getRowsOfCellId(mentioned);
+				final String mProp = TableTypeSystem.getPropertyOfEntity(mentioned);
+				final List<Integer> mRows = graph.getRowsOfCellId(mentioned);
 				if (opts.verbosity >= 2)
 					LogInfo.logs("[m] %s %s %s", mentioned, mProp, mRows);
 				// Same column as ENTITY + offset
@@ -88,32 +91,24 @@ public class TableBaselineFeatureComputer implements FeatureComputer
 				{
 					defineAllFeatures(deriv, "same-column", phraseInfos);
 					if (pRows != null && pRows.size() == 1 && mRows != null && mRows.size() == 1)
-					{
 						defineAllFeatures(deriv, "same-column;offset=" + (pRows.get(0) - mRows.get(0)), phraseInfos);
-					}
 				}
 				// Same row as ENTITY
 				if (mRows != null && pRows != null)
-				{
-					for (int pRow : pRows)
-					{
+					for (final int pRow : pRows)
 						if (mRows.contains(pRow))
 						{
 							defineAllFeatures(deriv, "same-row", phraseInfos);
 							break;
 						}
-					}
-				}
 			}
-			for (String mentioned : mentionedProperties)
+			for (final String mentioned : mentionedProperties)
 			{
 				// match column name BINARY
 				if (opts.verbosity >= 2)
 					LogInfo.logs("%s %s", pProp, mentioned);
 				if (mentioned.equals(pProp))
-				{
 					defineAllFeatures(deriv, "match-column-binary", phraseInfos);
-				}
 			}
 			// Row index (first or last)
 			if (pRows != null && pRows.contains(0))
@@ -124,23 +119,21 @@ public class TableBaselineFeatureComputer implements FeatureComputer
 
 	}
 
-	private void defineAllFeatures(Derivation deriv, String name, List<PhraseInfo> phraseInfos)
+	private void defineAllFeatures(final Derivation deriv, final String name, final List<PhraseInfo> phraseInfos)
 	{
 		defineUnlexicalizedFeatures(deriv, name);
 		defineLexicalizedFeatures(deriv, name, phraseInfos);
 	}
 
-	private void defineUnlexicalizedFeatures(Derivation deriv, String name)
+	private void defineUnlexicalizedFeatures(final Derivation deriv, final String name)
 	{
 		deriv.addFeature("table-baseline", name);
 	}
 
-	private void defineLexicalizedFeatures(Derivation deriv, String name, List<PhraseInfo> phraseInfos)
+	private void defineLexicalizedFeatures(final Derivation deriv, final String name, final List<PhraseInfo> phraseInfos)
 	{
-		for (PhraseInfo phraseInfo : phraseInfos)
-		{
+		for (final PhraseInfo phraseInfo : phraseInfos)
 			deriv.addFeature("table-baseline", "phrase=" + phraseInfo.lemmaText + ";" + name);
-		}
 	}
 
 }

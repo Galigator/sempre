@@ -38,7 +38,7 @@ public abstract class SingleDerivationStream implements DerivationStream
 	{
 		if (!hasNext())
 			throw new RuntimeException("No more derivations!");
-		Derivation deriv = nextDeriv;
+		final Derivation deriv = nextDeriv;
 		nextDeriv = null;
 		return deriv;
 	}

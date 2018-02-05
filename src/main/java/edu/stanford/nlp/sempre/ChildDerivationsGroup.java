@@ -16,13 +16,13 @@ public class ChildDerivationsGroup
 {
 	public final List<Derivation> derivations1, derivations2;
 
-	public ChildDerivationsGroup(List<Derivation> derivations1)
+	public ChildDerivationsGroup(final List<Derivation> derivations1)
 	{
 		this.derivations1 = derivations1;
-		this.derivations2 = null;
+		derivations2 = null;
 	}
 
-	public ChildDerivationsGroup(List<Derivation> derivations1, List<Derivation> derivations2)
+	public ChildDerivationsGroup(final List<Derivation> derivations1, final List<Derivation> derivations2)
 	{
 		this.derivations1 = derivations1;
 		this.derivations2 = derivations2;

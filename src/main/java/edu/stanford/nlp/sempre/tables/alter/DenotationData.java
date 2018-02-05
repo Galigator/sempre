@@ -1,13 +1,16 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
-import java.io.*;
-import java.util.*;
-
 import edu.stanford.nlp.sempre.Derivation;
 import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.Values;
 import edu.stanford.nlp.sempre.tables.InfiniteListValue;
 import fig.basic.MapUtils;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DenotationData
 {
@@ -24,21 +27,21 @@ public class DenotationData
 	// representative derivation of each group
 	private List<Integer> representativeDerivs;
 
-	public DenotationData(int numAlteredTables, int numDerivs)
+	public DenotationData(final int numAlteredTables, final int numDerivs)
 	{
 		this.numAlteredTables = numAlteredTables;
 		this.numDerivs = numDerivs;
 		denotations = new ArrayList<>(numDerivs);
 		for (int k = 0; k < numDerivs; k++)
 		{
-			List<Integer> denotationsForDeriv = new ArrayList<>(numAlteredTables + 1);
+			final List<Integer> denotationsForDeriv = new ArrayList<>(numAlteredTables + 1);
 			for (int j = 0; j < numAlteredTables + 1; j++)
 				denotationsForDeriv.add(null);
 			denotations.add(denotationsForDeriv);
 		}
 	}
 
-	private int lookup(Value value)
+	private int lookup(final Value value)
 	{
 		Integer id = uniqueDenotationsToId.get(value);
 		if (id == null)
@@ -50,37 +53,37 @@ public class DenotationData
 		return id;
 	}
 
-	public void addDenotation(int derivIndex, int tableIndex, Value value)
+	public void addDenotation(final int derivIndex, final int tableIndex, final Value value)
 	{
 		denotations.get(derivIndex).set(tableIndex, lookup(value));
 	}
 
-	public Value getDenotation(int derivIndex, int tableIndex)
+	public Value getDenotation(final int derivIndex, final int tableIndex)
 	{
 		return uniqueDenotations.get(denotations.get(derivIndex).get(tableIndex));
 	}
 
-	public List<Value> getDenotations(int derivIndex)
+	public List<Value> getDenotations(final int derivIndex)
 	{
-		List<Value> answer = new ArrayList<>(numAlteredTables);
-		for (int x : denotations.get(derivIndex))
+		final List<Value> answer = new ArrayList<>(numAlteredTables);
+		for (final int x : denotations.get(derivIndex))
 			answer.add(uniqueDenotations.get(x));
 		return answer;
 	}
 
-	public int[][] toArray(List<Integer> derivs)
+	public int[][] toArray(final List<Integer> derivs)
 	{
-		int[][] answer = new int[derivs.size()][numAlteredTables + 1];
+		final int[][] answer = new int[derivs.size()][numAlteredTables + 1];
 		for (int i = 0; i < derivs.size(); i++)
 		{
-			List<Integer> derivDenotationIndices = denotations.get(derivs.get(i));
+			final List<Integer> derivDenotationIndices = denotations.get(derivs.get(i));
 			for (int j = 0; j <= numAlteredTables; j++)
 				answer[i][j] = derivDenotationIndices.get(j);
 		}
 		return answer;
 	}
 
-	public void addAnnotatedDenotation(int tableIndex, Value value)
+	public void addAnnotatedDenotation(final int tableIndex, final Value value)
 	{
 		if (annotatedDenotations == null)
 		{
@@ -91,15 +94,15 @@ public class DenotationData
 		annotatedDenotations.set(tableIndex, lookup(value));
 	}
 
-	public Value getAnnotatedDenotation(int tableIndex)
+	public Value getAnnotatedDenotation(final int tableIndex)
 	{
 		return uniqueDenotations.get(annotatedDenotations.get(tableIndex));
 	}
 
 	public List<Value> getAnnotatedDenotations()
 	{
-		List<Value> answer = new ArrayList<>(numAlteredTables);
-		for (int x : annotatedDenotations)
+		final List<Value> answer = new ArrayList<>(numAlteredTables);
+		for (final int x : annotatedDenotations)
 			answer.add(uniqueDenotations.get(x));
 		return answer;
 	}
@@ -109,25 +112,25 @@ public class DenotationData
 		return annotatedDenotations != null;
 	}
 
-	public void computeGroups(List<Derivation> derivs)
+	public void computeGroups(final List<Derivation> derivs)
 	{
 		groups = groupByDenotation(denotations);
 		// Get the representative derivation of each group
 		// Choose the smallest formula
 		representativeDerivs = new ArrayList<>();
-		for (List<Integer> equivClass : groups.values())
+		for (final List<Integer> equivClass : groups.values())
 		{
 			int bestIndex = 0, bestScore = Integer.MIN_VALUE;
-			for (int index : equivClass)
+			for (final int index : equivClass)
 			{
-				Derivation deriv = derivs.get(index);
+				final Derivation deriv = derivs.get(index);
 				int score = -index;
 				try
 				{
 					if (deriv.canonicalUtterance.startsWith("$ROOT:"))
 						score = 100 - Integer.parseInt(deriv.canonicalUtterance.substring("$ROOT:".length()));
 				}
-				catch (NumberFormatException e)
+				catch (final NumberFormatException e)
 				{
 				}
 				if (score > bestScore)
@@ -143,9 +146,9 @@ public class DenotationData
 	/**
 	 * Helper method: Group formulas that execute to the same denotation (or tuple of denotations). Return a map from denotations to lists of formula indices.
 	 */
-	public static <T> Map<T, List<Integer>> groupByDenotation(List<T> denotations)
+	public static <T> Map<T, List<Integer>> groupByDenotation(final List<T> denotations)
 	{
-		Map<T, List<Integer>> groups = new HashMap<>();
+		final Map<T, List<Integer>> groups = new HashMap<>();
 		for (int i = 0; i < denotations.size(); i++)
 			MapUtils.addToList(groups, denotations.get(i), i);
 		return groups;
@@ -165,7 +168,7 @@ public class DenotationData
 		return representativeDerivs;
 	}
 
-	public List<Integer> getEquivClass(int representativeIndex)
+	public List<Integer> getEquivClass(final int representativeIndex)
 	{
 		if (groups == null)
 			throw new RuntimeException("Must call computeGroups(derivs) first");
@@ -176,28 +179,28 @@ public class DenotationData
 	// Serialization
 	// ============================================================
 
-	public void dump(PrintWriter out)
+	public void dump(final PrintWriter out)
 	{
 		// # derivations, # altered tables, # unique denotations
 		out.println("" + numDerivs + " " + numAlteredTables + " " + uniqueDenotations.size());
-		for (Value denotation : uniqueDenotations)
+		for (final Value denotation : uniqueDenotations)
 			out.println(denotation);
-		for (List<Integer> derivDenotationIndices : denotations)
+		for (final List<Integer> derivDenotationIndices : denotations)
 		{
-			StringBuilder sb = new StringBuilder();
-			for (Integer derivDenotationIndex : derivDenotationIndices)
+			final StringBuilder sb = new StringBuilder();
+			for (final Integer derivDenotationIndex : derivDenotationIndices)
 				sb.append(derivDenotationIndex == null ? -1 : derivDenotationIndex).append(" ");
 			out.println(sb.toString().trim());
 		}
 	}
 
-	public void dumpAnnotated(PrintWriter out)
+	public void dumpAnnotated(final PrintWriter out)
 	{
-		for (Integer annotatedDenotationIndex : annotatedDenotations)
+		for (final Integer annotatedDenotationIndex : annotatedDenotations)
 			out.println(annotatedDenotationIndex == null ? null : uniqueDenotations.get(annotatedDenotationIndex));
 	}
 
-	public static DenotationData load(BufferedReader in)
+	public static DenotationData load(final BufferedReader in)
 	{
 		try
 		{
@@ -205,33 +208,27 @@ public class DenotationData
 			String[] tokens = line.split(" ");
 			if (tokens.length != 3)
 				throw new RuntimeException("Expected 3 tokens; got " + tokens.length);
-			int numDerivs = Integer.parseInt(tokens[0]), numAlteredTables = Integer.parseInt(tokens[1]), numUniqueDenotations = Integer.parseInt(tokens[2]);
-			DenotationData denotationData = new DenotationData(numAlteredTables, numDerivs);
+			final int numDerivs = Integer.parseInt(tokens[0]), numAlteredTables = Integer.parseInt(tokens[1]), numUniqueDenotations = Integer.parseInt(tokens[2]);
+			final DenotationData denotationData = new DenotationData(numAlteredTables, numDerivs);
 			for (int i = 0; i < numUniqueDenotations; i++)
 			{
 				line = in.readLine();
 				Value value;
 				if ("ERROR".equals(line))
-				{
 					value = ValueCanonicalizer.ERROR;
-				}
 				else
 					if ("null".equals(line))
-					{
 						value = null;
-					}
 					else
-					{
 						try
 						{
 							value = Values.fromString(line);
 						}
-						catch (Exception e)
+						catch (final Exception e)
 						{
 							// Probably InfiniteValue
 							value = new InfiniteListValue(line);
 						}
-					}
 				denotationData.uniqueDenotations.add(value);
 				denotationData.uniqueDenotationsToId.put(value, i);
 			}
@@ -241,13 +238,11 @@ public class DenotationData
 				if (tokens.length != numAlteredTables + 1)
 					throw new RuntimeException("Expected " + (numAlteredTables + 1) + " tokens; got " + tokens.length);
 				for (int j = 0; j <= numAlteredTables; j++)
-				{
 					denotationData.denotations.get(i).set(j, Integer.parseInt(tokens[j]));
-				}
 			}
 			return denotationData;
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			throw new RuntimeException(e);
 		}

@@ -2,8 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import fig.basic.LispTree;
 import fig.basic.Option;
-import fig.basic.Utils;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,7 +28,7 @@ public abstract class SemanticFn
 
 	// Initialize the semantic function with any arguments (optional).
 	// Override this function and call super.init(tree);
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		this.tree = tree;
 	}
@@ -60,7 +58,7 @@ public abstract class SemanticFn
 		final Rule rule;
 		final List<Derivation> children;
 
-		public CallInfo(String cat, int start, int end, Rule rule, List<Derivation> children)
+		public CallInfo(final String cat, final int start, final int end, final Rule rule, final List<Derivation> children)
 		{
 			this.cat = cat;
 			this.start = start;
@@ -94,12 +92,12 @@ public abstract class SemanticFn
 			return children;
 		}
 
-		public Derivation child(int i)
+		public Derivation child(final int i)
 		{
 			return children.get(i);
 		}
 
-		public String childStringValue(int i)
+		public String childStringValue(final int i)
 		{
 			return Formulas.getString(children.get(i).formula);
 		}
@@ -123,13 +121,13 @@ public abstract class SemanticFn
 	}
 
 	// default does nothing
-	public void addFeedback(Example ex)
+	public void addFeedback(final Example ex)
 	{
 		return;
 	}
 
 	// default does nothing
-	public void sortOnFeedback(Params params)
+	public void sortOnFeedback(final Params params)
 	{
 		return;
 	}
@@ -145,7 +143,7 @@ public abstract class SemanticFn
 		return false;
 	}
 
-	public Collection<ChildDerivationsGroup> getFilteredDerivations(List<Derivation> derivations1, List<Derivation> derivations2)
+	public Collection<ChildDerivationsGroup> getFilteredDerivations(final List<Derivation> derivations1, final List<Derivation> derivations2)
 	{
 		throw new UnsupportedOperationException();
 	}

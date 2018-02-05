@@ -1,9 +1,8 @@
 package edu.stanford.nlp.sempre.cprune;
 
-import java.util.regex.Pattern;
-
 import edu.stanford.nlp.sempre.Derivation;
 import fig.basic.LogInfo;
+import java.util.regex.Pattern;
 
 public class FormulaPattern implements Comparable<FormulaPattern>
 {
@@ -11,7 +10,7 @@ public class FormulaPattern implements Comparable<FormulaPattern>
 	public Integer frequency;
 	public Double score;
 
-	public FormulaPattern(String pattern, Integer frequency)
+	public FormulaPattern(final String pattern, final Integer frequency)
 	{
 		this.pattern = pattern;
 		this.frequency = frequency;
@@ -30,21 +29,15 @@ public class FormulaPattern implements Comparable<FormulaPattern>
 	}
 
 	@Override
-	public int compareTo(FormulaPattern that)
+	public int compareTo(final FormulaPattern that)
 	{
-		if (this.frequency > that.frequency)
-		{
+		if (frequency > that.frequency)
 			return -1;
-		}
 		else
-			if (this.frequency < that.frequency)
-			{
+			if (frequency < that.frequency)
 				return 1;
-			}
 			else
-			{
-				return this.complexity().compareTo(that.complexity());
-			}
+				return complexity().compareTo(that.complexity());
 	}
 
 	// ============================================================
@@ -56,7 +49,7 @@ public class FormulaPattern implements Comparable<FormulaPattern>
 	private static Pattern compare = Pattern.compile("(<=|>=|>|<)");
 	private static Pattern whitespace = Pattern.compile("\\s+");
 
-	public static String convertToIndexedPattern(Derivation deriv)
+	public static String convertToIndexedPattern(final Derivation deriv)
 	{
 		String formula = deriv.formula.toString();
 
@@ -91,7 +84,7 @@ public class FormulaPattern implements Comparable<FormulaPattern>
 		formula = cellProperty.matcher(formula).replaceAll("@PPT");
 		while (formula.contains("@PPT"))
 		{
-			int begin = formula.indexOf("(@PPT");
+			final int begin = formula.indexOf("(@PPT");
 			if (begin == -1)
 			{
 				formula = formula.replace("@PPT", "");
@@ -102,24 +95,20 @@ public class FormulaPattern implements Comparable<FormulaPattern>
 			for (int i = begin + 1; i < formula.length(); i++)
 			{
 				if (formula.charAt(i) == '(')
-				{
 					count++;
-				}
 				else
 					if (formula.charAt(i) == ')')
 					{
 						count--;
 						if (count == 0)
 						{
-							int end = i;
+							final int end = i;
 							formula = formula.substring(0, begin) + formula.substring(begin + 6, end) + formula.substring(end + 1, formula.length());
 							break;
 						}
 					}
 				if (i == formula.length() - 1)
-				{
 					LogInfo.fails("Unbalanced parentheses: %s", formula);
-				}
 			}
 		}
 		return formula;

@@ -1,11 +1,10 @@
 package edu.stanford.nlp.sempre.freebase.test;
 
-import org.testng.annotations.Test;
-
 import edu.stanford.nlp.sempre.SemType;
 import edu.stanford.nlp.sempre.SemTypeHierarchy;
-import edu.stanford.nlp.sempre.freebase.*;
+import edu.stanford.nlp.sempre.freebase.FreebaseInfo;
 import fig.basic.LispTree;
+import org.testng.annotations.Test;
 
 /**
  * Test type system on Freebase schema.
@@ -15,23 +14,23 @@ import fig.basic.LispTree;
 public class FreebaseSemTypeTest
 {
 	// For testing
-	private static SemType T(String str)
+	private static SemType T(final String str)
 	{
 		return SemType.fromLispTree(LispTree.proto.parseFromString(str));
 	}
 
-	private static void verifyEquals(SemType predType, SemType wantedType)
+	private static void verifyEquals(final SemType predType, final SemType wantedType)
 	{
 		if (!predType.toString().equals(wantedType.toString()))
 			throw new RuntimeException(String.format("Wanted %s, but got %s", wantedType, predType));
 	}
 
-	private static void verifyMeet(String t1, String t2)
+	private static void verifyMeet(final String t1, final String t2)
 	{
 		verifyMeet(t1, t2, t2);
 	}
 
-	private static void verifyMeet(String t1, String t2, String t)
+	private static void verifyMeet(final String t1, final String t2, final String t)
 	{
 		verifyEquals(T(t1).meet(T(t2)), T(t));
 		verifyEquals(T(t2).meet(T(t1)), T(t));
@@ -72,7 +71,7 @@ public class FreebaseSemTypeTest
 		verifyMeet("(-> (union city country) person)", "(-> city (union person dog))", "(-> city person)");
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		new FreebaseSemTypeTest().simpleSemType();
 	}

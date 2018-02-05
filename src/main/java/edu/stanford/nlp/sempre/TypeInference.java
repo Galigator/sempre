@@ -1,8 +1,16 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
-
-import java.util.*;
+import fig.basic.ImmutableAssocList;
+import fig.basic.ListUtils;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.Ref;
+import fig.basic.Utils;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Performs type inference: given a Formula, return a SemType. Use a TypeLookup class to look up types of entities and properties. - The default NullTypeLookup
@@ -37,7 +45,7 @@ public final class TypeInference
 		return typeLookup;
 	}
 
-	public static void setTypeLookup(TypeLookup typeLookup)
+	public static void setTypeLookup(final TypeLookup typeLookup)
 	{ // Kind of hacky, only used in tests
 		TypeInference.typeLookup = typeLookup;
 	}
@@ -45,7 +53,7 @@ public final class TypeInference
 	// For computing type of (call ...) expressions.
 	private static Map<String, CallTypeInfo> callTypeInfos;
 
-	public static void addCallTypeInfo(CallTypeInfo info)
+	public static void addCallTypeInfo(final CallTypeInfo info)
 	{
 		if (callTypeInfos.containsKey(info.func))
 			throw new RuntimeException("Already contains " + info.func);
@@ -56,7 +64,7 @@ public final class TypeInference
 	{
 		if (callTypeInfos != null)
 			return;
-		callTypeInfos = new HashMap<String, CallTypeInfo>();
+		callTypeInfos = new HashMap<>();
 		addCallTypeInfo(new CallTypeInfo("Math.cos", ListUtils.newList(SemType.floatType), SemType.floatType));
 		addCallTypeInfo(new CallTypeInfo(".concat", ListUtils.newList(SemType.stringType, SemType.stringType), SemType.stringType));
 		addCallTypeInfo(new CallTypeInfo(".length", ListUtils.newList(SemType.stringType), SemType.intType));
@@ -65,9 +73,9 @@ public final class TypeInference
 		// putting types in (see JavaExecutor).
 	}
 
-	private static final ValueFormula<NameValue> typeFormula = new ValueFormula<NameValue>(new NameValue(CanonicalNames.TYPE));
+	private static final ValueFormula<NameValue> typeFormula = new ValueFormula<>(new NameValue(CanonicalNames.TYPE));
 
-	private static final Set<Formula> comparisonFormulas = new HashSet<>(Arrays.asList(new ValueFormula<NameValue>(new NameValue("<")), new ValueFormula<NameValue>(new NameValue(">")), new ValueFormula<NameValue>(new NameValue("<=")), new ValueFormula<NameValue>(new NameValue(">="))));
+	private static final Set<Formula> comparisonFormulas = new HashSet<>(Arrays.asList(new ValueFormula<>(new NameValue("<")), new ValueFormula<>(new NameValue(">")), new ValueFormula<>(new NameValue("<=")), new ValueFormula<>(new NameValue(">="))));
 
 	@SuppressWarnings("serial")
 	private static class TypeException extends Exception
@@ -80,37 +88,33 @@ public final class TypeInference
 		private final boolean allowFreeVariable; // Don't throw an error if there is an unbound variable.
 		private final ImmutableAssocList<String, Ref<SemType>> list;
 
-		private Env(ImmutableAssocList<String, Ref<SemType>> list, TypeLookup typeLookup, boolean allowFreeVariable)
+		private Env(final ImmutableAssocList<String, Ref<SemType>> list, final TypeLookup typeLookup, final boolean allowFreeVariable)
 		{
 			this.list = list;
 			this.typeLookup = typeLookup;
 			this.allowFreeVariable = allowFreeVariable;
 		}
 
-		public Env(TypeLookup typeLookup, boolean allowFreeVariable)
+		public Env(final TypeLookup typeLookup, final boolean allowFreeVariable)
 		{
 			this(ImmutableAssocList.emptyList, typeLookup, allowFreeVariable);
 		}
 
-		public Env addVar(String var)
+		public Env addVar(final String var)
 		{
-			return new Env(list.prepend(var, new Ref<SemType>(SemType.topType)), typeLookup, allowFreeVariable);
+			return new Env(list.prepend(var, new Ref<>(SemType.topType)), typeLookup, allowFreeVariable);
 		}
 
-		public SemType updateType(String var, SemType type)
+		public SemType updateType(final String var, final SemType type)
 		{
 			Ref<SemType> ref = list.get(var);
 			if (ref == null)
-			{
 				if (!allowFreeVariable)
 					throw new RuntimeException("Free variable not defined: " + var);
 				else
-				{
 					// This does not save the new type to the list
-					ref = new Ref<SemType>(SemType.topType);
-				}
-			}
-			SemType newType = ref.value.meet(type);
+					ref = new Ref<>(SemType.topType);
+			final SemType newType = ref.value.meet(type);
 			if (!newType.isValid() && opts.verbose >= 2)
 				LogInfo.warnings("Invalid type from [%s MEET %s]", ref.value, type);
 			ref.value = newType;
@@ -133,29 +137,29 @@ public final class TypeInference
 	}
 
 	// Use the default typeLookup
-	public static SemType inferType(Formula formula)
+	public static SemType inferType(final Formula formula)
 	{
 		return inferType(formula, getTypeLookup(), false);
 	}
 
-	public static SemType inferType(Formula formula, boolean allowFreeVariable)
+	public static SemType inferType(final Formula formula, final boolean allowFreeVariable)
 	{
 		return inferType(formula, getTypeLookup(), allowFreeVariable);
 	}
 
-	public static SemType inferType(Formula formula, TypeLookup typeLookup)
+	public static SemType inferType(final Formula formula, final TypeLookup typeLookup)
 	{
 		return inferType(formula, typeLookup, false);
 	}
 
-	public static SemType inferType(Formula formula, TypeLookup typeLookup, boolean allowFreeVariable)
+	public static SemType inferType(final Formula formula, final TypeLookup typeLookup, final boolean allowFreeVariable)
 	{
 		SemType type;
 		try
 		{
 			type = inferType(formula, new Env(typeLookup, allowFreeVariable), SemType.topType);
 		}
-		catch (TypeException e)
+		catch (final TypeException e)
 		{
 			type = SemType.bottomType;
 		}
@@ -164,7 +168,7 @@ public final class TypeInference
 		return type;
 	}
 
-	private static SemType check(SemType type) throws TypeException
+	private static SemType check(final SemType type) throws TypeException
 	{
 		if (!type.isValid())
 			throw new TypeException();
@@ -173,19 +177,16 @@ public final class TypeInference
 
 	// Return the type of |formula| (|type| is an upper bound on the type).
 	// |env| specifies the mapping form variables to their types.  This should be updated.
-	private static SemType inferType(Formula formula, Env env, SemType type) throws TypeException
+	private static SemType inferType(final Formula formula, Env env, SemType type) throws TypeException
 	{
 		if (opts.verbose >= 5)
 			LogInfo.logs("TypeInference.inferType(%s, %s, %s)", formula, env, type);
 		if (formula instanceof VariableFormula)
-		{
 			return check(env.updateType(((VariableFormula) formula).name, type));
-
-		}
 		else
 			if (formula instanceof ValueFormula)
 			{
-				Value value = ((ValueFormula<?>) formula).value;
+				final Value value = ((ValueFormula<?>) formula).value;
 				if (value instanceof NumberValue)
 					return check(type.meet(SemType.numberType));
 				else
@@ -200,7 +201,7 @@ public final class TypeInference
 							else
 								if (value instanceof NameValue)
 								{
-									String id = ((NameValue) value).id;
+									final String id = ((NameValue) value).id;
 
 									if (CanonicalNames.isUnary(id))
 									{ // Unary
@@ -214,14 +215,10 @@ public final class TypeInference
 										// Careful of the reversal.
 										SemType propertyType = null;
 										if (CanonicalNames.SPECIAL_SEMTYPES.containsKey(id))
-										{
 											propertyType = CanonicalNames.SPECIAL_SEMTYPES.get(id);
-										}
 										else
 											if (!CanonicalNames.isReverseProperty(id))
-											{
 												propertyType = env.typeLookup.getPropertyType(id);
-											}
 											else
 											{
 												propertyType = env.typeLookup.getPropertyType(CanonicalNames.reverseProperty(id));
@@ -235,15 +232,13 @@ public final class TypeInference
 									return type;
 								}
 								else
-								{
 									throw new RuntimeException("Unhandled value: " + value);
-								}
 
 			}
 			else
 				if (formula instanceof JoinFormula)
 				{
-					JoinFormula join = (JoinFormula) formula;
+					final JoinFormula join = (JoinFormula) formula;
 
 					// Special case: (fb:type.object.type fb:people.person) => fb:people.person
 					if (typeFormula.equals(join.relation) && join.child instanceof ValueFormula)
@@ -254,7 +249,7 @@ public final class TypeInference
 						return check(type.meet(inferType(join.child, env, SemType.numberOrDateType)));
 
 					SemType relationType = inferType(join.relation, env, new FuncSemType(SemType.topType, type)); // Relation
-					SemType childType = inferType(join.child, env, relationType.getArgType()); // Child
+					final SemType childType = inferType(join.child, env, relationType.getArgType()); // Child
 					relationType = inferType(join.relation, env, new FuncSemType(childType, type)); // Relation again
 					return check(relationType.getRetType());
 
@@ -262,7 +257,7 @@ public final class TypeInference
 				else
 					if (formula instanceof MergeFormula)
 					{
-						MergeFormula merge = (MergeFormula) formula;
+						final MergeFormula merge = (MergeFormula) formula;
 						type = check(type.meet(SemType.anyType)); // Must be not higher-order
 						type = inferType(merge.child1, env, type);
 						type = inferType(merge.child2, env, type);
@@ -272,7 +267,7 @@ public final class TypeInference
 					else
 						if (formula instanceof MarkFormula)
 						{
-							MarkFormula mark = (MarkFormula) formula;
+							final MarkFormula mark = (MarkFormula) formula;
 							env = env.addVar(mark.var);
 							type = check(type.meet(SemType.anyType)); // Must be not higher-order
 							type = inferType(mark.body, env, type);
@@ -283,17 +278,17 @@ public final class TypeInference
 						else
 							if (formula instanceof LambdaFormula)
 							{
-								LambdaFormula lambda = (LambdaFormula) formula;
+								final LambdaFormula lambda = (LambdaFormula) formula;
 								env = env.addVar(lambda.var);
-								SemType bodyType = inferType(lambda.body, env, type.getRetType());
-								SemType varType = check(env.updateType(lambda.var, type.getArgType()));
+								final SemType bodyType = inferType(lambda.body, env, type.getRetType());
+								final SemType varType = check(env.updateType(lambda.var, type.getArgType()));
 								return new FuncSemType(varType, bodyType);
 
 							}
 							else
 								if (formula instanceof NotFormula)
 								{
-									NotFormula not = (NotFormula) formula;
+									final NotFormula not = (NotFormula) formula;
 									type = check(type.meet(SemType.anyType)); // Must be not higher-order
 									return inferType(not.child, env, type);
 
@@ -301,8 +296,8 @@ public final class TypeInference
 								else
 									if (formula instanceof AggregateFormula)
 									{
-										AggregateFormula aggregate = (AggregateFormula) formula;
-										SemType childType = inferType(aggregate.child, env, SemType.anyType);
+										final AggregateFormula aggregate = (AggregateFormula) formula;
+										final SemType childType = inferType(aggregate.child, env, SemType.anyType);
 										if (aggregate.mode == AggregateFormula.Mode.count)
 											return check(SemType.numberType.meet(type));
 										else
@@ -312,7 +307,7 @@ public final class TypeInference
 									else
 										if (formula instanceof ArithmeticFormula)
 										{
-											ArithmeticFormula arith = (ArithmeticFormula) formula;
+											final ArithmeticFormula arith = (ArithmeticFormula) formula;
 											// TODO(pliang): allow date + duration
 											type = inferType(arith.child1, env, type);
 											type = inferType(arith.child2, env, type);
@@ -322,20 +317,20 @@ public final class TypeInference
 										else
 											if (formula instanceof ReverseFormula)
 											{
-												ReverseFormula reverse = (ReverseFormula) formula;
-												SemType reverseType = inferType(reverse.child, env, type.reverse());
+												final ReverseFormula reverse = (ReverseFormula) formula;
+												final SemType reverseType = inferType(reverse.child, env, type.reverse());
 												return check(reverseType.reverse());
 
 											}
 											else
 												if (formula instanceof SuperlativeFormula)
 												{
-													SuperlativeFormula superlative = (SuperlativeFormula) formula;
+													final SuperlativeFormula superlative = (SuperlativeFormula) formula;
 													inferType(superlative.rank, env, SemType.numberType);
 													inferType(superlative.count, env, SemType.numberType);
 													type = check(type.meet(SemType.anyType)); // Must be not higher-order
 													type = inferType(superlative.head, env, type); // Head
-													SemType relationType = inferType(superlative.relation, env, new FuncSemType(SemType.numberOrDateType, type)); // Relation
+													final SemType relationType = inferType(superlative.relation, env, new FuncSemType(SemType.numberOrDateType, type)); // Relation
 													type = inferType(superlative.head, env, relationType.getRetType()); // Head again
 													return type;
 
@@ -344,15 +339,15 @@ public final class TypeInference
 													if (formula instanceof CallFormula)
 													{
 														initCallTypeInfo();
-														CallFormula call = (CallFormula) formula;
+														final CallFormula call = (CallFormula) formula;
 														if (!(call.func instanceof ValueFormula))
 															return SemType.bottomType;
-														Value value = ((ValueFormula<?>) call.func).value;
+														final Value value = ((ValueFormula<?>) call.func).value;
 														if (!(value instanceof NameValue))
 															return SemType.bottomType;
-														String func = ((NameValue) value).id;
+														final String func = ((NameValue) value).id;
 
-														CallTypeInfo info = callTypeInfos.get(func);
+														final CallTypeInfo info = callTypeInfos.get(func);
 														if (info == null)
 															return SemType.anyType; // Don't know
 
@@ -369,8 +364,6 @@ public final class TypeInference
 															return SemType.anyType;
 														}
 														else
-														{
 															throw new RuntimeException("Can't infer type of formula: " + formula);
-														}
 	}
 }

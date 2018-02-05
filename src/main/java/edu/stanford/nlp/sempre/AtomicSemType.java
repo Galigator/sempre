@@ -7,7 +7,7 @@ public class AtomicSemType extends SemType
 {
 	public final String name;
 
-	public AtomicSemType(String name)
+	public AtomicSemType(final String name)
 	{
 		if (name == null)
 			throw new RuntimeException("Null name");
@@ -19,7 +19,7 @@ public class AtomicSemType extends SemType
 		return true;
 	}
 
-	public SemType meet(SemType that)
+	public SemType meet(final SemType that)
 	{
 		if (that instanceof TopSemType)
 			return this;
@@ -27,8 +27,8 @@ public class AtomicSemType extends SemType
 			return that.meet(this);
 		if (that instanceof AtomicSemType)
 		{
-			String name1 = this.name;
-			String name2 = ((AtomicSemType) that).name;
+			final String name1 = name;
+			final String name2 = ((AtomicSemType) that).name;
 			if (name1.equals(name2))
 				return this; // Shortcut: the same
 			if (SemTypeHierarchy.singleton.getSupertypes(name1).contains(name2))
@@ -40,7 +40,7 @@ public class AtomicSemType extends SemType
 		return SemType.bottomType;
 	}
 
-	public SemType apply(SemType that)
+	public SemType apply(final SemType that)
 	{
 		return SemType.bottomType;
 	}

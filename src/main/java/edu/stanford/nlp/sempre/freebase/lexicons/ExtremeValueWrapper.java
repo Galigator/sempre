@@ -10,13 +10,13 @@ public abstract class ExtremeValueWrapper
 class MinValueWrapper extends ExtremeValueWrapper
 {
 
-	public MinValueWrapper(double max)
+	public MinValueWrapper(final double max)
 	{
 		distance = max;
 	}
 
 	@Override
-	public boolean add(double other)
+	public boolean add(final double other)
 	{
 		if (other < distance)
 		{
@@ -30,13 +30,13 @@ class MinValueWrapper extends ExtremeValueWrapper
 class MaxValueWrapper extends ExtremeValueWrapper
 {
 
-	public MaxValueWrapper(double min)
+	public MaxValueWrapper(final double min)
 	{
 		distance = min;
 	}
 
 	@Override
-	public boolean add(double other)
+	public boolean add(final double other)
 	{
 		if (other > distance)
 		{

@@ -1,13 +1,12 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.util.List;
-
 import edu.stanford.nlp.sempre.Derivation;
 import edu.stanford.nlp.sempre.Example;
+import java.util.List;
 
 public class Definition
 {
-	public Definition(Example head, List<Derivation> chartList, List<Example> body)
+	public Definition(final Example head, final List<Derivation> chartList, final List<Example> body)
 	{
 	}
 }

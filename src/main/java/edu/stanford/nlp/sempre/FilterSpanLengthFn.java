@@ -14,27 +14,23 @@ public class FilterSpanLengthFn extends SemanticFn
 	{
 	}
 
-	public FilterSpanLengthFn(int minLength)
+	public FilterSpanLengthFn(final int minLength)
 	{
 		init(LispTree.proto.newList("FilterSpanLengthFn", "" + minLength));
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		minLength = Integer.parseInt(tree.child(1).value);
 		if (tree.children.size() > 2)
-		{
 			maxLength = Integer.parseInt(tree.child(2).value);
-		}
 		else
-		{
 			maxLength = NO_MAXIMUM;
-		}
 	}
 
 	@Override
-	public DerivationStream call(Example ex, final Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{

@@ -7,7 +7,7 @@ public enum FbIndexField
 
 	private final String fieldName;
 
-	FbIndexField(String fieldName)
+	FbIndexField(final String fieldName)
 	{
 		this.fieldName = fieldName;
 	}

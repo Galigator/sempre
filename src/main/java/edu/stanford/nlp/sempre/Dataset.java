@@ -4,13 +4,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
-
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.Pair;
+import fig.basic.StatFig;
 import fig.exec.Execution;
 import fig.prob.SampleUtils;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * A dataset contains a set of examples, which are keyed by group (e.g., train, dev, test).
@@ -22,9 +32,9 @@ public class Dataset
 	public static class Options
 	{
 		@Option(gloss = "Paths to read input files (format: <group>:<file>)")
-		public ArrayList<Pair<String, String>> inPaths = new ArrayList<Pair<String, String>>();
+		public ArrayList<Pair<String, String>> inPaths = new ArrayList<>();
 		@Option(gloss = "Maximum number of examples to read")
-		public ArrayList<Pair<String, Integer>> maxExamples = new ArrayList<Pair<String, Integer>>();
+		public ArrayList<Pair<String, Integer>> maxExamples = new ArrayList<>();
 
 		// Training file gets split into:
 		// |  trainFrac  -->  |           | <-- devFrac |
@@ -47,10 +57,10 @@ public class Dataset
 	public static Options opts = new Options();
 
 	// Group id -> examples in that group
-	private LinkedHashMap<String, List<Example>> allExamples = new LinkedHashMap<String, List<Example>>();
+	private LinkedHashMap<String, List<Example>> allExamples = new LinkedHashMap<>();
 
 	// General statistics about the examples.
-	private final HashSet<String> tokenTypes = new HashSet<String>();
+	private final HashSet<String> tokenTypes = new HashSet<>();
 	private final StatFig numTokensFig = new StatFig(); // For each example, number of tokens
 
 	public Set<String> groups()
@@ -58,7 +68,7 @@ public class Dataset
 		return allExamples.keySet();
 	}
 
-	public List<Example> examples(String group)
+	public List<Example> examples(final String group)
 	{
 		return allExamples.get(group);
 	}
@@ -73,7 +83,7 @@ public class Dataset
 		String path; // Optional, used if this was read from a path.
 
 		@JsonCreator
-		public GroupInfo(@JsonProperty("group") String group, @JsonProperty("examples") List<Example> examples)
+		public GroupInfo(@JsonProperty("group") final String group, @JsonProperty("examples") final List<Example> examples)
 		{
 			this.group = group;
 			this.examples = examples;
@@ -84,8 +94,8 @@ public class Dataset
 	@JsonProperty("groups")
 	public List<GroupInfo> getAllGroupInfos()
 	{
-		List<GroupInfo> all = Lists.newArrayList();
-		for (Map.Entry<String, List<Example>> entry : allExamples.entrySet())
+		final List<GroupInfo> all = Lists.newArrayList();
+		for (final Map.Entry<String, List<Example>> entry : allExamples.entrySet())
 			all.add(new GroupInfo(entry.getKey(), entry.getValue()));
 		return all;
 	}
@@ -94,9 +104,9 @@ public class Dataset
 	// Allows us to creates dataset from arbitrary JSON, not requiring a
 	// path from which to read.
 	@JsonCreator
-	public static Dataset fromGroupInfos(@JsonProperty("groups") List<GroupInfo> groups)
+	public static Dataset fromGroupInfos(@JsonProperty("groups") final List<GroupInfo> groups)
 	{
-		Dataset d = new Dataset();
+		final Dataset d = new Dataset();
 		d.readFromGroupInfos(groups);
 		return d;
 	}
@@ -106,17 +116,15 @@ public class Dataset
 		readFromPathPairs(opts.inPaths);
 	}
 
-	public void readFromPathPairs(List<Pair<String, String>> pathPairs)
+	public void readFromPathPairs(final List<Pair<String, String>> pathPairs)
 	{
 		// Try to detect whether we need JSON.
-		for (Pair<String, String> pathPair : pathPairs)
-		{
+		for (final Pair<String, String> pathPair : pathPairs)
 			if (pathPair.getSecond().endsWith(".json"))
 			{
 				readJsonFromPathPairs(pathPairs);
 				return;
 			}
-		}
 		readLispTreeFromPathPairs(pathPairs);
 		updateGlobalContext();
 	}
@@ -125,44 +133,40 @@ public class Dataset
 	{
 		if (opts.globalGraphPath != null)
 		{
-			KnowledgeGraph graph = NaiveKnowledgeGraph.fromFile(opts.globalGraphPath);
-			for (String group : allExamples.keySet())
-			{
-				for (Example ex : allExamples.get(group))
-				{
+			final KnowledgeGraph graph = NaiveKnowledgeGraph.fromFile(opts.globalGraphPath);
+			for (final String group : allExamples.keySet())
+				for (final Example ex : allExamples.get(group))
 					ex.setContext(new ContextValue(graph));
-				}
-			}
 		}
 	}
 
-	private void readJsonFromPathPairs(List<Pair<String, String>> pathPairs)
+	private void readJsonFromPathPairs(final List<Pair<String, String>> pathPairs)
 	{
-		List<GroupInfo> groups = Lists.newArrayListWithCapacity(pathPairs.size());
-		for (Pair<String, String> pathPair : pathPairs)
+		final List<GroupInfo> groups = Lists.newArrayListWithCapacity(pathPairs.size());
+		for (final Pair<String, String> pathPair : pathPairs)
 		{
-			String group = pathPair.getFirst();
-			String path = pathPair.getSecond();
-			List<Example> examples = Json.readValueHard(IOUtils.openInHard(path), new TypeReference<List<Example>>()
+			final String group = pathPair.getFirst();
+			final String path = pathPair.getSecond();
+			final List<Example> examples = Json.readValueHard(IOUtils.openInHard(path), new TypeReference<List<Example>>()
 			{
 			});
-			GroupInfo gi = new GroupInfo(group, examples);
+			final GroupInfo gi = new GroupInfo(group, examples);
 			gi.path = path;
 			groups.add(gi);
 		}
 		readFromGroupInfos(groups);
 	}
 
-	private void readFromGroupInfos(List<GroupInfo> groupInfos)
+	private void readFromGroupInfos(final List<GroupInfo> groupInfos)
 	{
 		LogInfo.begin_track_printAll("Dataset.read");
 
-		for (GroupInfo groupInfo : groupInfos)
+		for (final GroupInfo groupInfo : groupInfos)
 		{
-			int maxExamples = getMaxExamplesForGroup(groupInfo.group);
+			final int maxExamples = getMaxExamplesForGroup(groupInfo.group);
 			List<Example> examples = allExamples.get(groupInfo.group);
 			if (examples == null)
-				allExamples.put(groupInfo.group, examples = new ArrayList<Example>());
+				allExamples.put(groupInfo.group, examples = new ArrayList<>());
 			readHelper(groupInfo.examples, maxExamples, examples, groupInfo.path);
 		}
 		if (opts.splitDevFromTrain)
@@ -175,21 +179,21 @@ public class Dataset
 	private void splitDevFromTrain()
 	{
 		// Split original training examples randomly into train and dev.
-		List<Example> origTrainExamples = allExamples.get("train");
+		final List<Example> origTrainExamples = allExamples.get("train");
 		if (origTrainExamples != null)
 		{
-			int split1 = (int) (opts.trainFrac * origTrainExamples.size());
-			int split2 = (int) ((1 - opts.devFrac) * origTrainExamples.size());
-			int[] perm = SampleUtils.samplePermutation(opts.splitRandom, origTrainExamples.size());
+			final int split1 = (int) (opts.trainFrac * origTrainExamples.size());
+			final int split2 = (int) ((1 - opts.devFrac) * origTrainExamples.size());
+			final int[] perm = SampleUtils.samplePermutation(opts.splitRandom, origTrainExamples.size());
 
-			List<Example> trainExamples = new ArrayList<Example>();
+			final List<Example> trainExamples = new ArrayList<>();
 			allExamples.put("train", trainExamples);
 			List<Example> devExamples = allExamples.get("dev");
 			if (devExamples == null)
 			{
 				// Preserve order
-				LinkedHashMap<String, List<Example>> newAllExamples = new LinkedHashMap<>();
-				for (Map.Entry<String, List<Example>> entry : allExamples.entrySet())
+				final LinkedHashMap<String, List<Example>> newAllExamples = new LinkedHashMap<>();
+				for (final Map.Entry<String, List<Example>> entry : allExamples.entrySet())
 				{
 					newAllExamples.put(entry.getKey(), entry.getValue());
 					if (entry.getKey().equals("train"))
@@ -204,7 +208,7 @@ public class Dataset
 		}
 	}
 
-	private void readHelper(List<Example> incoming, int maxExamples, List<Example> examples, String path)
+	private void readHelper(final List<Example> incoming, final int maxExamples, final List<Example> examples, final String path)
 	{
 		if (examples.size() >= maxExamples)
 			return;
@@ -217,7 +221,7 @@ public class Dataset
 
 			if (ex.id == null)
 			{
-				String id = (path != null ? path : "<nopath>") + ":" + i;
+				final String id = (path != null ? path : "<nopath>") + ":" + i;
 				ex = new Example.Builder().withExample(ex).setId(id).createExample();
 			}
 			i++;
@@ -231,22 +235,22 @@ public class Dataset
 
 			examples.add(ex);
 			numTokensFig.add(ex.numTokens());
-			for (String token : ex.getTokens())
+			for (final String token : ex.getTokens())
 				tokenTypes.add(token);
 		}
 	}
 
-	private void readLispTreeFromPathPairs(List<Pair<String, String>> pathPairs)
+	private void readLispTreeFromPathPairs(final List<Pair<String, String>> pathPairs)
 	{
 		LogInfo.begin_track_printAll("Dataset.read");
-		for (Pair<String, String> pathPair : pathPairs)
+		for (final Pair<String, String> pathPair : pathPairs)
 		{
-			String group = pathPair.getFirst();
-			String path = pathPair.getSecond();
-			int maxExamples = getMaxExamplesForGroup(group);
+			final String group = pathPair.getFirst();
+			final String path = pathPair.getSecond();
+			final int maxExamples = getMaxExamplesForGroup(group);
 			List<Example> examples = allExamples.get(group);
 			if (examples == null)
-				allExamples.put(group, examples = new ArrayList<Example>());
+				allExamples.put(group, examples = new ArrayList<>());
 			readLispTreeHelper(path, maxExamples, examples);
 		}
 		if (opts.splitDevFromTrain)
@@ -254,18 +258,18 @@ public class Dataset
 		LogInfo.end_track();
 	}
 
-	private void readLispTreeHelper(String path, int maxExamples, List<Example> examples)
+	private void readLispTreeHelper(final String path, final int maxExamples, final List<Example> examples)
 	{
 		if (examples.size() >= maxExamples)
 			return;
 		LogInfo.begin_track("Reading %s", path);
 
-		Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
+		final Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
 		int n = 0;
 		while (examples.size() < maxExamples && trees.hasNext())
 		{
 			// Format: (example (id ...) (utterance ...) (targetFormula ...) (targetValue ...))
-			LispTree tree = trees.next();
+			final LispTree tree = trees.next();
 			if (tree.children.size() < 2 || !"example".equals(tree.child(0).value))
 			{
 				if ("metadata".equals(tree.child(0).value))
@@ -273,7 +277,7 @@ public class Dataset
 				throw new RuntimeException("Invalid example: " + tree);
 			}
 
-			Example ex = Example.fromLispTree(tree, path + ":" + n); // Specify a default id if it doesn't exist
+			final Example ex = Example.fromLispTree(tree, path + ":" + n); // Specify a default id if it doesn't exist
 			n++;
 			ex.preprocess();
 
@@ -285,7 +289,7 @@ public class Dataset
 
 			examples.add(ex);
 			numTokensFig.add(ex.numTokens());
-			for (String token : ex.getTokens())
+			for (final String token : ex.getTokens())
 				tokenTypes.add(token);
 		}
 		LogInfo.end_track();
@@ -296,35 +300,31 @@ public class Dataset
 		LogInfo.begin_track_printAll("Dataset stats");
 		Execution.putLogRec("numTokenTypes", tokenTypes.size());
 		Execution.putLogRec("numTokensPerExample", numTokensFig);
-		for (Map.Entry<String, List<Example>> e : allExamples.entrySet())
+		for (final Map.Entry<String, List<Example>> e : allExamples.entrySet())
 			Execution.putLogRec("numExamples." + e.getKey(), e.getValue().size());
 		LogInfo.end_track();
 	}
 
-	public static int getMaxExamplesForGroup(String group)
+	public static int getMaxExamplesForGroup(final String group)
 	{
 		int maxExamples = Integer.MAX_VALUE;
-		for (Pair<String, Integer> maxPair : opts.maxExamples)
+		for (final Pair<String, Integer> maxPair : opts.maxExamples)
 			if (maxPair.getFirst().equals(group))
 				maxExamples = maxPair.getSecond();
 		return maxExamples;
 	}
 
-	public static void appendExampleToFile(String path, Example ex)
+	public static void appendExampleToFile(final String path, final Example ex)
 	{
 		// JSON is an annoying format because we can't just append.
 		// So currently we have to read the entire file in and write it out.
 		List<Example> examples;
 		if (new File(path).exists())
-		{
 			examples = Json.readValueHard(IOUtils.openInHard(path), new TypeReference<List<Example>>()
 			{
 			});
-		}
 		else
-		{
-			examples = new ArrayList<Example>();
-		}
+			examples = new ArrayList<>();
 		examples.add(ex);
 		Json.prettyWriteValueHard(new File(path), examples);
 	}

@@ -2,13 +2,22 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-
-import fig.basic.*;
-
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.Pair;
+import fig.basic.ValueComparator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Params contains the parameters of the model. Currently consists of a map from features to weights.
@@ -49,7 +58,7 @@ public class Params
 		LAZY, NONLAZY, NONE;
 	}
 
-	private L1Reg parseReg(String l1Reg)
+	private L1Reg parseReg(final String l1Reg)
 	{
 		if ("lazy".equals(l1Reg))
 			return L1Reg.LAZY;
@@ -60,10 +69,10 @@ public class Params
 		throw new RuntimeException("not legal l1reg");
 	}
 
-	private L1Reg l1Reg = parseReg(opts.l1Reg);
+	private final L1Reg l1Reg = parseReg(opts.l1Reg);
 
 	// Discriminative weights
-	private Map<String, Double> weights = new HashMap<>();
+	private final Map<String, Double> weights = new HashMap<>();
 
 	// For AdaGrad
 	Map<String, Double> sumSquaredGradients = new HashMap<>();
@@ -78,30 +87,30 @@ public class Params
 	Map<String, Integer> l1UpdateTimeMap = new HashMap<>();
 
 	// Initialize the weights
-	public void init(List<Pair<String, Double>> initialization)
+	public void init(final List<Pair<String, Double>> initialization)
 	{
 		if (!weights.isEmpty())
 			throw new RuntimeException("Initialization is not legal when there are non-zero weights");
-		for (Pair<String, Double> pair : initialization)
+		for (final Pair<String, Double> pair : initialization)
 			weights.put(pair.getFirst(), pair.getSecond());
 	}
 
 	// Read parameters from |path|.
-	public void read(String path)
+	public void read(final String path)
 	{
 		LogInfo.begin_track("Reading parameters from %s", path);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(path);
+			final BufferedReader in = IOUtils.openIn(path);
 			String line;
 			while ((line = in.readLine()) != null)
 			{
-				String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
+				final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
 				weights.put(pair[0], Double.parseDouble(pair[1]));
 			}
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -110,22 +119,22 @@ public class Params
 	}
 
 	// Read parameters from |path|.
-	public void read(String path, String prefix)
+	public void read(final String path, final String prefix)
 	{
 		LogInfo.begin_track("Reading parameters from %s", path);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(path);
+			final BufferedReader in = IOUtils.openIn(path);
 			String line;
 			while ((line = in.readLine()) != null)
 			{
-				String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
+				final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
 				weights.put(pair[0], Double.parseDouble(pair[1]));
 				weights.put(prefix + pair[0], Double.parseDouble(pair[1]));
 			}
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -134,18 +143,18 @@ public class Params
 	}
 
 	// Update weights by adding |gradient| (modified appropriately with step size).
-	public synchronized void update(Map<String, Double> gradient)
+	public synchronized void update(final Map<String, Double> gradient)
 	{
-		for (Map.Entry<String, Double> entry : gradient.entrySet())
+		for (final Map.Entry<String, Double> entry : gradient.entrySet())
 		{
-			String f = entry.getKey();
-			double g = entry.getValue();
+			final String f = entry.getKey();
+			final double g = entry.getValue();
 			if (g * g == 0)
 				continue; // In order to not divide by zero
 
 			if (l1Reg == L1Reg.LAZY)
 				lazyL1Update(f);
-			double stepSize = computeStepSize(f, g);
+			final double stepSize = computeStepSize(f, g);
 
 			if (opts.dualAveraging)
 			{
@@ -169,11 +178,11 @@ public class Params
 		// non lazy implementation goes over all weights
 		if (l1Reg == L1Reg.NONLAZY)
 		{
-			Set<String> features = new HashSet<String>(weights.keySet());
-			for (String f : features)
+			final Set<String> features = new HashSet<>(weights.keySet());
+			for (final String f : features)
 			{
-				double stepSize = computeStepSize(f, 0d); // no update for gradient here
-				double update = opts.l1RegCoeff * -Math.signum(MapUtils.getDouble(weights, f, opts.defaultWeight));
+				final double stepSize = computeStepSize(f, 0d); // no update for gradient here
+				final double update = opts.l1RegCoeff * -Math.signum(MapUtils.getDouble(weights, f, opts.defaultWeight));
 				clipUpdate(f, stepSize * update);
 			}
 		}
@@ -187,43 +196,37 @@ public class Params
 		}
 	}
 
-	private double computeStepSize(String feature, double gradient)
+	private double computeStepSize(final String feature, final double gradient)
 	{
 		if (opts.adaptiveStepSize)
 		{
 			MapUtils.incr(sumSquaredGradients, feature, gradient * gradient);
 			// ugly - adding one to the denominator when using l1 reg.
 			if (l1Reg != L1Reg.NONE)
-				return opts.initStepSize / (Math.sqrt(sumSquaredGradients.get(feature) + 1));
+				return opts.initStepSize / Math.sqrt(sumSquaredGradients.get(feature) + 1);
 			else
 				return opts.initStepSize / Math.sqrt(sumSquaredGradients.get(feature));
 		}
 		else
-		{
 			return opts.initStepSize / Math.pow(numUpdates, opts.stepSizeReduction);
-		}
 	}
 
 	/*
 	 * If the update changes the sign, remove the feature
 	 */
-	private void clipUpdate(String f, double update)
+	private void clipUpdate(final String f, final double update)
 	{
-		double currWeight = MapUtils.getDouble(weights, f, 0);
+		final double currWeight = MapUtils.getDouble(weights, f, 0);
 		if (currWeight == 0)
 			return;
 
 		if (currWeight * (currWeight + update) < 0.0)
-		{
 			weights.remove(f);
-		}
 		else
-		{
 			MapUtils.incr(weights, f, update);
-		}
 	}
 
-	private void lazyL1Update(String f)
+	private void lazyL1Update(final String f)
 	{
 		if (MapUtils.getDouble(weights, f, 0.0) == 0)
 			return;
@@ -234,14 +237,14 @@ public class Params
 			sumSquaredGradients.put(f, 0.0);
 			return;
 		}
-		int numOfIter = numUpdates - MapUtils.get(l1UpdateTimeMap, f, 0);
+		final int numOfIter = numUpdates - MapUtils.get(l1UpdateTimeMap, f, 0);
 		if (numOfIter == 0)
 			return;
 		if (numOfIter < 0)
 			throw new RuntimeException("l1UpdateTimeMap is out of sync.");
 
-		double stepSize = (numOfIter * opts.initStepSize) / (Math.sqrt(sumSquaredGradients.get(f) + 1));
-		double update = -opts.l1RegCoeff * Math.signum(MapUtils.getDouble(weights, f, 0.0));
+		final double stepSize = numOfIter * opts.initStepSize / Math.sqrt(sumSquaredGradients.get(f) + 1);
+		final double update = -opts.l1RegCoeff * Math.signum(MapUtils.getDouble(weights, f, 0.0));
 		clipUpdate(f, stepSize * update);
 		if (weights.containsKey(f))
 			l1UpdateTimeMap.put(f, numUpdates);
@@ -249,16 +252,14 @@ public class Params
 			l1UpdateTimeMap.remove(f);
 	}
 
-	public synchronized double getWeight(String f)
+	public synchronized double getWeight(final String f)
 	{
 		if (l1Reg == L1Reg.LAZY)
 			lazyL1Update(f);
 		if (opts.initWeightsRandomly)
 			return MapUtils.getDouble(weights, f, 2 * opts.initRandom.nextDouble() - 1);
 		else
-		{
 			return MapUtils.getDouble(weights, f, opts.defaultWeight);
-		}
 	}
 
 	public synchronized Map<String, Double> getWeights()
@@ -267,26 +268,26 @@ public class Params
 		return weights;
 	}
 
-	public void write(PrintWriter out)
+	public void write(final PrintWriter out)
 	{
 		write(null, out);
 	}
 
-	public void write(String prefix, PrintWriter out)
+	public void write(final String prefix, final PrintWriter out)
 	{
-		List<Map.Entry<String, Double>> entries = Lists.newArrayList(weights.entrySet());
+		final List<Map.Entry<String, Double>> entries = Lists.newArrayList(weights.entrySet());
 		Collections.sort(entries, new ValueComparator<String, Double>(true));
-		for (Map.Entry<String, Double> entry : entries)
+		for (final Map.Entry<String, Double> entry : entries)
 		{
-			double value = entry.getValue();
+			final double value = entry.getValue();
 			out.println((prefix == null ? "" : prefix + "\t") + entry.getKey() + "\t" + value);
 		}
 	}
 
-	public void write(String path)
+	public void write(final String path)
 	{
 		LogInfo.begin_track("Params.write(%s)", path);
-		PrintWriter out = IOUtils.openOutHard(path);
+		final PrintWriter out = IOUtils.openOutHard(path);
 		write(out);
 		out.close();
 		LogInfo.end_track();
@@ -295,11 +296,11 @@ public class Params
 	public void log()
 	{
 		LogInfo.begin_track("Params");
-		List<Map.Entry<String, Double>> entries = Lists.newArrayList(weights.entrySet());
+		final List<Map.Entry<String, Double>> entries = Lists.newArrayList(weights.entrySet());
 		Collections.sort(entries, new ValueComparator<String, Double>(true));
-		for (Map.Entry<String, Double> entry : entries)
+		for (final Map.Entry<String, Double> entry : entries)
 		{
-			double value = entry.getValue();
+			final double value = entry.getValue();
 			LogInfo.logs("%s\t%s", entry.getKey(), value);
 		}
 		LogInfo.end_track();
@@ -309,34 +310,30 @@ public class Params
 	{
 		if (l1Reg == L1Reg.LAZY)
 		{
-			Set<String> features = new HashSet<>(weights.keySet());
-			for (String f : features)
+			final Set<String> features = new HashSet<>(weights.keySet());
+			for (final String f : features)
 				lazyL1Update(f);
 		}
 	}
 
 	public Params copyParams()
 	{
-		Params result = new Params();
-		for (String feature : this.getWeights().keySet())
-		{
-			result.weights.put(feature, this.getWeight(feature));
-		}
+		final Params result = new Params();
+		for (final String feature : getWeights().keySet())
+			result.weights.put(feature, getWeight(feature));
 		return result;
 	}
 
 	// copy params starting with prefix and drop the prefix
-	public Params copyParamsByPrefix(String prefix)
+	public Params copyParamsByPrefix(final String prefix)
 	{
-		Params result = new Params();
-		for (String feature : this.getWeights().keySet())
-		{
+		final Params result = new Params();
+		for (final String feature : getWeights().keySet())
 			if (feature.startsWith(prefix))
 			{
-				String newFeature = feature.substring(prefix.length());
-				result.weights.put(newFeature, this.getWeight(feature));
+				final String newFeature = feature.substring(prefix.length());
+				result.weights.put(newFeature, getWeight(feature));
 			}
-		}
 		return result;
 	}
 
@@ -347,12 +344,10 @@ public class Params
 
 	public Params getRandomWeightParams()
 	{
-		Random rand = new Random();
-		Params result = new Params();
-		for (String feature : this.getWeights().keySet())
-		{
+		final Random rand = new Random();
+		final Params result = new Params();
+		for (final String feature : getWeights().keySet())
 			result.weights.put(feature, 2 * rand.nextDouble() - 1); // between -1 and 1
-		}
 		return result;
 	}
 }

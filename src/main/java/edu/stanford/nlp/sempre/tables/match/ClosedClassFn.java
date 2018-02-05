@@ -1,12 +1,26 @@
 package edu.stanford.nlp.sempre.tables.match;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.MultipleDerivationStream;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.SemanticFn;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
+import edu.stanford.nlp.sempre.tables.TableCell;
+import edu.stanford.nlp.sempre.tables.TableColumn;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Generate the closed class entities from the table, including: - [generic] Generic common entities (e.g., null = empty cell) - [column] If the number of
@@ -33,21 +47,21 @@ public class ClosedClassFn extends SemanticFn
 
 	protected ClosedClassFnMode mode;
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
-		String value = tree.child(1).value;
+		final String value = tree.child(1).value;
 		if ("generic".equals(value))
-			this.mode = ClosedClassFnMode.GENERIC;
+			mode = ClosedClassFnMode.GENERIC;
 		else
 			if ("column".equals(value))
-				this.mode = ClosedClassFnMode.COLUMN;
+				mode = ClosedClassFnMode.COLUMN;
 			else
 				throw new RuntimeException("Invalid argument: " + value);
 	}
 
 	@Override
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new LazyClosedClassFnDerivs(ex, c, mode);
 	}
@@ -66,10 +80,10 @@ public class ClosedClassFn extends SemanticFn
 		int index = 0;
 		List<Formula> formulas;
 
-		public LazyClosedClassFnDerivs(Example ex, Callable c, ClosedClassFnMode mode)
+		public LazyClosedClassFnDerivs(final Example ex, final Callable c, final ClosedClassFnMode mode)
 		{
 			this.ex = ex;
-			this.graph = (TableKnowledgeGraph) ex.context.graph;
+			graph = (TableKnowledgeGraph) ex.context.graph;
 			this.c = c;
 			this.mode = mode;
 		}
@@ -79,7 +93,6 @@ public class ClosedClassFn extends SemanticFn
 		{
 			// Compute the formulas if not computed yet
 			if (formulas == null)
-			{
 				switch (mode)
 				{
 					case GENERIC:
@@ -91,37 +104,32 @@ public class ClosedClassFn extends SemanticFn
 					default:
 						throw new RuntimeException("Invalid mode: " + mode);
 				}
-			}
 
 			// Use the next formula to create a derivation
 			if (index >= formulas.size())
 				return null;
-			Formula formula = formulas.get(index++);
-			SemType type = TypeInference.inferType(formula);
+			final Formula formula = formulas.get(index++);
+			final SemType type = TypeInference.inferType(formula);
 
 			return new Derivation.Builder().withCallable(c).formula(formula).type(type).createDerivation();
 		}
 
 		protected Collection<Formula> createGenericFormulas()
 		{
-			List<Formula> formulas = new ArrayList<>();
+			final List<Formula> formulas = new ArrayList<>();
 			// Find out if the table has a null cell
-			for (TableColumn column : graph.columns)
-			{
-				for (TableCell cell : column.children)
-				{
+			for (final TableColumn column : graph.columns)
+				for (final TableCell cell : column.children)
 					if (cell.properties.id.endsWith(".null"))
 					{
 						formulas.add(new ValueFormula<>(cell.properties.nameValue));
 						break;
 
 					}
-				}
-			}
 			if (ClosedClassFn.opts.verbose >= 2)
 			{
 				LogInfo.begin_track("ClosedClassFn(generic):");
-				for (Formula formula : formulas)
+				for (final Formula formula : formulas)
 					LogInfo.logs("%s", formula);
 				LogInfo.end_track();
 			}
@@ -130,13 +138,13 @@ public class ClosedClassFn extends SemanticFn
 
 		protected Collection<Formula> createColumnFormulas()
 		{
-			Set<Formula> formulas = new HashSet<>();
+			final Set<Formula> formulas = new HashSet<>();
 			// Process the columns separately
-			for (TableColumn column : graph.columns)
+			for (final TableColumn column : graph.columns)
 			{
 				boolean hasRepeats = false;
-				Set<Value> values = new HashSet<>();
-				for (TableCell cell : column.children)
+				final Set<Value> values = new HashSet<>();
+				for (final TableCell cell : column.children)
 				{
 					if (cell.properties.id.endsWith(".null"))
 						continue;
@@ -146,17 +154,13 @@ public class ClosedClassFn extends SemanticFn
 						values.add(cell.properties.nameValue);
 				}
 				if (values.size() <= ClosedClassFn.opts.maxNumClosedClassEntities && hasRepeats)
-				{
-					for (Value value : values)
-					{
+					for (final Value value : values)
 						formulas.add(new ValueFormula<>(value));
-					}
-				}
 			}
 			if (ClosedClassFn.opts.verbose >= 2)
 			{
 				LogInfo.begin_track("ClosedClassFn(column):");
-				for (Formula formula : formulas)
+				for (final Formula formula : formulas)
 					LogInfo.logs("%s", formula);
 				LogInfo.end_track();
 			}

@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
+import fig.basic.Option;
+import fig.basic.Utils;
 
 /**
  * LanguageAnalyzer takes an utterance and applies various NLP pre-processing steps to to output a LanguageInfo object
@@ -31,7 +32,7 @@ public abstract class LanguageAnalyzer
 		return singleton;
 	}
 
-	public static void setSingleton(LanguageAnalyzer analyzer)
+	public static void setSingleton(final LanguageAnalyzer analyzer)
 	{
 		singleton = analyzer;
 	}

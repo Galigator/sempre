@@ -1,11 +1,20 @@
 package edu.stanford.nlp.sempre.tables.serialize;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.Values;
 import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Pair;
 import fig.exec.Execution;
+import java.util.Iterator;
 
 /**
  * Generate TSV files containing CoreNLP tags of the datasets. Field descriptions: - id: unique ID of the example - utterance: the question in its original
@@ -19,7 +28,7 @@ import fig.exec.Execution;
 public class TaggedDatasetGenerator extends TSVGenerator implements Runnable
 {
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "TaggedDatasetGeneratorMain", new TaggedDatasetGenerator(), Master.getOptionsParser());
 	}
@@ -29,24 +38,24 @@ public class TaggedDatasetGenerator extends TSVGenerator implements Runnable
 	{
 		// Read dataset
 		LogInfo.begin_track("Dataset.read");
-		for (Pair<String, String> pathPair : Dataset.opts.inPaths)
+		for (final Pair<String, String> pathPair : Dataset.opts.inPaths)
 		{
-			String group = pathPair.getFirst();
-			String path = pathPair.getSecond();
+			final String group = pathPair.getFirst();
+			final String path = pathPair.getSecond();
 			// Open output file
-			String filename = Execution.getFile("tagged-" + group + ".tsv");
+			final String filename = Execution.getFile("tagged-" + group + ".tsv");
 			out = IOUtils.openOutHard(filename);
 			dump(FIELDS);
 			// Read LispTrees
 			LogInfo.begin_track("Reading %s", path);
-			int maxExamples = Dataset.getMaxExamplesForGroup(group);
-			Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
+			final int maxExamples = Dataset.getMaxExamplesForGroup(group);
+			final Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
 			// Go through the examples
 			int n = 0;
 			while (n < maxExamples)
 			{
 				// Format: (example (id ...) (utterance ...) (targetFormula ...) (targetValue ...))
-				LispTree tree = trees.next();
+				final LispTree tree = trees.next();
 				if (tree == null)
 					break;
 				if (tree.children.size() < 2 || !"example".equals(tree.child(0).value))
@@ -55,7 +64,7 @@ public class TaggedDatasetGenerator extends TSVGenerator implements Runnable
 						continue;
 					throw new RuntimeException("Invalid example: " + tree);
 				}
-				Example ex = Example.fromLispTree(tree, path + ":" + n);
+				final Example ex = Example.fromLispTree(tree, path + ":" + n);
 				ex.preprocess();
 				LogInfo.logs("Example %s (%d): %s => %s", ex.id, n, ex.getTokens(), ex.targetValue);
 				n++;
@@ -71,29 +80,25 @@ public class TaggedDatasetGenerator extends TSVGenerator implements Runnable
 	private static final String[] FIELDS = new String[] { "id", "utterance", "context", "targetValue", "tokens", "lemmaTokens", "posTags", "nerTags", "nerValues", "targetCanon", "targetCanonType", };
 
 	@Override
-	protected void dump(String... stuff)
+	protected void dump(final String... stuff)
 	{
 		assert stuff.length == FIELDS.length;
 		super.dump(stuff);
 	}
 
-	private void dumpExample(Example ex, LispTree tree)
+	private void dumpExample(final Example ex, final LispTree tree)
 	{
-		String[] fields = new String[FIELDS.length];
+		final String[] fields = new String[FIELDS.length];
 		// Get original information from the LispTree
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			LispTree arg = tree.child(i);
-			String label = arg.child(0).value;
+			final LispTree arg = tree.child(i);
+			final String label = arg.child(0).value;
 			if ("id".equals(label))
-			{
 				fields[0] = serialize(arg.child(1).value);
-			}
 			else
 				if ("utterance".equals(label))
-				{
 					fields[1] = serialize(arg.child(1).value);
-				}
 				else
 					if ("targetValue".equals(label) || "targetValues".equals(label))
 					{

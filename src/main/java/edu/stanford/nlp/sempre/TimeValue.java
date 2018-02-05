@@ -11,7 +11,7 @@ public class TimeValue extends Value
 	public final int hour;
 	public final int minute;
 
-	public TimeValue(int hour, int minute)
+	public TimeValue(final int hour, final int minute)
 	{
 		if (hour > 23 || hour < 0)
 			throw new RuntimeException("Illegal hour: " + hour);
@@ -21,16 +21,16 @@ public class TimeValue extends Value
 		this.minute = minute;
 	}
 
-	public TimeValue(LispTree tree)
+	public TimeValue(final LispTree tree)
 	{
-		this.hour = Integer.valueOf(tree.child(1).value);
-		this.minute = Integer.valueOf(tree.child(2).value);
+		hour = Integer.valueOf(tree.child(1).value);
+		minute = Integer.valueOf(tree.child(2).value);
 	}
 
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("time");
 		tree.addChild(String.valueOf(hour));
 		tree.addChild(String.valueOf(minute));
@@ -38,13 +38,13 @@ public class TimeValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		TimeValue timeValue = (TimeValue) o;
+		final TimeValue timeValue = (TimeValue) o;
 		if (hour != timeValue.hour)
 			return false;
 		if (minute != timeValue.minute)

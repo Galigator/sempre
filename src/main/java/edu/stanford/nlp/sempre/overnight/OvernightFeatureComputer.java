@@ -3,13 +3,31 @@ package edu.stanford.nlp.sempre.overnight;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import edu.stanford.nlp.io.IOUtils;
+import edu.stanford.nlp.sempre.CallFormula;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FeatureComputer;
+import edu.stanford.nlp.sempre.FeatureVector;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.LanguageInfo;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.SimpleLexicon;
+import edu.stanford.nlp.sempre.StringValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
 import fig.basic.BipartiteMatcher;
 import fig.basic.LogInfo;
 import fig.basic.MapUtils;
 import fig.basic.Option;
-import edu.stanford.nlp.sempre.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Define features on the input utterance and a partial canonical utterance. Feature computation recipe: - For both the input and (partial) canonical utterance,
@@ -55,21 +73,19 @@ public class OvernightFeatureComputer implements FeatureComputer
 	public final SimpleLexicon simpleLexicon = SimpleLexicon.getSingleton();
 
 	@Override
-	public void extractLocal(Example ex, Derivation deriv)
+	public void extractLocal(final Example ex, final Derivation deriv)
 	{
 		if (deriv.rule.rhs == null)
 			return;
 
 		// Optimization: feature vector same as child, so don't do anything.
 		if (deriv.rule.isCatUnary())
-		{
 			if (deriv.isRootCat())
 			{
 				extractValueInFormulaFeature(deriv);
 				extractRootFeatures(ex, deriv);
 				return;
 			}
-		}
 
 		// Important!  We want to define the global feature vector for this
 		// derivation, but we can only specify the local feature vector.  So to
@@ -86,16 +102,16 @@ public class OvernightFeatureComputer implements FeatureComputer
 		if (!opts.itemAnalysis)
 			return;
 
-		List<Item> inputItems = computeInputItems(ex);
-		List<Item> candidateItems = computeCandidateItems(ex, deriv);
+		final List<Item> inputItems = computeInputItems(ex);
+		final List<Item> candidateItems = computeCandidateItems(ex, deriv);
 
-		for (Item input : inputItems)
+		for (final Item input : inputItems)
 		{
 			double match = 0;
 			double ppdb = 0;
 			double skipBigram = 0;
 			double skipPpdb = 0;
-			for (Item candidate : candidateItems)
+			for (final Item candidate : candidateItems)
 			{
 				if (!input.tag.equals(candidate.tag))
 					continue;
@@ -121,7 +137,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 				deriv.addFeature("paraphrase", "skip-ppdb");
 		}
 
-		HashMap<String, Double> features = new LinkedHashMap<>();
+		final HashMap<String, Double> features = new LinkedHashMap<>();
 		deriv.incrementAllFeatureVector(+1, features);
 		if (opts.verbose >= 1)
 		{
@@ -130,7 +146,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 		}
 	}
 
-	private void extractValueInFormulaFeature(Derivation deriv)
+	private void extractValueInFormulaFeature(final Derivation deriv)
 	{
 		if (!opts.featureDomains.contains("denotation"))
 			return;
@@ -139,13 +155,13 @@ public class OvernightFeatureComputer implements FeatureComputer
 		{
 
 			//get strings from value
-			List<String> valueList = new ArrayList<>();
+			final List<String> valueList = new ArrayList<>();
 
 			String value = ((StringValue) deriv.value).value;
 
 			if (value.charAt(0) == '[')
 				value = value.substring(1, value.length() - 1); //strip "[]"
-			String[] tokens = value.split(",");
+			final String[] tokens = value.split(",");
 			for (String token : tokens)
 			{
 				token = token.trim(); //strip spaces
@@ -154,121 +170,101 @@ public class OvernightFeatureComputer implements FeatureComputer
 			}
 
 			//get strings from formula
-			List<Formula> formulaList = deriv.formula.mapToList(formula ->
+			final List<Formula> formulaList = deriv.formula.mapToList(formula ->
 			{
-				List<Formula> res = new ArrayList<>();
+				final List<Formula> res = new ArrayList<>();
 				if (formula instanceof ValueFormula)
-				{
 					res.add(formula);
-				}
 				return res;
 			}, true);
 
-			for (Formula f : formulaList)
+			for (final Formula f : formulaList)
 			{
-				Value formulaValue = ((ValueFormula) f).value;
-				String valueStr = (formulaValue instanceof StringValue) ? ((StringValue) formulaValue).value : formulaValue.toString();
+				final Value formulaValue = ((ValueFormula) f).value;
+				final String valueStr = formulaValue instanceof StringValue ? ((StringValue) formulaValue).value : formulaValue.toString();
 				if (valueList.contains(valueStr))
 					deriv.addFeature("denotation", "value_in_formula");
 			}
 		}
 	}
 
-	private void extractRootFeatures(Example ex, Derivation deriv)
+	private void extractRootFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!deriv.isRootCat())
 			return;
 		if (!opts.featureDomains.contains("root") && !opts.featureDomains.contains("root_lexical"))
 			return;
 
-		List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
-		List<String> inputTokens = ex.getTokens();
+		final List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
+		final List<String> inputTokens = ex.getTokens();
 		//alignment features
-		BipartiteMatcher bMatcher = new BipartiteMatcher();
-		List<String> filteredInputTokens = filterStopWords(inputTokens);
-		List<String> filteredDerivTokens = filterStopWords(derivTokens);
+		final BipartiteMatcher bMatcher = new BipartiteMatcher();
+		final List<String> filteredInputTokens = filterStopWords(inputTokens);
+		final List<String> filteredDerivTokens = filterStopWords(derivTokens);
 
-		int[] assignment = bMatcher.findMaxWeightAssignment(buildAlignmentMatrix(filteredInputTokens, filteredDerivTokens));
+		final int[] assignment = bMatcher.findMaxWeightAssignment(buildAlignmentMatrix(filteredInputTokens, filteredDerivTokens));
 
 		if (opts.featureDomains.contains("root"))
 		{
 			//number of unmathced words based on exact match and ppdb
 			int matches = 0;
 			for (int i = 0; i < filteredInputTokens.size(); ++i)
-			{
 				if (assignment[i] != i)
-				{
 					matches++;
-				}
-			}
 			deriv.addFeature("root", "unmatched_input", filteredInputTokens.size() - matches);
 			deriv.addFeature("root", "unmatched_deriv", filteredDerivTokens.size() - matches);
 			if (deriv.value != null)
-			{
 				if (deriv.value instanceof ListValue)
 				{
-					ListValue list = (ListValue) deriv.value;
+					final ListValue list = (ListValue) deriv.value;
 					deriv.addFeature("root", String.format("pos0=%s&returnType=%s", ex.posTag(0), list.values.get(0).getClass()));
 				}
-			}
 		}
 
 		if (opts.featureDomains.contains("root_lexical"))
-		{
 			for (int i = 0; i < assignment.length; ++i)
-			{
 				if (assignment[i] == i)
-				{
 					if (i < filteredInputTokens.size())
 					{
-						String inputToken = filteredInputTokens.get(i).toLowerCase();
+						final String inputToken = filteredInputTokens.get(i).toLowerCase();
 						deriv.addFeature("root_lexical", "deleted_token=" + inputToken);
 						if (!simpleLexicon.lookup(inputToken).isEmpty())
-						{
 							deriv.addFeature("root_lexical", "deleted_entity");
-						}
 					}
 					else
 					{
-						String derivToken = filteredDerivTokens.get(i - filteredInputTokens.size());
+						final String derivToken = filteredDerivTokens.get(i - filteredInputTokens.size());
 						deriv.addFeature("root_lexical", "deleted_token=" + derivToken);
 						if (!simpleLexicon.lookup(derivToken).isEmpty())
-						{
 							deriv.addFeature("root_lexical", "deleted_entity");
-						}
 					}
-				}
-			}
-		}
 	}
 
-	private List<Formula> getCallFormulas(Derivation deriv)
+	private List<Formula> getCallFormulas(final Derivation deriv)
 	{
 		return deriv.formula.mapToList(formula ->
 		{
-			List<Formula> res = new ArrayList<>();
+			final List<Formula> res = new ArrayList<>();
 			if (formula instanceof CallFormula)
-			{
 				res.add(((CallFormula) formula).func);
-			}
 			return res;
 		}, true);
 	}
 
-	private void extractLogicalFormFeatures(Example ex, Derivation deriv)
+	private void extractLogicalFormFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!opts.featureDomains.contains("lf"))
 			return;
 		for (int i = 0; i < ex.numTokens(); ++i)
 		{
-			List<Formula> callFormulas = getCallFormulas(deriv);
+			final List<Formula> callFormulas = getCallFormulas(deriv);
 			if (ex.posTag(i).equals("JJS"))
 			{
 				if (ex.token(i).equals("least") || ex.token(i).equals("most")) //at least and at most are not what we want
 					continue;
-				for (Formula callFormula : callFormulas)
+				for (final Formula callFormula : callFormulas)
 				{
-					String callFormulaDesc = callFormula.toString();
+					final String callFormulaDesc = callFormula.toString();
 					//LogInfo.logs("SUPER: utterance=%s, formula=%s", ex.utterance, deriv.formula);
 					deriv.addFeature("lf", callFormulaDesc + "& superlative");
 				}
@@ -279,8 +275,8 @@ public class OvernightFeatureComputer implements FeatureComputer
 		//specific handling of simple world methods
 		if (deriv.formula instanceof CallFormula)
 		{
-			CallFormula callFormula = (CallFormula) deriv.formula;
-			String desc = callFormula.func.toString();
+			final CallFormula callFormula = (CallFormula) deriv.formula;
+			final String desc = callFormula.func.toString();
 			switch (desc)
 			{
 				case "edu.stanford.nlp.sempre.overnight.SimpleWorld.filter":
@@ -307,7 +303,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 		}
 	}
 
-	private void extractPhraseAlignmentFeatures(Example ex, Derivation deriv)
+	private void extractPhraseAlignmentFeatures(final Example ex, final Derivation deriv)
 	{
 
 		if (!opts.featureDomains.contains("alignment"))
@@ -316,43 +312,39 @@ public class OvernightFeatureComputer implements FeatureComputer
 			phraseTable = loadPhraseTable();
 
 		//get the tokens
-		List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
-		Set<String> inputSubspans = ex.languageInfo.getLowerCasedSpans();
+		final List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
+		final Set<String> inputSubspans = ex.languageInfo.getLowerCasedSpans();
 
 		for (int i = 0; i < derivTokens.size(); ++i)
-		{
 			for (int j = i + 1; j <= derivTokens.size() && j <= i + 4; ++j)
 			{
 
-				String lhs = Joiner.on(' ').join(derivTokens.subList(i, j));
+				final String lhs = Joiner.on(' ').join(derivTokens.subList(i, j));
 				if (entities.contains(lhs))
 					continue; //optimization
 
 				if (phraseTable.containsKey(lhs))
 				{
-					Map<String, Double> rhsCandidates = phraseTable.get(lhs);
-					Set<String> intersection = Sets.intersection(rhsCandidates.keySet(), inputSubspans);
-					for (String rhs : intersection)
-					{
+					final Map<String, Double> rhsCandidates = phraseTable.get(lhs);
+					final Set<String> intersection = Sets.intersection(rhsCandidates.keySet(), inputSubspans);
+					for (final String rhs : intersection)
 						addAndFilterLexicalFeature(deriv, "alignment", rhs, lhs);
-					}
 				}
 			}
-		}
 	}
 
 	private Map<String, Map<String, Double>> loadPhraseTable()
 	{
-		Map<String, Map<String, Double>> res = new HashMap<>();
+		final Map<String, Map<String, Double>> res = new HashMap<>();
 		int num = 0;
-		for (String line : IOUtils.readLines(opts.phraseAlignmentPath))
+		for (final String line : IOUtils.readLines(opts.phraseAlignmentPath))
 		{
-			String[] tokens = line.split("\t");
+			final String[] tokens = line.split("\t");
 			if (tokens.length != 3)
 				throw new RuntimeException("Bad alignment line: " + line);
 			MapUtils.putIfAbsent(res, tokens[0], new HashMap<>());
 
-			double value = Double.parseDouble(tokens[2]);
+			final double value = Double.parseDouble(tokens[2]);
 			if (value >= opts.phraseTableThreshold)
 			{
 				res.get(tokens[0]).put(tokens[1], value);
@@ -363,15 +355,15 @@ public class OvernightFeatureComputer implements FeatureComputer
 		return res;
 	}
 
-	private void addAndFilterLexicalFeature(Derivation deriv, String domain, String str1, String str2)
+	private void addAndFilterLexicalFeature(final Derivation deriv, final String domain, final String str1, final String str2)
 	{
 
-		String[] str1Tokens = str1.split("\\s+");
-		String[] str2Tokens = str2.split("\\s+");
-		for (String str1Token : str1Tokens)
+		final String[] str1Tokens = str1.split("\\s+");
+		final String[] str2Tokens = str2.split("\\s+");
+		for (final String str1Token : str1Tokens)
 			if (entities.contains(str1Token))
 				return;
-		for (String str2Token : str2Tokens)
+		for (final String str2Token : str2Tokens)
 			if (entities.contains(str2Token))
 				return;
 
@@ -380,32 +372,31 @@ public class OvernightFeatureComputer implements FeatureComputer
 		deriv.addFeature(domain, str1 + "--" + str2);
 	}
 
-	private void extractLexicalFeatures(Example ex, Derivation deriv)
+	private void extractLexicalFeatures(final Example ex, final Derivation deriv)
 	{
 
 		if (!opts.featureDomains.contains("lexical"))
 			return;
 
-		List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
-		List<String> inputTokens = ex.getTokens();
+		final List<String> derivTokens = Arrays.asList(deriv.canonicalUtterance.split("\\s+"));
+		final List<String> inputTokens = ex.getTokens();
 		//alignment features
-		BipartiteMatcher bMatcher = new BipartiteMatcher();
-		List<String> filteredInputTokens = filterStopWords(inputTokens);
-		List<String> filteredDerivTokens = filterStopWords(derivTokens);
+		final BipartiteMatcher bMatcher = new BipartiteMatcher();
+		final List<String> filteredInputTokens = filterStopWords(inputTokens);
+		final List<String> filteredDerivTokens = filterStopWords(derivTokens);
 
-		double[][] alignmentMatrix = buildLexicalAlignmentMatrix(filteredInputTokens, filteredDerivTokens);
-		int[] assignment = bMatcher.findMaxWeightAssignment(alignmentMatrix);
+		final double[][] alignmentMatrix = buildLexicalAlignmentMatrix(filteredInputTokens, filteredDerivTokens);
+		final int[] assignment = bMatcher.findMaxWeightAssignment(alignmentMatrix);
 		for (int i = 0; i < filteredInputTokens.size(); ++i)
-		{
 			if (assignment[i] != i)
 			{
-				int derivIndex = assignment[i] - filteredInputTokens.size();
-				String inputToken = filteredInputTokens.get(i).toLowerCase();
+				final int derivIndex = assignment[i] - filteredInputTokens.size();
+				final String inputToken = filteredInputTokens.get(i).toLowerCase();
 
 				if (entities.contains(inputToken))
 					continue; //optimization - stop here
 
-				String derivToken = filteredDerivTokens.get(derivIndex).toLowerCase();
+				final String derivToken = filteredDerivTokens.get(derivIndex).toLowerCase();
 				if (!inputToken.equals(derivToken))
 				{
 					addAndFilterLexicalFeature(deriv, "lexical", inputToken, derivToken);
@@ -413,65 +404,51 @@ public class OvernightFeatureComputer implements FeatureComputer
 
 					//2:2 features
 					if (i < filteredInputTokens.size() - 1)
-					{
 						if (assignment[i + 1] == assignment[i] + 1)
 						{
-							String inputBigram = Joiner.on(' ').join(inputToken, filteredInputTokens.get(i + 1)).toLowerCase();
-							String derivBigram = Joiner.on(' ').join(derivToken, filteredDerivTokens.get(derivIndex + 1)).toLowerCase();
+							final String inputBigram = Joiner.on(' ').join(inputToken, filteredInputTokens.get(i + 1)).toLowerCase();
+							final String derivBigram = Joiner.on(' ').join(derivToken, filteredDerivTokens.get(derivIndex + 1)).toLowerCase();
 							if (!inputBigram.equals(derivBigram))
-							{
 								addAndFilterLexicalFeature(deriv, "lexical", inputBigram, derivBigram);
-							}
 						}
-					}
 					//1:2 features
 					if (derivIndex > 0)
-					{
 						addAndFilterLexicalFeature(deriv, "lexical", inputToken, Joiner.on(' ').join(filteredDerivTokens.get(derivIndex - 1), filteredDerivTokens.get(derivIndex)));
-					}
 					if (derivIndex < filteredDerivTokens.size() - 1)
-					{
 						addAndFilterLexicalFeature(deriv, "lexical", inputToken, Joiner.on(' ').join(filteredDerivTokens.get(derivIndex), filteredDerivTokens.get(derivIndex + 1)));
-					}
 				}
 			}
-		}
 	}
 
-	private void extractStringSimilarityFeatures(Derivation deriv, String inputToken, String derivToken)
+	private void extractStringSimilarityFeatures(final Derivation deriv, final String inputToken, final String derivToken)
 	{
 		if (inputToken.startsWith(derivToken) || derivToken.startsWith(inputToken))
 			deriv.addFeature("lexical", "starts_with");
 		else
 			if (inputToken.length() > 4 && derivToken.length() > 4)
-			{
 				if (inputToken.substring(0, 4).equals(derivToken.substring(0, 4)))
 					deriv.addFeature("lexical", "common_prefix");
-			}
 	}
 
 	//return a list without wtop words
-	private List<String> filterStopWords(List<String> tokens)
+	private List<String> filterStopWords(final List<String> tokens)
 	{
-		List<String> res = new ArrayList<>();
-		for (String token : tokens)
-		{
+		final List<String> res = new ArrayList<>();
+		for (final String token : tokens)
 			if (!stopWords.contains(token))
 				res.add(token);
-		}
 		return res;
 	}
 
-	private double[][] buildAlignmentMatrix(List<String> inputTokens, List<String> derivTokens)
+	private double[][] buildAlignmentMatrix(final List<String> inputTokens, final List<String> derivTokens)
 	{
 
-		double[][] res = new double[inputTokens.size() + derivTokens.size()][inputTokens.size() + derivTokens.size()];
+		final double[][] res = new double[inputTokens.size() + derivTokens.size()][inputTokens.size() + derivTokens.size()];
 		for (int i = 0; i < inputTokens.size(); ++i)
-		{
 			for (int j = 0; j < derivTokens.size(); ++j)
 			{
-				String inputToken = inputTokens.get(i);
-				String derivToken = derivTokens.get(j);
+				final String inputToken = inputTokens.get(i);
+				final String derivToken = derivTokens.get(j);
 
 				if (computeMatch(inputToken, derivToken) > 0d)
 				{
@@ -485,34 +462,25 @@ public class OvernightFeatureComputer implements FeatureComputer
 						res[inputTokens.size() + j][i] = 0.5d;
 					}
 			}
-		}
 		for (int i = 0; i < res.length - 1; i++)
-		{
 			for (int j = i + 1; j < res.length; j++)
-			{
 				if (i != j && res[i][j] < 1)
 				{
 					res[i][j] = Double.NEGATIVE_INFINITY;
 					res[j][i] = Double.NEGATIVE_INFINITY;
 				}
-			}
-		}
 		return res;
 	}
 
-	private double[][] buildLexicalAlignmentMatrix(List<String> inputTokens, List<String> derivTokens)
+	private double[][] buildLexicalAlignmentMatrix(final List<String> inputTokens, final List<String> derivTokens)
 	{
 		if (aligner == null)
-		{
 			aligner = Aligner.read(opts.wordAlignmentPath);
-		}
 
-		double[][] res = new double[inputTokens.size() + derivTokens.size()][inputTokens.size() + derivTokens.size()];
+		final double[][] res = new double[inputTokens.size() + derivTokens.size()][inputTokens.size() + derivTokens.size()];
 		//init with -infnty and low score on the diagonal
 		for (int i = 0; i < res.length - 1; i++)
-		{
 			for (int j = i; j < res.length; j++)
-			{
 				if (i == j)
 				{
 					res[i][j] = 0d;
@@ -523,15 +491,12 @@ public class OvernightFeatureComputer implements FeatureComputer
 					res[i][j] = -1000d;
 					res[j][i] = -1000d;
 				}
-			}
-		}
 
 		for (int i = 0; i < inputTokens.size(); ++i)
-		{
 			for (int j = 0; j < derivTokens.size(); ++j)
 			{
-				String inputToken = inputTokens.get(i).toLowerCase();
-				String derivToken = derivTokens.get(j).toLowerCase();
+				final String inputToken = inputTokens.get(i).toLowerCase();
+				final String derivToken = derivTokens.get(j).toLowerCase();
 
 				if (computeMatch(inputToken, derivToken) > 0)
 				{
@@ -547,12 +512,11 @@ public class OvernightFeatureComputer implements FeatureComputer
 					else
 						if (aligner.getCondProb(inputToken, derivToken) > 0d && aligner.getCondProb(derivToken, inputToken) > 0d)
 						{
-							double product = aligner.getCondProb(inputToken, derivToken) * aligner.getCondProb(derivToken, inputToken);
+							final double product = aligner.getCondProb(inputToken, derivToken) * aligner.getCondProb(derivToken, inputToken);
 							res[i][inputTokens.size() + j] = product;
 							res[inputTokens.size() + j][i] = product;
 						}
 			}
-		}
 		return res;
 	}
 
@@ -562,7 +526,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 		public final String tag;
 		public final String data;
 
-		public Item(String tag, String data)
+		public Item(final String tag, final String data)
 		{
 			this.tag = tag;
 			this.data = data;
@@ -577,7 +541,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 
 	// Fetch items from the temporary state.
 	// If it doesn't exist, create one.
-	private static List<Item> getItems(Map<String, Object> tempState)
+	private static List<Item> getItems(final Map<String, Object> tempState)
 	{
 		List<Item> items = (List<Item>) tempState.get("items");
 		if (items == null)
@@ -585,7 +549,7 @@ public class OvernightFeatureComputer implements FeatureComputer
 		return items;
 	}
 
-	private static void setItems(Map<String, Object> tempState, List<Item> items)
+	private static void setItems(final Map<String, Object> tempState, final List<Item> items)
 	{
 		tempState.put("items", items);
 	}
@@ -594,40 +558,36 @@ public class OvernightFeatureComputer implements FeatureComputer
 	private static final List<String> stopWords = Arrays.asList("\' \" `` ` \'\' a an the that which . what ? is are am be of".split(" "));
 	private static final Set<String> entities = new HashSet<>(Arrays.asList("alice", "bob", "greenberg", "greenberg cafe", "central office", "sacramento", "austin", "california", "texas", "colorado", "colorado river", "red river", "lake tahoe", "tahoe", "lake huron", "huron", "mount whitney", "whitney", "mount rainier", "rainier", "death valley", "pacific ocean", "pacific", "sesame", "mission ave", "mission", "chelsea", "multivariate data analysis", "multivariate data", "data analysis", "multivariate", "data", "efron", "lakoff", "annals of statistics", "annals", "annals of", "of statistics", "statistics", "computational linguistics", "computational", "linguistics", "thai cafe", "pizzeria juno", "new york", "york", "beijing", "brown university", "ucla", "mckinsey", "google"));
 
-	private static boolean isStopWord(String token)
+	private static boolean isStopWord(final String token)
 	{
 		return stopWords.contains(token);
 	}
 
-	private static void populateItems(List<String> tokens, List<Item> items)
+	private static void populateItems(final List<String> tokens, final List<Item> items)
 	{
-		List<String> prunedTokens = new ArrayList<>();
+		final List<String> prunedTokens = new ArrayList<>();
 		// Populate items with unpruned tokens
 		for (int i = 0; i < tokens.size(); i++)
 		{
 			items.add(new Item("unigram", tokens.get(i)));
 			if (i - 1 >= 0)
-			{
 				items.add(new Item("bigram", tokens.get(i - 1) + " " + tokens.get(i)));
-			}
-			if (!isStopWord(tokens.get(i)) || (i > 0 && (tokens.get(i - 1).equals('`') || tokens.get(i - 1).equals("``"))))
+			if (!isStopWord(tokens.get(i)) || i > 0 && (tokens.get(i - 1).equals('`') || tokens.get(i - 1).equals("``")))
 				prunedTokens.add(tokens.get(i));
 		}
 
 		// Populate items with skip words removed
 		for (int i = 1; i < prunedTokens.size(); i++)
-		{
 			items.add(new Item("skip-bigram", prunedTokens.get(i - i) + " " + prunedTokens.get(i)));
-		}
 	}
 
 	// Compute the items for the input utterance.
-	private static List<Item> computeInputItems(Example ex)
+	private static List<Item> computeInputItems(final Example ex)
 	{
-		List<Item> items = getItems(ex.getTempState());
+		final List<Item> items = getItems(ex.getTempState());
 		if (items.size() != 0)
 			return items;
-		List<String> tokens = new ArrayList<>(ex.getTokens());
+		final List<String> tokens = new ArrayList<>(ex.getTokens());
 		populateItems(tokens, items);
 		LogInfo.logs("input %s, items %s", ex, items);
 		return items;
@@ -635,12 +595,12 @@ public class OvernightFeatureComputer implements FeatureComputer
 
 	// Return the set of tokens (partial canonical utterance) produced by the
 	// derivation.
-	public static List<String> extractTokens(Example ex, Derivation deriv, List<String> tokens)
+	public static List<String> extractTokens(final Example ex, final Derivation deriv, final List<String> tokens)
 	{
 		int childIndex = 0;
 		if (deriv.rule.rhs != null)
 		{
-			for (String p : deriv.rule.rhs)
+			for (final String p : deriv.rule.rhs)
 				if (Rule.isCat(p))
 					extractTokens(ex, deriv.children.get(childIndex++), tokens);
 				else
@@ -649,52 +609,46 @@ public class OvernightFeatureComputer implements FeatureComputer
 		}
 		else
 			if (deriv.start != -1 && deriv.end != -1)
-			{
 				for (int i = deriv.start; i < deriv.end; i++)
 					tokens.add(ex.token(i));
-			}
 		return tokens;
 	}
 
 	// Compute the items for a partial canonical utterance.
-	private static List<Item> computeCandidateItems(Example ex, Derivation deriv)
+	private static List<Item> computeCandidateItems(final Example ex, final Derivation deriv)
 	{
 		// Get tokens
-		List<String> tokens = new ArrayList<>();
+		final List<String> tokens = new ArrayList<>();
 		extractTokens(ex, deriv, tokens);
 		// Compute items
-		List<Item> items = new ArrayList<>();
+		final List<Item> items = new ArrayList<>();
 		populateItems(tokens, items);
 		return items;
 	}
 
-	private static void subtractDescendentsFeatures(Derivation deriv, Derivation subderiv)
+	private static void subtractDescendentsFeatures(final Derivation deriv, final Derivation subderiv)
 	{
 		if (subderiv.children != null)
-		{
-			for (Derivation child : subderiv.children)
+			for (final Derivation child : subderiv.children)
 			{
 				deriv.getLocalFeatureVector().add(-1, child.getLocalFeatureVector());
 				subtractDescendentsFeatures(deriv, child);
 			}
-		}
 	}
 
 	// Return the "complexity" of the given derivation.
-	private static int derivationSize(Derivation deriv)
+	private static int derivationSize(final Derivation deriv)
 	{
 		int sum = 0;
-		if (opts.countIntermediate || !(deriv.rule.lhs.contains("Intermediate")))
+		if (opts.countIntermediate || !deriv.rule.lhs.contains("Intermediate"))
 			sum++;
 		if (deriv.children != null)
-		{
-			for (Derivation child : deriv.children)
+			for (final Derivation child : deriv.children)
 				sum += derivationSize(child);
-		}
 		return sum;
 	}
 
-	private static double computeMatch(String a, String b)
+	private static double computeMatch(final String a, final String b)
 	{
 		if (a.equals(b))
 			return 1;
@@ -703,33 +657,25 @@ public class OvernightFeatureComputer implements FeatureComputer
 		return 0;
 	}
 
-	private static double computeParaphrase(String a, String b)
+	private static double computeParaphrase(final String a, final String b)
 	{
 		if (computeMatch(a, b) > 0)
 			return 0;
 
-		String[] aGrams = a.split(" ");
-		String[] bGrams = b.split(" ");
+		final String[] aGrams = a.split(" ");
+		final String[] bGrams = b.split(" ");
 		if (aGrams.length != bGrams.length)
 			return 0;
 
-		PPDBModel model = PPDBModel.getSingleton();
+		final PPDBModel model = PPDBModel.getSingleton();
 		int numPpdb = 0;
 		int numMisses = 0;
 		for (int i = 0; i < aGrams.length; i++)
-		{
 			if (computeMatch(aGrams[i], bGrams[i]) == 0d)
-			{
 				if (model.get(aGrams[i], bGrams[i]) > 0d || model.get(LanguageInfo.LanguageUtils.stem(aGrams[i]), LanguageInfo.LanguageUtils.stem(bGrams[i])) > 0d)
-				{
 					numPpdb++;
-				}
 				else
-				{
 					numMisses++;
-				}
-			}
-		}
-		return (numMisses == 0 && numPpdb <= 1 ? 1d : 0d);
+		return numMisses == 0 && numPpdb <= 1 ? 1d : 0d;
 	}
 }

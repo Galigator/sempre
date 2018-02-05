@@ -3,7 +3,6 @@ package edu.stanford.nlp.sempre;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.Option;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -68,14 +67,13 @@ public class JoinFn extends SemanticFn
 		return arg0Fn;
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		for (int j = 1; j < tree.children.size(); j++)
 		{
-			String arg = tree.child(j).value;
+			final String arg = tree.child(j).value;
 			if (tree.child(j).isLeaf())
-			{
 				switch (arg)
 				{
 					case "binary,unary":
@@ -104,26 +102,21 @@ public class JoinFn extends SemanticFn
 					default:
 						throw new RuntimeException("Invalid argument: " + arg);
 				}
-			}
 			else
-			{
 				if ("arg0".equals(tree.child(j).child(0).value))
 				{
 					arg0Fn = new ConstantFn();
 					arg0Fn.init(tree.child(j));
 				}
 				else
-				{
 					throw new RuntimeException("Invalid argument: " + tree.child(j));
-				}
-			}
 		}
 
 		if (!unaryCanBeArg0 && !unaryCanBeArg1)
 			throw new RuntimeException("At least one of unaryCanBeArg0 and unaryCanBeArg1 must be set");
 	}
 
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new LazyJoinFnDerivs(ex, c);
 	}
@@ -131,15 +124,15 @@ public class JoinFn extends SemanticFn
 	public class LazyJoinFnDerivs extends MultipleDerivationStream
 	{
 		private int currIndex = 0;
-		private List<Derivation> derivations = new ArrayList<>();
-		private Example ex;
-		private Callable callable;
+		private final List<Derivation> derivations = new ArrayList<>();
+		private final Example ex;
+		private final Callable callable;
 		Derivation unaryDeriv, binaryDeriv;
 
-		public LazyJoinFnDerivs(Example ex, Callable c)
+		public LazyJoinFnDerivs(final Example ex, final Callable c)
 		{
 			this.ex = ex;
-			this.callable = c;
+			callable = c;
 			Derivation child0, child1;
 			// TODO(pliang): we can actually push most of this logic into createDerivation()
 			// don't need to get the exact size
@@ -149,7 +142,7 @@ public class JoinFn extends SemanticFn
 				if (c.getChildren().size() != 1)
 					throw new RuntimeException("Expected one argument (already have " + arg0Fn + "), but got args: " + c.getChildren());
 				// This is just a virtual child which is not a derivation.
-				DerivationStream ld = arg0Fn.call(ex, CallInfo.NULL_INFO);
+				final DerivationStream ld = arg0Fn.call(ex, CallInfo.NULL_INFO);
 				child0 = ld.next();
 				child1 = c.child(0);
 			}
@@ -189,7 +182,7 @@ public class JoinFn extends SemanticFn
 			return derivations.get(currIndex++);
 		}
 
-		SemType specializedTypeCheck(SemType binaryType, SemType unaryType)
+		SemType specializedTypeCheck(final SemType binaryType, SemType unaryType)
 		{
 			// Ugly special case for Free917/WebQuestions: when |that| is a
 			// UnionSemType corresponding to an entity (e.g.,
@@ -199,14 +192,14 @@ public class JoinFn extends SemanticFn
 			// - that: (union fb:business.employer ...)
 			// - argType: fb:cvg.cvg_publisher
 			// The meet here is fb:cvg.cvg_publisher, but we actually want to return bottom (to be more stringent).
-			SemType argType = binaryType.getArgType();
+			final SemType argType = binaryType.getArgType();
 			if (unaryType instanceof TopSemType) // Happens when we don't know the type of the unary
 				return SemType.bottomType;
 			if (unaryType instanceof AtomicSemType) // Make things uniform
 				unaryType = new UnionSemType(unaryType);
 			if (unaryType instanceof UnionSemType && argType instanceof AtomicSemType)
 			{
-				for (SemType t : ((UnionSemType) unaryType).baseTypes)
+				for (final SemType t : ((UnionSemType) unaryType).baseTypes)
 					if (t instanceof AtomicSemType && SemTypeHierarchy.singleton.getSupertypes(((AtomicSemType) t).name).contains(((AtomicSemType) argType).name))
 						return binaryType.getRetType();
 				return SemType.bottomType;
@@ -215,7 +208,7 @@ public class JoinFn extends SemanticFn
 		}
 
 		// Return null if unable to join.
-		private Derivation doJoin(Derivation binaryDeriv, Formula binaryFormula, SemType binaryType, Derivation unaryDeriv, Formula unaryFormula, SemType unaryType, String featureDesc)
+		private Derivation doJoin(final Derivation binaryDeriv, final Formula binaryFormula, final SemType binaryType, final Derivation unaryDeriv, final Formula unaryFormula, final SemType unaryType, final String featureDesc)
 		{
 			// Do a coarse type check.
 			SemType type = opts.specializedTypeCheck ? specializedTypeCheck(binaryType, unaryType) : binaryType.apply(unaryType);
@@ -234,14 +227,12 @@ public class JoinFn extends SemanticFn
 				f = Formulas.lambdaApply((LambdaFormula) binaryFormula, unaryFormula);
 			}
 			else
-			{
 				f = new JoinFormula(binaryFormula, unaryFormula);
-			}
 
 			// Do full type inference.
 			if (opts.typeInference)
 			{
-				SemType fullType = TypeInference.inferType(f);
+				final SemType fullType = TypeInference.inferType(f);
 				if (opts.verbose >= 2)
 					LogInfo.logs("JoinFn.typeInference: %s => %s [coarse type = %s]", f, fullType, type);
 				if (!fullType.isValid())
@@ -250,39 +241,35 @@ public class JoinFn extends SemanticFn
 			}
 
 			if (opts.verbose >= 3)
-			{
 				LogInfo.logs("JoinFn: binary: %s [%s], unary: %s [%s], result: %s [%s]", binaryFormula, binaryType, unaryFormula, unaryType, f, type);
-			}
 
 			// Add features
-			FeatureVector features = new FeatureVector();
+			final FeatureVector features = new FeatureVector();
 			if (FeatureExtractor.containsDomain("joinPos") && featureDesc != null)
 				features.add("joinPos", featureDesc);
 
 			// FbFormulasInfo.touchBinaryFormula(binaryFormula);
-			Derivation newDeriv = new Derivation.Builder().withCallable(callable).formula(f).type(type).localFeatureVector(features).createDerivation();
+			final Derivation newDeriv = new Derivation.Builder().withCallable(callable).formula(f).type(type).localFeatureVector(features).createDerivation();
 
 			if (SemanticFn.opts.trackLocalChoices)
-			{
 				newDeriv.addLocalChoice("JoinFn " + (binaryDeriv.start == -1 ? "-" : binaryDeriv.startEndString(ex.getTokens())) + " " + binaryDeriv.formula + " AND " + (unaryDeriv.start == -1 ? "-" : unaryDeriv.startEndString(ex.getTokens())) + " " + unaryDeriv.formula);
-			}
 
 			return newDeriv;
 		}
 
-		private void doJoins(Derivation binaryDeriv, Derivation unaryDeriv)
+		private void doJoins(final Derivation binaryDeriv, final Derivation unaryDeriv)
 		{
-			String binaryPos = ex.languageInfo.getCanonicalPos(binaryDeriv.start);
-			String unaryPos = ex.languageInfo.getCanonicalPos(unaryDeriv.start);
+			final String binaryPos = ex.languageInfo.getCanonicalPos(binaryDeriv.start);
+			final String unaryPos = ex.languageInfo.getCanonicalPos(unaryDeriv.start);
 			if (unaryCanBeArg0)
 			{
-				Derivation deriv = doJoin(binaryDeriv, Formulas.reverseFormula(binaryDeriv.formula), binaryDeriv.type.reverse(), unaryDeriv, unaryDeriv.formula, unaryDeriv.type, "binary=" + binaryPos + ",unary=" + unaryPos + "_reverse");
+				final Derivation deriv = doJoin(binaryDeriv, Formulas.reverseFormula(binaryDeriv.formula), binaryDeriv.type.reverse(), unaryDeriv, unaryDeriv.formula, unaryDeriv.type, "binary=" + binaryPos + ",unary=" + unaryPos + "_reverse");
 				if (deriv != null)
 					derivations.add(deriv);
 			}
 			if (unaryCanBeArg1)
 			{
-				Derivation deriv = doJoin(binaryDeriv, binaryDeriv.formula, binaryDeriv.type, unaryDeriv, unaryDeriv.formula, unaryDeriv.type, "binary=" + binaryPos + ",unary=" + unaryPos);
+				final Derivation deriv = doJoin(binaryDeriv, binaryDeriv.formula, binaryDeriv.type, unaryDeriv, unaryDeriv.formula, unaryDeriv.type, "binary=" + binaryPos + ",unary=" + unaryPos);
 				if (deriv != null)
 					derivations.add(deriv);
 			}

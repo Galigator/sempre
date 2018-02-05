@@ -15,25 +15,25 @@ public class ConcatFn extends SemanticFn
 	{
 	}
 
-	public ConcatFn(String delim)
+	public ConcatFn(final String delim)
 	{
 		this.delim = delim;
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		delim = tree.child(1).value;
 	}
 
-	public DerivationStream call(Example ex, final Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{
 			@Override
 			public Derivation createDerivation()
 			{
-				StringBuilder out = new StringBuilder();
+				final StringBuilder out = new StringBuilder();
 				for (int i = 0; i < c.getChildren().size(); i++)
 				{
 					if (i > 0)

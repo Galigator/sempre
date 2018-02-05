@@ -1,6 +1,6 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Value;
 
 /**
  * Impose that the result is a binary and: - the set of first pair entries should be a subset of |upperBoundFirst| - the set of second pair entries should be a
@@ -14,10 +14,10 @@ public class BinaryTypeHint extends TypeHint
 	public final UnaryDenotation firstUpperBound, secondUpperBound;
 
 	// Should only be called within this package
-	protected BinaryTypeHint(UnaryDenotation first, UnaryDenotation second, VariableMap map)
+	protected BinaryTypeHint(final UnaryDenotation first, final UnaryDenotation second, final VariableMap map)
 	{
-		firstUpperBound = (first == null) ? InfiniteUnaryDenotation.STAR_UNARY : first;
-		secondUpperBound = (second == null) ? InfiniteUnaryDenotation.STAR_UNARY : second;
+		firstUpperBound = first == null ? InfiniteUnaryDenotation.STAR_UNARY : first;
+		secondUpperBound = second == null ? InfiniteUnaryDenotation.STAR_UNARY : second;
 		variableMap = map;
 	}
 
@@ -31,12 +31,12 @@ public class BinaryTypeHint extends TypeHint
 	// Derive a new type hint
 	// ============================================================
 
-	public BinaryTypeHint withVar(String name, Value value)
+	public BinaryTypeHint withVar(final String name, final Value value)
 	{
 		return new BinaryTypeHint(firstUpperBound, secondUpperBound, variableMap.plus(name, value));
 	}
 
-	public BinaryTypeHint withFreeVar(String name)
+	public BinaryTypeHint withFreeVar(final String name)
 	{
 		return new BinaryTypeHint(firstUpperBound, secondUpperBound, variableMap.plusFreeVar(name));
 	}
@@ -57,7 +57,7 @@ public class BinaryTypeHint extends TypeHint
 	}
 
 	// Binary (a, b) = mapping from b to a
-	public UnarylikeTypeHint asMapping(String freeVar)
+	public UnarylikeTypeHint asMapping(final String freeVar)
 	{
 		return new UnarylikeTypeHint(firstUpperBound, secondUpperBound, variableMap.plusFreeVar(freeVar));
 	}

@@ -1,13 +1,13 @@
 package edu.stanford.nlp.sempre.freebase;
 
+import edu.stanford.nlp.sempre.FeatureExtractor;
+import edu.stanford.nlp.sempre.FeatureVector;
 import edu.stanford.nlp.sempre.freebase.lexicons.TokenLevelMatchFeatures;
-import edu.stanford.nlp.sempre.*;
 import edu.stanford.nlp.stats.ClassicCounter;
 import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.stats.Counters;
 import fig.basic.LogInfo;
 import fig.basic.Option;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -37,34 +37,34 @@ public class TextToTextMatcher
 		return textToTextMatcher;
 	}
 
-	private Stemmer stemmer;
+	private final Stemmer stemmer;
 
 	public TextToTextMatcher()
 	{
 		stemmer = new Stemmer();
 	}
 
-	public FeatureVector extractFeatures(List<String> exampleTokens, List<String> examplePosTags, List<String> exampleLemmas, Set<String> fbDescs)
+	public FeatureVector extractFeatures(final List<String> exampleTokens, final List<String> examplePosTags, final List<String> exampleLemmas, final Set<String> fbDescs)
 	{
-		FeatureVector res = new FeatureVector();
+		final FeatureVector res = new FeatureVector();
 		extractTokenMatchFeatures(exampleTokens, exampleLemmas, fbDescs, res);
 		extractWordSimilarityFeatures(exampleTokens, examplePosTags, fbDescs, res);
 		return res;
 	}
 
 	// JONATHAN - changing to not have edit distance since it is inefficient
-	private void extractWordSimilarityFeatures(List<String> exampleTokens, List<String> examplePosTags, Set<String> fbDescs, FeatureVector vector)
+	private void extractWordSimilarityFeatures(final List<String> exampleTokens, final List<String> examplePosTags, final Set<String> fbDescs, final FeatureVector vector)
 	{
 		if (!FeatureExtractor.containsDomain("wordSim"))
 			return;
 
 		boolean match = false;
 		// collect fb tokens
-		List<String> candidateFbTokens = new ArrayList<>();
-		for (String fbDesc : fbDescs)
+		final List<String> candidateFbTokens = new ArrayList<>();
+		for (final String fbDesc : fbDescs)
 		{
-			List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDesc);
-			for (String fbDescToken : fbDescTokens)
+			final List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDesc);
+			for (final String fbDescToken : fbDescTokens)
 			{
 				if (fbDescToken.length() <= 2)
 					continue;
@@ -74,35 +74,33 @@ public class TextToTextMatcher
 		// check if there is a token that is an fb token candidate
 		for (int i = 0; i < exampleTokens.size(); ++i)
 		{
-			String pos = examplePosTags.get(i);
-			String textToken = exampleTokens.get(i);
-			if (pos.startsWith("NN") || (pos.startsWith("VB") && !pos.equals("VBD-AUX")) || pos.equals("JJ"))
-			{
+			final String pos = examplePosTags.get(i);
+			final String textToken = exampleTokens.get(i);
+			if (pos.startsWith("NN") || pos.startsWith("VB") && !pos.equals("VBD-AUX") || pos.equals("JJ"))
 				if (candidateFbTokens.contains(textToken))
 				{
 					match = true;
 					break;
 				}
-			}
 		}
 		if (match)
 			vector.add("wordSim", "FbTokenExTokenMatch");
 	}
 
-	public boolean existsTokenMatch(List<String> exampleTokens, List<String> exampleLemmas, Set<String> fbDescs)
+	public boolean existsTokenMatch(final List<String> exampleTokens, final List<String> exampleLemmas, final Set<String> fbDescs)
 	{
 		// generate stems
-		List<String> exampleStems = new ArrayList<String>();
-		for (String token : exampleTokens)
+		final List<String> exampleStems = new ArrayList<>();
+		for (final String token : exampleTokens)
 			exampleStems.add(stemmer.stem(token));
 
-		Counter<String> tokenFeatures = new ClassicCounter<String>();
-		Counter<String> stemFeatures = new ClassicCounter<String>();
-		for (String fbDescription : fbDescs)
+		final Counter<String> tokenFeatures = new ClassicCounter<>();
+		final Counter<String> stemFeatures = new ClassicCounter<>();
+		for (final String fbDescription : fbDescs)
 		{
-			List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDescription);
-			List<String> fbDescStems = new ArrayList<>();
-			for (String fbDescToken : fbDescTokens)
+			final List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDescription);
+			final List<String> fbDescStems = new ArrayList<>();
+			for (final String fbDescToken : fbDescTokens)
 				fbDescStems.add(stemmer.stem(fbDescToken));
 
 			Counters.maxInPlace(tokenFeatures, TokenLevelMatchFeatures.extractTokenMatchFeatures(exampleTokens, fbDescTokens, true));
@@ -114,23 +112,23 @@ public class TextToTextMatcher
 		return false;
 	}
 
-	private void extractTokenMatchFeatures(List<String> exampleTokens, List<String> exampleLemmas, Set<String> fbDescs, FeatureVector vector)
+	private void extractTokenMatchFeatures(final List<String> exampleTokens, final List<String> exampleLemmas, final Set<String> fbDescs, final FeatureVector vector)
 	{
 		if (!FeatureExtractor.containsDomain("tokenMatch"))
 			return;
 
 		// generate stems
-		List<String> exampleStems = new ArrayList<>();
-		for (String token : exampleTokens)
+		final List<String> exampleStems = new ArrayList<>();
+		for (final String token : exampleTokens)
 			exampleStems.add(stemmer.stem(token));
 
-		Counter<String> tokenFeatures = new ClassicCounter<>();
-		Counter<String> stemFeatures = new ClassicCounter<>();
-		for (String fbDescription : fbDescs)
+		final Counter<String> tokenFeatures = new ClassicCounter<>();
+		final Counter<String> stemFeatures = new ClassicCounter<>();
+		for (final String fbDescription : fbDescs)
 		{
-			List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDescription);
-			List<String> fbDescStems = new ArrayList<>();
-			for (String fbDescToken : fbDescTokens)
+			final List<String> fbDescTokens = FbFormulasInfo.BinaryFormulaInfo.tokenizeFbDescription(fbDescription);
+			final List<String> fbDescStems = new ArrayList<>();
+			for (final String fbDescToken : fbDescTokens)
 				fbDescStems.add(stemmer.stem(fbDescToken));
 
 			Counters.maxInPlace(tokenFeatures, TokenLevelMatchFeatures.extractTokenMatchFeatures(exampleTokens, fbDescTokens, true));
@@ -138,14 +136,12 @@ public class TextToTextMatcher
 			Counters.maxInPlace(stemFeatures, TokenLevelMatchFeatures.extractTokenMatchFeatures(exampleStems, fbDescStems, false));
 		}
 		if (opts.verbose >= 3)
-		{
 			LogInfo.logs("Binary formula desc: %s, token match: %s, stem match: %s", fbDescs, tokenFeatures, stemFeatures);
-		}
 		addFeaturesToVector(tokenFeatures, "binary_token", vector);
 		addFeaturesToVector(stemFeatures, "binary_stem", vector);
 	}
 
-	private void addFeaturesToVector(Counter<String> features, String prefix, FeatureVector vector)
+	private void addFeaturesToVector(final Counter<String> features, final String prefix, final FeatureVector vector)
 	{
 		if (features.getCount("equal") > 0)
 			vector.add("tokenMatch", prefix + ".equal", features.getCount("equal"));

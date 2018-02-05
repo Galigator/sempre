@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.Value;
 
 /**
  * Impose that the result is a unary and the set of values should be a subset of |upperBound|.
@@ -14,10 +15,10 @@ public class UnarylikeTypeHint extends TypeHint
 	public final UnaryDenotation domainUpperBound;
 
 	// Should only be called within this package
-	protected UnarylikeTypeHint(UnaryDenotation u, UnaryDenotation domain, VariableMap map)
+	protected UnarylikeTypeHint(final UnaryDenotation u, final UnaryDenotation domain, final VariableMap map)
 	{
-		upperBound = (u == null) ? InfiniteUnaryDenotation.STAR_UNARY : u;
-		domainUpperBound = (domain == null) ? InfiniteUnaryDenotation.STAR_UNARY : domain;
+		upperBound = u == null ? InfiniteUnaryDenotation.STAR_UNARY : u;
+		domainUpperBound = domain == null ? InfiniteUnaryDenotation.STAR_UNARY : domain;
 		variableMap = map;
 	}
 
@@ -30,7 +31,7 @@ public class UnarylikeTypeHint extends TypeHint
 	/**
 	 * Keep only the values that appear in this upperBound. If a value occurs multiple times, keep the multiplicity.
 	 */
-	public Unarylike applyBound(Unarylike denotation)
+	public Unarylike applyBound(final Unarylike denotation)
 	{
 		return denotation.filter(upperBound, domainUpperBound);
 	}
@@ -39,12 +40,12 @@ public class UnarylikeTypeHint extends TypeHint
 	// Derive a new type hint
 	// ============================================================
 
-	public UnarylikeTypeHint withVar(String name, Value value)
+	public UnarylikeTypeHint withVar(final String name, final Value value)
 	{
 		return new UnarylikeTypeHint(upperBound, domainUpperBound, variableMap.plus(name, value));
 	}
 
-	public UnarylikeTypeHint withFreeVar(String name)
+	public UnarylikeTypeHint withFreeVar(final String name)
 	{
 		return new UnarylikeTypeHint(upperBound, domainUpperBound, variableMap.plusFreeVar(name));
 	}
@@ -54,7 +55,7 @@ public class UnarylikeTypeHint extends TypeHint
 		return new BinaryTypeHint(upperBound, null, variableMap);
 	}
 
-	public BinaryTypeHint asFirstOfBinaryWithSecond(UnaryDenotation second)
+	public BinaryTypeHint asFirstOfBinaryWithSecond(final UnaryDenotation second)
 	{
 		return new BinaryTypeHint(upperBound, second, variableMap);
 	}
@@ -64,7 +65,7 @@ public class UnarylikeTypeHint extends TypeHint
 		return new BinaryTypeHint(null, upperBound, variableMap);
 	}
 
-	public BinaryTypeHint asSecondOfBinaryWithFirst(UnaryDenotation first)
+	public BinaryTypeHint asSecondOfBinaryWithFirst(final UnaryDenotation first)
 	{
 		return new BinaryTypeHint(first, upperBound, variableMap);
 	}
@@ -74,7 +75,7 @@ public class UnarylikeTypeHint extends TypeHint
 		return new BinaryTypeHint(upperBound, upperBound, variableMap);
 	}
 
-	public UnarylikeTypeHint restrict(Unarylike child1d)
+	public UnarylikeTypeHint restrict(final Unarylike child1d)
 	{
 		return restrictedUnary(DenotationUtils.merge(upperBound, child1d, MergeFormula.Mode.and).range());
 	}

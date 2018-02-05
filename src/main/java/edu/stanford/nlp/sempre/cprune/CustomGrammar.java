@@ -1,9 +1,24 @@
 package edu.stanford.nlp.sempre.cprune;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.Rule;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class CustomGrammar extends Grammar
 {
@@ -15,7 +30,7 @@ public class CustomGrammar extends Grammar
 
 	public static Options opts = new Options();
 
-	public static final Set<String> baseCategories = new HashSet<String>(Arrays.asList(Rule.tokenCat, Rule.phraseCat, Rule.lemmaTokenCat, Rule.lemmaPhraseCat, "$Unary", "$Binary", "$Entity", "$Property"));
+	public static final Set<String> baseCategories = new HashSet<>(Arrays.asList(Rule.tokenCat, Rule.phraseCat, Rule.lemmaTokenCat, Rule.lemmaPhraseCat, "$Unary", "$Binary", "$Entity", "$Property"));
 
 	ArrayList<Rule> baseRules = new ArrayList<>();
 	// symbolicFormulas => symbolicFormula ID
@@ -25,49 +40,40 @@ public class CustomGrammar extends Grammar
 	// customRuleString => Binarized rules
 	Map<String, Set<Rule>> customBinarizedRules = new HashMap<>();
 
-	public void init(Grammar initGrammar)
+	public void init(final Grammar initGrammar)
 	{
 		baseRules = new ArrayList<>();
-		for (Rule rule : initGrammar.getRules())
-		{
+		for (final Rule rule : initGrammar.getRules())
 			if (baseCategories.contains(rule.lhs))
-			{
 				baseRules.add(rule);
-			}
-		}
-		this.freshCatIndex = initGrammar.getFreshCatIndex();
+		freshCatIndex = initGrammar.getFreshCatIndex();
 	}
 
-	public List<Rule> getRules(Collection<String> customRuleStrings)
+	public List<Rule> getRules(final Collection<String> customRuleStrings)
 	{
-		Set<Rule> ruleSet = new LinkedHashSet<>();
+		final Set<Rule> ruleSet = new LinkedHashSet<>();
 		ruleSet.addAll(baseRules);
-		for (String ruleString : customRuleStrings)
-		{
+		for (final String ruleString : customRuleStrings)
 			ruleSet.addAll(customBinarizedRules.get(ruleString));
-		}
-		return new ArrayList<Rule>(ruleSet);
+		return new ArrayList<>(ruleSet);
 	}
 
-	public Set<String> addCustomRule(Derivation deriv, Example ex)
+	public Set<String> addCustomRule(final Derivation deriv, final Example ex)
 	{
-		String indexedSymbolicFormula = getIndexedSymbolicFormula(deriv);
-		if (customRules.containsKey(indexedSymbolicFormula)) { return customRules.get(indexedSymbolicFormula); }
+		final String indexedSymbolicFormula = getIndexedSymbolicFormula(deriv);
+		if (customRules.containsKey(indexedSymbolicFormula))
+			return customRules.get(indexedSymbolicFormula);
 
-		CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
-		Set<String> crossReferences = new HashSet<>();
-		for (Symbol symbol : derivInfo.treeSymbols.values())
-		{
+		final CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
+		final Set<String> crossReferences = new HashSet<>();
+		for (final Symbol symbol : derivInfo.treeSymbols.values())
 			if (symbol.frequency > 1)
-			{
 				crossReferences.add(symbol.formula);
-			}
-		}
 		computeCustomRules(deriv, crossReferences);
-		customRules.put(indexedSymbolicFormula, new HashSet<String>(derivInfo.customRuleStrings));
+		customRules.put(indexedSymbolicFormula, new HashSet<>(derivInfo.customRuleStrings));
 
 		LogInfo.begin_track("Add custom rules for formula: " + indexedSymbolicFormula);
-		for (String customRuleString : derivInfo.customRuleStrings)
+		for (final String customRuleString : derivInfo.customRuleStrings)
 		{
 			if (customBinarizedRules.containsKey(customRuleString))
 			{
@@ -76,16 +82,14 @@ public class CustomGrammar extends Grammar
 			}
 
 			rules = new ArrayList<>();
-			LispTree tree = LispTree.proto.parseFromString(customRuleString);
+			final LispTree tree = LispTree.proto.parseFromString(customRuleString);
 			interpretRule(tree);
-			customBinarizedRules.put(customRuleString, new HashSet<Rule>(rules));
+			customBinarizedRules.put(customRuleString, new HashSet<>(rules));
 
 			// Debug
 			LogInfo.begin_track("Add custom rule: " + customRuleString);
-			for (Rule rule : rules)
-			{
+			for (final Rule rule : rules)
 				LogInfo.log(rule.toString());
-			}
 			LogInfo.end_track();
 		}
 		LogInfo.end_track();
@@ -96,7 +100,7 @@ public class CustomGrammar extends Grammar
 		return customRules.get(indexedSymbolicFormula);
 	}
 
-	public static String getIndexedSymbolicFormula(Derivation deriv)
+	public static String getIndexedSymbolicFormula(final Derivation deriv)
 	{
 		return getIndexedSymbolicFormula(deriv, deriv.formula.toString());
 	}
@@ -104,15 +108,15 @@ public class CustomGrammar extends Grammar
 	/**
 	 * Replace symbols (e.g., fb:row.row.name) with placeholders (e.g., Binary#1).
 	 */
-	public static String getIndexedSymbolicFormula(Derivation deriv, String formula)
+	public static String getIndexedSymbolicFormula(final Derivation deriv, String formula)
 	{
-		CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
+		final CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
 		int index = 1;
-		List<Symbol> symbolList = new ArrayList<>(derivInfo.treeSymbols.values());
-		for (Symbol symbol : symbolList)
+		final List<Symbol> symbolList = new ArrayList<>(derivInfo.treeSymbols.values());
+		for (final Symbol symbol : symbolList)
 			symbol.computeIndex(formula);
 		Collections.sort(symbolList);
-		for (Symbol symbol : symbolList)
+		for (final Symbol symbol : symbolList)
 		{
 			if (formula.equals(symbol.formula))
 				formula = symbol.category + "#" + index;
@@ -126,10 +130,10 @@ public class CustomGrammar extends Grammar
 	// Private methods
 	// ============================================================
 
-	private static String safeReplace(String formula, String target, String replacement)
+	private static String safeReplace(String formula, String target, final String replacement)
 	{
 		// (argmin 1 1 ...) and (argmax 1 1 ...) are troublesome
-		String before = formula, targetBefore = target;
+		final String before = formula, targetBefore = target;
 		formula = formula.replace("(argmin (number 1) (number 1)", "(ARGMIN");
 		formula = formula.replace("(argmax (number 1) (number 1)", "(ARGMAX");
 		target = target.replace("(argmin (number 1) (number 1)", "(ARGMIN");
@@ -146,48 +150,41 @@ public class CustomGrammar extends Grammar
 	/**
 	 * Cache the symbols in deriv.tempState[cprune].treeSymbols
 	 */
-	private static CPruneDerivInfo aggregateSymbols(Derivation deriv)
+	private static CPruneDerivInfo aggregateSymbols(final Derivation deriv)
 	{
-		Map<String, Object> tempState = deriv.getTempState();
-		if (tempState.containsKey("cprune")) { return (CPruneDerivInfo) tempState.get("cprune"); }
-		CPruneDerivInfo derivInfo = new CPruneDerivInfo();
+		final Map<String, Object> tempState = deriv.getTempState();
+		if (tempState.containsKey("cprune"))
+			return (CPruneDerivInfo) tempState.get("cprune");
+		final CPruneDerivInfo derivInfo = new CPruneDerivInfo();
 		tempState.put("cprune", derivInfo);
 
-		Map<String, Symbol> treeSymbols = new LinkedHashMap<>();
+		final Map<String, Symbol> treeSymbols = new LinkedHashMap<>();
 		derivInfo.treeSymbols = treeSymbols;
 		if (baseCategories.contains(deriv.cat))
 		{
-			String formula = deriv.formula.toString();
+			final String formula = deriv.formula.toString();
 			treeSymbols.put(formula, new Symbol(deriv.cat, formula, 1));
 		}
 		else
-		{
-			for (Derivation child : deriv.children)
+			for (final Derivation child : deriv.children)
 			{
-				CPruneDerivInfo childInfo = aggregateSymbols(child);
-				for (Symbol symbol : childInfo.treeSymbols.values())
-				{
+				final CPruneDerivInfo childInfo = aggregateSymbols(child);
+				for (final Symbol symbol : childInfo.treeSymbols.values())
 					if (derivInfo.treeSymbols.containsKey(symbol.formula))
-					{
 						treeSymbols.get(symbol.formula).frequency += symbol.frequency;
-					}
 					else
-					{
 						treeSymbols.put(symbol.formula, symbol);
-					}
-				}
 			}
-		}
 		return derivInfo;
 	}
 
-	private CPruneDerivInfo computeCustomRules(Derivation deriv, Set<String> crossReferences)
+	private CPruneDerivInfo computeCustomRules(final Derivation deriv, final Set<String> crossReferences)
 	{
-		CPruneDerivInfo derivInfo = (CPruneDerivInfo) deriv.getTempState().get("cprune");
-		Map<String, Symbol> ruleSymbols = new LinkedHashMap<>();
+		final CPruneDerivInfo derivInfo = (CPruneDerivInfo) deriv.getTempState().get("cprune");
+		final Map<String, Symbol> ruleSymbols = new LinkedHashMap<>();
 		derivInfo.ruleSymbols = ruleSymbols;
 		derivInfo.customRuleStrings = new ArrayList<>();
-		String formula = deriv.formula.toString();
+		final String formula = deriv.formula.toString();
 
 		if (baseCategories.contains(deriv.cat))
 		{
@@ -199,15 +196,15 @@ public class CustomGrammar extends Grammar
 		else
 		{
 			derivInfo.containsCrossReference = false;
-			for (Derivation child : deriv.children)
+			for (final Derivation child : deriv.children)
 			{
-				CPruneDerivInfo childInfo = computeCustomRules(child, crossReferences);
+				final CPruneDerivInfo childInfo = computeCustomRules(child, crossReferences);
 				derivInfo.containsCrossReference = derivInfo.containsCrossReference || childInfo.containsCrossReference;
 			}
 
-			for (Derivation child : deriv.children)
+			for (final Derivation child : deriv.children)
 			{
-				CPruneDerivInfo childInfo = (CPruneDerivInfo) child.getTempState().get("cprune");
+				final CPruneDerivInfo childInfo = (CPruneDerivInfo) child.getTempState().get("cprune");
 				ruleSymbols.putAll(childInfo.ruleSymbols);
 				derivInfo.customRuleStrings.addAll(childInfo.customRuleStrings);
 			}
@@ -216,13 +213,10 @@ public class CustomGrammar extends Grammar
 			{
 				// If this node contains a cross reference
 				if (deriv.isRootCat())
-				{
 					// If this is the root node, then generate a custom rule
 					derivInfo.customRuleStrings.add(getCustomRuleString(deriv, derivInfo));
-				}
 			}
 			else
-			{
 				if (!deriv.cat.startsWith("$Intermediate"))
 				{
 					// Generate a custom rule for this node
@@ -232,16 +226,15 @@ public class CustomGrammar extends Grammar
 					ruleSymbols.clear();
 					ruleSymbols.put(formula, new Symbol(hash(deriv), deriv.formula.toString(), 1));
 				}
-			}
 		}
 		return derivInfo;
 	}
 
-	private String getCustomRuleString(Derivation deriv, CPruneDerivInfo derivInfo)
+	private String getCustomRuleString(final Derivation deriv, final CPruneDerivInfo derivInfo)
 	{
 		String formula = deriv.formula.toString();
-		List<Symbol> rhsSymbols = new ArrayList<>(derivInfo.ruleSymbols.values());
-		for (Symbol symbol : rhsSymbols)
+		final List<Symbol> rhsSymbols = new ArrayList<>(derivInfo.ruleSymbols.values());
+		for (final Symbol symbol : rhsSymbols)
 			symbol.computeIndex(formula);
 		Collections.sort(rhsSymbols);
 
@@ -251,14 +244,12 @@ public class CustomGrammar extends Grammar
 		else
 			lhs = deriv.isRootCat() ? "$ROOT" : hash(deriv);
 
-		LinkedList<String> rhsList = new LinkedList<>();
+		final LinkedList<String> rhsList = new LinkedList<>();
 		int index = 1;
-		for (Symbol symbol : rhsSymbols)
+		for (final Symbol symbol : rhsSymbols)
 		{
 			if (formula.equals(symbol.formula))
-			{
 				formula = "(IdentityFn)";
-			}
 			else
 			{
 				formula = safeReplace(formula, symbol.formula, "(var s" + index + ")");
@@ -269,9 +260,7 @@ public class CustomGrammar extends Grammar
 		}
 		String rhs = null;
 		if (rhsList.size() > 0)
-		{
 			rhs = "(" + String.join(" ", rhsList) + ")";
-		}
 		else
 		{
 			rhs = "(nothing)";
@@ -280,26 +269,26 @@ public class CustomGrammar extends Grammar
 		return "(rule " + lhs + " " + rhs + " " + formula + ")";
 	}
 
-	private String hash(Derivation deriv)
+	private String hash(final Derivation deriv)
 	{
 		if (baseCategories.contains(deriv.cat))
 			return deriv.cat;
 
-		String formula = getSymbolicFormula(deriv);
+		final String formula = getSymbolicFormula(deriv);
 		if (!symbolicFormulas.containsKey(formula))
 		{
 			symbolicFormulas.put(formula, symbolicFormulas.size() + 1);
-			String hashString = "$Formula" + symbolicFormulas.get(formula);
+			final String hashString = "$Formula" + symbolicFormulas.get(formula);
 			LogInfo.log("Add symbolic formula: " + hashString + " = " + formula + "  (" + deriv.cat + ")");
 		}
 		return "$Formula" + symbolicFormulas.get(formula);
 	}
 
-	private static String getSymbolicFormula(Derivation deriv)
+	private static String getSymbolicFormula(final Derivation deriv)
 	{
-		CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
+		final CPruneDerivInfo derivInfo = aggregateSymbols(deriv);
 		String formula = deriv.formula.toString();
-		for (Symbol symbol : derivInfo.treeSymbols.values())
+		for (final Symbol symbol : derivInfo.treeSymbols.values())
 		{
 			if (formula.equals(symbol.formula))
 				formula = symbol.category;

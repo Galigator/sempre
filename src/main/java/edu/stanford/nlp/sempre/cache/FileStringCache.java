@@ -1,7 +1,10 @@
 package edu.stanford.nlp.sempre.cache;
 
-import fig.basic.*;
-
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.MemUsage;
+import fig.basic.Option;
+import fig.basic.StatFig;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -49,15 +52,11 @@ public class FileStringCache implements StringCache, LruCallback<String, String>
 	public FileStringCache()
 	{
 		int cap = opts.capacity;
-		cap = (cap < 0) ? cap : (cap * 1024 * 1024);
+		cap = cap < 0 ? cap : cap * 1024 * 1024;
 		if (cap < 0)
-		{
-			cache = new LinkedHashMap<String, String>();
-		}
+			cache = new LinkedHashMap<>();
 		else
-		{
-			cache = new LruMap<String, String>(cap, this);
-		}
+			cache = new LruMap<>(cap, this);
 	}
 
 	public String getPath()
@@ -65,12 +64,12 @@ public class FileStringCache implements StringCache, LruCallback<String, String>
 		return path;
 	}
 
-	public void init(String path)
+	public void init(final String path)
 	{
 		init(path, false);
 	}
 
-	public void init(String path, boolean readOnly)
+	public void init(final String path, final boolean readOnly)
 	{
 		if (this.path != null)
 			throw new RuntimeException("Already initialized with " + this.path);
@@ -79,24 +78,22 @@ public class FileStringCache implements StringCache, LruCallback<String, String>
 
 		// Read existing.
 		if (new File(path).exists())
-		{
 			try
 			{
-				BufferedReader in = IOUtils.openInHard(path);
+				final BufferedReader in = IOUtils.openInHard(path);
 				String line;
 				while ((line = in.readLine()) != null)
 				{
-					String[] tokens = line.split("\t", 2);
+					final String[] tokens = line.split("\t", 2);
 					if (tokens.length != 2)
 						throw new RuntimeException("Invalid line in cache file: " + line);
 					cache.put(tokens[0], tokens[1]);
 				}
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				throw new RuntimeException(e);
 			}
-		}
 
 		LogInfo.logs("Using cache %s (%d entries)", path, cache.size());
 
@@ -129,39 +126,35 @@ public class FileStringCache implements StringCache, LruCallback<String, String>
 			LogInfo.end_track();
 		}
 
-		PrintWriter dumpOut = IOUtils.openOutHard(this.path + ".tmp");
-		for (Map.Entry<String, String> entry : cache.entrySet())
-		{
+		final PrintWriter dumpOut = IOUtils.openOutHard(path + ".tmp");
+		for (final Map.Entry<String, String> entry : cache.entrySet())
 			dumpOut.println(entry.getKey() + "\t" + entry.getValue());
-		}
 		dumpOut.flush();
 		dumpOut.close();
 		try
 		{
-			Path src = FileSystems.getDefault().getPath(this.path + ".tmp");
-			Path dst = FileSystems.getDefault().getPath(this.path);
+			final Path src = FileSystems.getDefault().getPath(path + ".tmp");
+			final Path dst = FileSystems.getDefault().getPath(path);
 			Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 	}
 
-	public String get(String key)
+	public String get(final String key)
 	{
 		return cache.get(key);
 	}
 
-	public void put(String key, String value)
+	public void put(final String key, final String value)
 	{
 		assert key.indexOf('\t') == -1 : key;
 		assert key.indexOf('\n') == -1 : key;
 		assert value.indexOf('\n') == -1 : value;
 		if (opts.verbose >= 5)
-		{
 			logTrack("FileStringCache PUT (before)", key, value);
-		}
 		cache.put(key, value);
 		if (out != null)
 		{ // Append mode
@@ -178,26 +171,22 @@ public class FileStringCache implements StringCache, LruCallback<String, String>
 	}
 
 	@Override
-	public void onEvict(Map.Entry<String, String> entry)
+	public void onEvict(final Map.Entry<String, String> entry)
 	{
 		if (opts.verbose >= 5)
-		{
 			logTrack("FileStringCache EVICT (after)", entry.getKey(), entry.getValue());
-		}
 		numEvictions++;
 		keyStats.add(entry.getKey(), entry.getKey().length());
 		valStats.add(entry.getValue(), entry.getValue().length());
 	}
 
-	private void logTrack(String header, String key, String value)
+	private void logTrack(final String header, final String key, final String value)
 	{
 		LogInfo.begin_track(header);
 		LogInfo.logs("Key size: %d (%d bytes)", key.length(), MemUsage.getBytes(key));
 		LogInfo.logs("Val size: %d (%d bytes)", value.length(), MemUsage.getBytes(value));
 		if (cache instanceof LruMap)
-		{
 			LogInfo.logs("Cache size: %d entries (%d bytes of %d)", cache.size(), ((LruMap) cache).getBytes(), ((LruMap) cache).getCapacity());
-		}
 		LogInfo.end_track();
 	}
 

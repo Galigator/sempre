@@ -11,16 +11,16 @@ public final class TableCell
 	public final TableRow parentRow;
 	public final TableCellProperties properties;
 
-	private TableCell(TableCellProperties properties, TableColumn column, TableRow row)
+	private TableCell(final TableCellProperties properties, final TableColumn column, final TableRow row)
 	{
-		this.parentColumn = column;
-		this.parentRow = row;
+		parentColumn = column;
+		parentRow = row;
 		this.properties = properties;
 	}
 
-	public static TableCell createAndAddTo(TableCellProperties properties, TableColumn column, TableRow row)
+	public static TableCell createAndAddTo(final TableCellProperties properties, final TableColumn column, final TableRow row)
 	{
-		TableCell answer = new TableCell(properties, column, row);
+		final TableCell answer = new TableCell(properties, column, row);
 		column.children.add(answer);
 		row.children.add(answer);
 		return answer;

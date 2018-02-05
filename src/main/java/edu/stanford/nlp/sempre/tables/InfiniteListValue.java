@@ -1,10 +1,10 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
 import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.Values;
 import fig.basic.LispTree;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represent a list of infinitely many values. The list is represented by a List of Objects.
@@ -17,57 +17,53 @@ public class InfiniteListValue extends Value
 	final List<Object> representation;
 	final int hashCode;
 
-	public InfiniteListValue(List<Object> representation)
+	public InfiniteListValue(final List<Object> representation)
 	{
 		this.representation = representation;
-		this.hashCode = representation.hashCode();
+		hashCode = representation.hashCode();
 	}
 
-	public InfiniteListValue(String s)
+	public InfiniteListValue(final String s)
 	{
 		this(LispTree.proto.parseFromString(s));
 	}
 
-	public InfiniteListValue(LispTree tree)
+	public InfiniteListValue(final LispTree tree)
 	{
-		this.representation = new ArrayList<>();
-		for (LispTree child : tree.children)
-		{
+		representation = new ArrayList<>();
+		for (final LispTree child : tree.children)
 			try
 			{
-				Value value = Values.fromLispTree(child);
+				final Value value = Values.fromLispTree(child);
 				representation.add(value);
 			}
-			catch (Exception e)
+			catch (final Exception e)
 			{
 				representation.add(child.toString());
 			}
-		}
-		this.hashCode = representation.hashCode();
+		hashCode = representation.hashCode();
 	}
 
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
-		for (Object x : representation)
-		{
+		final LispTree tree = LispTree.proto.newList();
+		for (final Object x : representation)
 			if (x instanceof Value)
 				tree.addChild(((Value) x).toLispTree());
 			else
 				tree.addChild(x.toString());
-		}
 		return tree;
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		InfiniteListValue that = (InfiniteListValue) o;
+		final InfiniteListValue that = (InfiniteListValue) o;
 		return representation.equals(that.representation);
 	}
 

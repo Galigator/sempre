@@ -1,8 +1,8 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
 import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class LambdaDCSException extends RuntimeException
 {
@@ -40,7 +40,7 @@ public class LambdaDCSException extends RuntimeException
 	public final Type type;
 	public final String message;
 
-	public LambdaDCSException(Type type, String message, Object... args)
+	public LambdaDCSException(final Type type, final String message, final Object... args)
 	{
 		this.type = type;
 		if (opts.noErrorMessage)
@@ -65,27 +65,27 @@ public class LambdaDCSException extends RuntimeException
 		UNRECOVERABLE.add(Type.typeMismatch);
 	}
 
-	public static boolean isUnrecoverable(String error)
+	public static boolean isUnrecoverable(final String error)
 	{
 		try
 		{
-			String typeString = error.substring(0, error.indexOf(":"));
-			Type type = Type.valueOf(typeString);
+			final String typeString = error.substring(0, error.indexOf(":"));
+			final Type type = Type.valueOf(typeString);
 			return UNRECOVERABLE.contains(type);
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			return false; // Be conservative
 		}
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (!(o instanceof LambdaDCSException))
 			return false;
-		LambdaDCSException that = (LambdaDCSException) o;
-		return type == that.type && ((message == null && that.message == null) || message.equals(that.message));
+		final LambdaDCSException that = (LambdaDCSException) o;
+		return type == that.type && (message == null && that.message == null || message.equals(that.message));
 	}
 
 	@Override

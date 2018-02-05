@@ -13,22 +13,22 @@ public class NameValue extends Value
 	public final String id; // Identifier (e.g., "fb:en.barack_obama")
 	public final String description; // Readable description (e.g., "Barack Obama")
 
-	public NameValue(LispTree tree)
+	public NameValue(final LispTree tree)
 	{
-		this.id = tree.child(1).value;
+		id = tree.child(1).value;
 		if (tree.children.size() > 2)
-			this.description = tree.child(2).value;
+			description = tree.child(2).value;
 		else
-			this.description = null;
-		assert (this.id != null) : tree;
+			description = null;
+		assert id != null : tree;
 	}
 
-	public NameValue(String id)
+	public NameValue(final String id)
 	{
 		this(id, null);
 	}
 
-	public NameValue(String id, String description)
+	public NameValue(String id, final String description)
 	{
 		if (id == null)
 		{
@@ -41,7 +41,7 @@ public class NameValue extends Value
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("name");
 		tree.addChild(id);
 		if (description != null)
@@ -68,14 +68,14 @@ public class NameValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		NameValue that = (NameValue) o;
+		final NameValue that = (NameValue) o;
 		// Note: only check id, not description
-		return this.id.equals(that.id);
+		return id.equals(that.id);
 	}
 }

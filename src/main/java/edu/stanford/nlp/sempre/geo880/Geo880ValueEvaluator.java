@@ -1,9 +1,13 @@
 package edu.stanford.nlp.sempre.geo880;
 
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.StringNormalizationUtils;
+import edu.stanford.nlp.sempre.DescriptionValue;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueEvaluator;
 import fig.basic.LogInfo;
-
 import java.util.List;
 
 /**
@@ -13,46 +17,40 @@ import java.util.List;
 public class Geo880ValueEvaluator implements ValueEvaluator
 {
 
-	public double getCompatibility(Value target, Value pred)
+	public double getCompatibility(final Value target, final Value pred)
 	{
-		List<Value> targetList = ((ListValue) target).values;
+		final List<Value> targetList = ((ListValue) target).values;
 		if (!(pred instanceof ListValue))
 			return 0;
-		List<Value> predList = ((ListValue) pred).values;
+		final List<Value> predList = ((ListValue) pred).values;
 
 		// In geo880, if we return that something is contained in a state, there is no need to return fb:country.usa
 		Value toDelete = null;
 		if (predList.size() > 1 && predList.get(0) instanceof NameValue)
-		{
-			for (Value v : predList)
+			for (final Value v : predList)
 			{
-				String id = ((NameValue) v).id;
+				final String id = ((NameValue) v).id;
 				if (id.equals("fb:country.usa"))
 				{
 					toDelete = v;
 					break;
 				}
 			}
-		}
 		if (toDelete != null)
-		{
 			predList.remove(toDelete);
-		}
 
 		if (targetList.size() != predList.size())
 			return 0;
 
-		for (Value targetValue : targetList)
+		for (final Value targetValue : targetList)
 		{
 			boolean found = false;
-			for (Value predValue : predList)
-			{
+			for (final Value predValue : predList)
 				if (getItemCompatibility(targetValue, predValue))
 				{
 					found = true;
 					break;
 				}
-			}
 			if (!found)
 				return 0;
 		}
@@ -64,7 +62,7 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 	// ============================================================
 
 	// Compare one element of the list.
-	protected boolean getItemCompatibility(Value target, Value pred)
+	protected boolean getItemCompatibility(final Value target, final Value pred)
 	{
 		if (pred instanceof ErrorValue)
 			return false; // Never award points for error
@@ -76,7 +74,7 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 
 		if (target instanceof DescriptionValue)
 		{
-			String targetText = ((DescriptionValue) target).value;
+			final String targetText = ((DescriptionValue) target).value;
 			if (pred instanceof NameValue)
 			{
 				// Just has to match the description
@@ -89,14 +87,15 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 		else
 			if (target instanceof NumberValue)
 			{
-				NumberValue targetNumber = (NumberValue) target;
-				if (pred instanceof NumberValue) { return compareNumberValues(targetNumber, (NumberValue) pred); }
+				final NumberValue targetNumber = (NumberValue) target;
+				if (pred instanceof NumberValue)
+					return compareNumberValues(targetNumber, (NumberValue) pred);
 			}
 
 		return target.equals(pred);
 	}
 
-	protected boolean compareNumberValues(NumberValue target, NumberValue pred)
+	protected boolean compareNumberValues(final NumberValue target, final NumberValue pred)
 	{
 		return Math.abs(target.value - pred.value) < 1e-6;
 	}

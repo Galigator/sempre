@@ -3,13 +3,23 @@ package edu.stanford.nlp.sempre;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.Utils;
 import fig.exec.Execution;
-
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * The grammar is a set of rules of the form: (rule lhsCat (rhs ... rhs) semanticFn (key value) ... (key value)) Some programming-language-esque features are
@@ -59,14 +69,14 @@ public class Grammar
 		LogInfo.end_track();
 	}
 
-	public void read(String path)
+	public void read(final String path)
 	{
 		read(Collections.singletonList(path));
 	}
 
-	public void read(List<String> paths)
+	public void read(final List<String> paths)
 	{
-		for (String path : paths)
+		for (final String path : paths)
 			readOnePath(path, Sets.newHashSet(opts.tags));
 		verifyValid();
 	}
@@ -74,75 +84,65 @@ public class Grammar
 	private void verifyValid()
 	{
 		// Make sure that all the categories which are used are actually defined.
-		Set<String> defined = new HashSet<>();
+		final Set<String> defined = new HashSet<>();
 		defined.add(Rule.tokenCat);
 		defined.add(Rule.phraseCat);
 		defined.add(Rule.lemmaTokenCat);
 		defined.add(Rule.lemmaPhraseCat);
-		for (Rule rule : rules)
+		for (final Rule rule : rules)
 			defined.add(rule.lhs);
 
 		// Make sure every non-terminal is defined
-		for (Rule rule : rules)
-		{
-			for (String item : rule.rhs)
-			{
+		for (final Rule rule : rules)
+			for (final String item : rule.rhs)
 				if (Rule.isCat(item) && !defined.contains(item))
-				{
 					LogInfo.warnings("Category not defined in the grammar: %s; used in rule: %s", item, rule);
-				}
-			}
-		}
 
 		// Check if all tags are defined in a grammar file
 		LogInfo.logs("Valid tags: %s", validTags);
 		LogInfo.logs("Used tags: %s", new TreeSet<>(opts.tags));
-		for (String tag : opts.tags)
-		{
+		for (final String tag : opts.tags)
 			if (!validTags.contains(tag))
-			{
 				LogInfo.warnings("Tag %s not defined in grammar", tag);
-			}
-		}
 	}
 
 	/**
 	 * @param contextPath Path relative to which grammar includes and such are expanded.
 	 */
-	public void addStatement(String stmt, String contextPath, Set<String> tags)
+	public void addStatement(final String stmt, final String contextPath, final Set<String> tags)
 	{
 		statements.add(stmt);
 		interpret(contextPath, LispTree.proto.parseFromString(stmt), Sets.newHashSet(Iterables.concat(tags, opts.tags)));
 	}
 
-	public void addStatement(String stmt, String contextPath)
+	public void addStatement(final String stmt, final String contextPath)
 	{
-		Set<String> s = Collections.emptySet();
+		final Set<String> s = Collections.emptySet();
 		addStatement(stmt, null, s);
 	}
 
-	public void addStatement(String stmt)
+	public void addStatement(final String stmt)
 	{
 		addStatement(stmt, null);
 	}
 
-	private static boolean isValidVar(String var)
+	private static boolean isValidVar(final String var)
 	{
 		return var.startsWith("@");
 	}
 
-	private static void checkIsValidVar(String var)
+	private static void checkIsValidVar(final String var)
 	{
 		if (!isValidVar("@"))
 			throw new RuntimeException("Invalid variable: '" + var + "' doesn't start with '@'");
 	}
 
 	// Replace all leaves of LispTree with value in macros if exists
-	private static LispTree applyMacros(Map<String, LispTree> macros, LispTree tree)
+	private static LispTree applyMacros(final Map<String, LispTree> macros, final LispTree tree)
 	{
 		if (tree.isLeaf())
 		{
-			LispTree replacement = macros.get(tree.value);
+			final LispTree replacement = macros.get(tree.value);
 			if (replacement != null)
 				return replacement;
 			if (isValidVar(tree.value))
@@ -150,31 +150,31 @@ public class Grammar
 			else
 				return tree;
 		}
-		LispTree newTree = LispTree.proto.newList();
-		for (LispTree child : tree.children)
+		final LispTree newTree = LispTree.proto.newList();
+		for (final LispTree child : tree.children)
 			newTree.addChild(applyMacros(macros, child));
 		return newTree;
 	}
 
 	// Apply the macro substitutions to |tree|.
-	public LispTree applyMacros(LispTree tree)
+	public LispTree applyMacros(final LispTree tree)
 	{
-		return applyMacros(this.macros, tree);
+		return applyMacros(macros, tree);
 	}
 
-	private void readOnePath(String path, Set<String> tags)
+	private void readOnePath(final String path, final Set<String> tags)
 	{
 		// Save raw lines
 		if (statements.size() > 0)
 			statements.add("");
 		statements.add("####### " + path);
-		for (String line : IOUtils.readLinesHard(path))
+		for (final String line : IOUtils.readLinesHard(path))
 			statements.add(line);
 
-		Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
+		final Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
 		while (trees.hasNext())
 		{
-			LispTree tree = trees.next();
+			final LispTree tree = trees.next();
 			interpret(path, tree, tags);
 			collectValidTags(tree);
 		}
@@ -182,36 +182,35 @@ public class Grammar
 
 	public void write()
 	{
-		String path = Execution.getFile("grammar");
+		final String path = Execution.getFile("grammar");
 		if (path == null)
 			return;
 		PrintWriter out = IOUtils.openOutHard(path);
-		for (String statement : statements)
+		for (final String statement : statements)
 			out.println(statement);
 		out.close();
 
 		out = IOUtils.openOutHard(Execution.getFile("processed-grammar"));
-		for (Rule rule : rules)
+		for (final Rule rule : rules)
 			out.println(rule.toLispTree().toString());
 		out.close();
 	}
 
-	private void interpret(String path, LispTree tree, Set<String> tags)
+	private void interpret(final String path, final LispTree tree, final Set<String> tags)
 	{
 		if (tree.isLeaf())
 			throw new RuntimeException("Expected list, got " + tree);
 
 		try
 		{
-			String command = tree.child(0).value;
+			final String command = tree.child(0).value;
 			if ("rule".equals(command))
-			{
 				interpretRule(tree);
-			}
 			else
 				if ("include".equals(command))
 				{
-					if (path == null) { throw new RuntimeException("Grammar include statement given without context path"); }
+					if (path == null)
+						throw new RuntimeException("Grammar include statement given without context path");
 					for (int i = 1; i < tree.children.size(); i++)
 						readOnePath(new File(path).getParent() + "/" + tree.child(i).value, tags);
 				}
@@ -219,34 +218,26 @@ public class Grammar
 					if ("when".equals(command))
 					{
 						if (interpretBoolean(tree.child(1), tags))
-						{
 							for (int i = 2; i < tree.children.size(); i++)
 								interpret(path, tree.child(i), tags);
-						}
 					}
 					else
 						if ("def".equals(command))
-						{
 							interpretMacroDef(tree);
-						}
 						else
 							if ("for".equals(command))
-							{
 								interpretFor(path, tree, tags);
-							}
 							else
-							{
 								throw new RuntimeException("Invalid command: " + command);
-							}
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			e.printStackTrace();
 			throw new RuntimeException("Error on " + tree + ": " + e);
 		}
 	}
 
-	private boolean interpretBoolean(LispTree tree, Set<String> tags)
+	private boolean interpretBoolean(final LispTree tree, final Set<String> tags)
 	{
 		if (tree.isLeaf())
 			return tags.contains(tree.value);
@@ -273,22 +264,24 @@ public class Grammar
 		throw new RuntimeException("Expected a single tag, but got: " + tree);
 	}
 
-	public void interpretMacroDef(LispTree tree)
+	public void interpretMacroDef(final LispTree tree)
 	{
-		if (tree.children.size() != 3 || !tree.child(1).isLeaf()) { throw new RuntimeException("Invalid usage (def |name| |value|): " + tree); }
-		String var = tree.child(1).value;
+		if (tree.children.size() != 3 || !tree.child(1).isLeaf())
+			throw new RuntimeException("Invalid usage (def |name| |value|): " + tree);
+		final String var = tree.child(1).value;
 		checkIsValidVar(var);
 		macros.put(var, applyMacros(tree.child(2)));
 	}
 
-	public void interpretFor(String path, LispTree tree, Set<String> tags)
+	public void interpretFor(final String path, final LispTree tree, final Set<String> tags)
 	{
-		if (tree.children.size() <= 3 || !tree.child(1).isLeaf()) { throw new RuntimeException("Invalid usage (for |var| (|value| ... |value|) |statement| ...) " + tree); }
-		String var = tree.child(1).value;
+		if (tree.children.size() <= 3 || !tree.child(1).isLeaf())
+			throw new RuntimeException("Invalid usage (for |var| (|value| ... |value|) |statement| ...) " + tree);
+		final String var = tree.child(1).value;
 		checkIsValidVar(var);
-		List<LispTree> values = applyMacros(tree.child(2)).children;
-		LispTree old = macros.get(var);
-		for (LispTree value : values)
+		final List<LispTree> values = applyMacros(tree.child(2)).children;
+		final LispTree old = macros.get(var);
+		for (final LispTree value : values)
 		{
 			macros.put(var, value);
 			for (int j = 3; j < tree.children.size(); j++)
@@ -300,7 +293,7 @@ public class Grammar
 			macros.put(var, old);
 	}
 
-	private static String checkCatName(String cat)
+	private static String checkCatName(final String cat)
 	{
 		if (isIntermediate(cat))
 			LogInfo.warnings("Category '%s' starts with '$Intermediate'; please avoid this unless you know what you are doing.");
@@ -318,22 +311,20 @@ public class Grammar
 		// Parse LHS
 		if (!tree.child(1).isLeaf())
 			throw new RuntimeException("Invalid LHS: " + tree.child(1));
-		String lhs = checkCatName(tree.child(1).value);
+		final String lhs = checkCatName(tree.child(1).value);
 
 		// Parse RHS
-		List<String> rhs = Lists.newArrayList();
-		List<Boolean> isOptionals = new ArrayList<>();
-		LispTree rhsTree = tree.child(2);
+		final List<String> rhs = Lists.newArrayList();
+		final List<Boolean> isOptionals = new ArrayList<>();
+		final LispTree rhsTree = tree.child(2);
 		if (rhsTree.isLeaf())
 			throw new RuntimeException("RHS needs to be list, but got: " + rhsTree);
 		for (int i = 0; i < rhsTree.children.size(); i++)
 		{
-			LispTree child = rhsTree.child(i);
+			final LispTree child = rhsTree.child(i);
 			boolean isOptional = false;
 			if (child.isLeaf())
-			{ // $PHRASE
 				rhs.add(checkCatName(child.value));
-			}
 			else
 			{
 				// e.g., ($PHRASE optional)
@@ -348,21 +339,21 @@ public class Grammar
 		}
 
 		// Parse semantic function
-		SemanticFn sem = parseSemanticFn(tree.child(3));
+		final SemanticFn sem = parseSemanticFn(tree.child(3));
 
-		Rule rule = new Rule(lhs, rhs, sem);
+		final Rule rule = new Rule(lhs, rhs, sem);
 
 		// Parse extra info
 		for (int i = 4; i < tree.children.size(); i++)
 		{
-			LispTree item = tree.child(i);
+			final LispTree item = tree.child(i);
 			if (!item.isLeaf() && item.children.size() != 2)
 				throw new RuntimeException("Invalid key-value pair: " + item);
 			try
 			{
 				rule.addInfo(item.child(0).value, Double.parseDouble(item.child(1).value));
 			}
-			catch (NumberFormatException e)
+			catch (final NumberFormatException e)
 			{
 				throw new RuntimeException("Invalid key-value pair: " + item);
 			}
@@ -371,27 +362,27 @@ public class Grammar
 		addRule(rule, isOptionals);
 	}
 
-	public synchronized void addRule(Rule rule)
+	public synchronized void addRule(final Rule rule)
 	{
-		List<Boolean> isOptionals = new ArrayList<>();
+		final List<Boolean> isOptionals = new ArrayList<>();
 		for (int i = 0; i < rule.rhs.size(); i++)
 			isOptionals.add(false);
 		addRule(rule, isOptionals);
 	}
 
 	// Add a rule to the grammar.
-	public synchronized void addRule(Rule rule, List<Boolean> isOptionals)
+	public synchronized void addRule(final Rule rule, final List<Boolean> isOptionals)
 	{
 		rules.addAll(binarizeRule(rule, isOptionals));
 	}
 
-	private void collectValidTags(LispTree tree)
+	private void collectValidTags(final LispTree tree)
 	{
 		if (tree.isLeaf())
 			throw new RuntimeException("Expected list, got " + tree);
 		try
 		{
-			String command = tree.child(0).value;
+			final String command = tree.child(0).value;
 			if ("when".equals(command))
 			{
 				collectValidTagsBoolean(tree.child(1));
@@ -400,26 +391,24 @@ public class Grammar
 			}
 			else
 				if ("for".equals(command))
-				{
 					for (int i = 3; i < tree.children.size(); i++)
 						collectValidTags(tree.child(i));
-				}
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			e.printStackTrace();
 			throw new RuntimeException("Error on " + tree + ": " + e);
 		}
 	}
 
-	private void collectValidTagsBoolean(LispTree tree)
+	private void collectValidTagsBoolean(final LispTree tree)
 	{
 		if (tree.isLeaf())
 		{
 			validTags.add(tree.value);
 			return;
 		}
-		String command = tree.child(0).value;
+		final String command = tree.child(0).value;
 		if ("not".equals(command))
 			collectValidTagsBoolean(tree.child(1));
 		else
@@ -438,7 +427,7 @@ public class Grammar
 		return INTERMEDIATE_PREFIX + freshCatIndex;
 	}
 
-	public static boolean isIntermediate(String cat)
+	public static boolean isIntermediate(final String cat)
 	{
 		return cat.startsWith(INTERMEDIATE_PREFIX);
 	}
@@ -453,9 +442,9 @@ public class Grammar
 	// which contains at most one non-optional category.
 	// Recall that only the non-optional categories on the RHS are arguments into the SemanticFn.
 	// Example: stop? $A stop $Stop? $B stop $Stop?
-	private List<Rule> binarizeRule(Rule rule, List<Boolean> isOptionals)
+	private List<Rule> binarizeRule(final Rule rule, final List<Boolean> isOptionals)
 	{
-		List<Rule> newRules = new ArrayList<>();
+		final List<Rule> newRules = new ArrayList<>();
 
 		// Don't binarize: do same as before
 		if (!opts.binarizeRules)
@@ -487,17 +476,17 @@ public class Grammar
 			if (j < rule.rhs.size())
 			{
 				// Create an intermediate category
-				String intCat = generateFreshCat();
+				final String intCat = generateFreshCat();
 
 				// Add rule 1
-				List<String> rhs1 = new ArrayList<>(rule.rhs.subList(0, i + 1));
+				final List<String> rhs1 = new ArrayList<>(rule.rhs.subList(0, i + 1));
 				newRules.addAll(binarizeRule(new Rule(intCat, rhs1, rule.sem).setInfo(rule), isOptionals.subList(0, i + 1)));
 
 				// Add rule 2
-				List<String> rhs2 = new ArrayList<>();
+				final List<String> rhs2 = new ArrayList<>();
 				rhs2.add(intCat);
 				rhs2.addAll(rule.rhs.subList(i + 1, rule.rhs.size()));
-				SemanticFn forwardBetaReduce = new JoinFn();
+				final SemanticFn forwardBetaReduce = new JoinFn();
 				forwardBetaReduce.init(LispTree.proto.parseFromString("(JoinFn forward betaReduce)"));
 				newRules.addAll(binarizeRule(new Rule(rule.lhs, rhs2, forwardBetaReduce).setInfo(rule), isOptionals.subList(i, isOptionals.size())));
 
@@ -516,9 +505,9 @@ public class Grammar
 		}
 
 		// Stores the current RHS that we're building up.
-		List<String> newRhs = new ArrayList<>();
-		List<Boolean> newIsOptional = new ArrayList<>();
-		List<Boolean> isRequiredCat = new ArrayList<>(); // These are the arguments to the semantic function
+		final List<String> newRhs = new ArrayList<>();
+		final List<Boolean> newIsOptional = new ArrayList<>();
+		final List<Boolean> isRequiredCat = new ArrayList<>(); // These are the arguments to the semantic function
 
 		// Left-binarize.
 		assert rule.rhs.size() >= 2;
@@ -539,13 +528,13 @@ public class Grammar
 			if (isRequiredCat.get(0) && isRequiredCat.get(1))
 				appliedRuleSem = true;
 
-			boolean atEnd = (i == rule.rhs.size() - 1);
+			final boolean atEnd = i == rule.rhs.size() - 1;
 			// TODO(pliang): currently, too many intermediate categories are created.  Remove
 			// to make flatter grammars (will generate fewer derivations).
-			String lhs = atEnd && appliedRuleSem ? rule.lhs : generateFreshCat();
+			final String lhs = atEnd && appliedRuleSem ? rule.lhs : generateFreshCat();
 
 			// Create rule with newRhs possibly excluding the optionals (there should be at most 2)
-			assert (newRhs.size() == 2);
+			assert newRhs.size() == 2;
 			boolean allCanBeOptional = false;
 			for (int b0 = 0; b0 < 2; b0++)
 			{ // Whether to include newRhs.get(0)
@@ -556,7 +545,7 @@ public class Grammar
 					if (b1 == 0 && !newIsOptional.get(1))
 						continue;
 
-					List<String> rhs = Lists.newArrayList();
+					final List<String> rhs = Lists.newArrayList();
 					SemanticFn sem;
 
 					if (b0 == 1)
@@ -583,7 +572,7 @@ public class Grammar
 						allCanBeOptional = true;
 				}
 			}
-			boolean req = isRequiredCat.get(0) || isRequiredCat.get(1);
+			final boolean req = isRequiredCat.get(0) || isRequiredCat.get(1);
 
 			// Replace with new category.
 			newRhs.clear();
@@ -616,7 +605,7 @@ public class Grammar
 		// Syntactic sugar: foo => (ConstantFn foo)
 		if (tree.isLeaf())
 		{
-			LispTree newTree = LispTree.proto.newList();
+			final LispTree newTree = LispTree.proto.newList();
 			newTree.addChild("ConstantFn");
 			newTree.addChild(tree.value);
 			tree = newTree;
@@ -628,7 +617,7 @@ public class Grammar
 		// defaults to (lambda x (var x)) => (JoinFn betaReduce forward (arg0 (lambda x (var x))))
 		if (name.equals("lambda"))
 		{
-			LispTree newTree = LispTree.proto.newList();
+			final LispTree newTree = LispTree.proto.newList();
 
 			if (Grammar.opts.useApplyFn == null)
 			{

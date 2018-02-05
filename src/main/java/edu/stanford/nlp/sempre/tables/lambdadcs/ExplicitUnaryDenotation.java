@@ -1,10 +1,19 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException.Type;
-import fig.basic.*;
+import fig.basic.LispTree;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A unary with finite number of elements. Represented as a set of values.
@@ -21,12 +30,12 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 		values = Collections.emptyList();
 	}
 
-	public ExplicitUnaryDenotation(Value value)
+	public ExplicitUnaryDenotation(final Value value)
 	{
 		values = Collections.singletonList(value);
 	}
 
-	public ExplicitUnaryDenotation(Collection<Value> values)
+	public ExplicitUnaryDenotation(final Collection<Value> values)
 	{
 		this.values = new ArrayList<>(values);
 	}
@@ -34,9 +43,9 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("unary");
-		for (Value value : values)
+		for (final Value value : values)
 			tree.addChild(value.toLispTree());
 		return tree;
 	}
@@ -62,13 +71,13 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public boolean contains(Object o)
+	public boolean contains(final Object o)
 	{
 		return values.contains(o);
 	}
 
 	@Override
-	public boolean containsAll(Collection<?> c)
+	public boolean containsAll(final Collection<?> c)
 	{
 		return values.containsAll(c);
 	}
@@ -86,7 +95,7 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public <T> T[] toArray(T[] a)
+	public <T> T[] toArray(final T[] a)
 	{
 		return values.toArray(a);
 	}
@@ -98,11 +107,11 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public UnaryDenotation merge(UnaryDenotation that, MergeFormula.Mode mode)
+	public UnaryDenotation merge(final UnaryDenotation that, final MergeFormula.Mode mode)
 	{
 		if (that.size() == Integer.MAX_VALUE)
 			return that.merge(this, mode);
-		Set<Value> merged = new HashSet<>(values);
+		final Set<Value> merged = new HashSet<>(values);
 		switch (mode)
 		{
 			case and:
@@ -118,25 +127,21 @@ public class ExplicitUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public UnaryDenotation aggregate(AggregateFormula.Mode mode)
+	public UnaryDenotation aggregate(final AggregateFormula.Mode mode)
 	{
 		if (mode == AggregateFormula.Mode.count)
-		{
 			// Count the set size, not the list size
 			return new ExplicitUnaryDenotation(new NumberValue(new HashSet<>(values).size()));
-		}
 		return new ExplicitUnaryDenotation(DenotationUtils.aggregate(this, mode));
 	}
 
 	@Override
-	public UnaryDenotation filter(UnaryDenotation upperBound)
+	public UnaryDenotation filter(final UnaryDenotation upperBound)
 	{
-		List<Value> filtered = new ArrayList<>();
-		for (Value value : values)
-		{
+		final List<Value> filtered = new ArrayList<>();
+		for (final Value value : values)
 			if (upperBound.contains(value))
 				filtered.add(value);
-		}
 		return new ExplicitUnaryDenotation(filtered);
 	}
 

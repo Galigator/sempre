@@ -4,7 +4,6 @@ import fig.basic.IOUtils;
 import fig.basic.LogInfo;
 import fig.basic.Option;
 import fig.exec.Execution;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -36,7 +35,7 @@ public class BuildCanonicalIdMap implements Runnable
 	@Option(required = true)
 	public String canonicalIdMapPath;
 
-	Set<String> allowableIds = new HashSet<String>();
+	Set<String> allowableIds = new HashSet<>();
 
 	PrintWriter out;
 	int numMids = 0;
@@ -47,7 +46,7 @@ public class BuildCanonicalIdMap implements Runnable
 		LogInfo.begin_track("Compute allowable ids");
 		try
 		{
-			BufferedReader in = IOUtils.openIn(rawPath);
+			final BufferedReader in = IOUtils.openIn(rawPath);
 			String line;
 			int numInputLines = 0;
 			while (numInputLines < maxInputLines && (line = in.readLine()) != null)
@@ -55,24 +54,24 @@ public class BuildCanonicalIdMap implements Runnable
 				numInputLines++;
 				if (numInputLines % 10000000 == 0)
 					LogInfo.logs("Read %s lines, %d allowable ids", numInputLines, allowableIds.size());
-				String[] tokens = Utils.parseTriple(line);
+				final String[] tokens = Utils.parseTriple(line);
 				if (tokens == null)
 					continue;
-				String arg1 = tokens[0];
+				final String arg1 = tokens[0];
 				if (!arg1.startsWith("fb:g.") && !arg1.startsWith("fb:m."))
 					allowableIds.add(arg1);
 			}
 			LogInfo.logs("%d allowable ids", allowableIds.size());
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 		LogInfo.end_track();
 	}
 
-	void flush(String mid, List<String> ids)
+	void flush(final String mid, final List<String> ids)
 	{
 		if (ids.size() == 0)
 			return;
@@ -80,18 +79,16 @@ public class BuildCanonicalIdMap implements Runnable
 
 		// Find the best id for this entity and put it first to use as the canonical id.
 		String bestId = mid;
-		for (String id : ids)
-		{
+		for (final String id : ids)
 			if (id.startsWith("fb:en.") || allowableIds.contains(id))
 			{
 				bestId = id;
 				break;
 			}
-		}
 
 		if (!bestId.equals(mid))
 			out.println(mid + "\t" + bestId);
-		for (String id : ids)
+		for (final String id : ids)
 		{
 			if (id.equals(bestId))
 				continue;
@@ -109,24 +106,24 @@ public class BuildCanonicalIdMap implements Runnable
 		out = IOUtils.openOutHard(canonicalIdMapPath);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(rawPath);
+			final BufferedReader in = IOUtils.openIn(rawPath);
 			String line;
 			int numInputLines = 0;
 
 			// Current block of triples corresponds to a single mid.
 			String mid = null;
-			List<String> ids = new ArrayList<String>();
+			final List<String> ids = new ArrayList<>();
 
 			while (numInputLines < maxInputLines && (line = in.readLine()) != null)
 			{
 				numInputLines++;
 				if (numInputLines % 10000000 == 0)
 					LogInfo.logs("Read %s lines, %d entities", numInputLines, numMids);
-				String[] tokens = Utils.parseTriple(line);
+				final String[] tokens = Utils.parseTriple(line);
 				if (tokens == null)
 					continue;
-				String arg1 = tokens[0];
-				String property = tokens[1];
+				final String arg1 = tokens[0];
+				final String property = tokens[1];
 				String arg2 = tokens[2];
 
 				if (!arg1.startsWith("fb:m."))
@@ -151,7 +148,7 @@ public class BuildCanonicalIdMap implements Runnable
 			in.close();
 			flush(mid, ids);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -159,7 +156,7 @@ public class BuildCanonicalIdMap implements Runnable
 		out.close();
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new BuildCanonicalIdMap());
 	}

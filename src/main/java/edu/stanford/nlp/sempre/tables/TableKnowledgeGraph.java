@@ -142,7 +142,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 				for (int i = 0; i < columns.size(); i++)
 				{
 					final TableColumn column = columns.get(i);
-					final String cellName = (i < record.length) ? record[i] : "";
+					final String cellName = i < record.length ? record[i] : "";
 					// Create a NameValue
 					final String normalizedCellName = StringNormalizationUtils.characterNormalize(cellName).toLowerCase();
 					final Pair<TableColumn, String> columnAndOriginalString = new Pair<>(column, normalizedCellName);
@@ -734,7 +734,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 
 	public String getOriginalString(final Value value)
 	{
-		return (value instanceof NameValue) ? getOriginalString(((NameValue) value).id) : null;
+		return value instanceof NameValue ? getOriginalString(((NameValue) value).id) : null;
 	}
 
 	public String getOriginalString(String nameValueId)

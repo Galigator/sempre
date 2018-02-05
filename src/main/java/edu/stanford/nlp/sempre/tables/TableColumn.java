@@ -1,8 +1,13 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.Value;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a table column. The column header is used as the relation name.
@@ -22,36 +27,36 @@ public class TableColumn
 	public final NameValue cellTypeValue;
 	public final SemType cellSemType;
 
-	public TableColumn(String originalString, String columnName, int index)
+	public TableColumn(final String originalString, final String columnName, final int index)
 	{
-		this.children = new ArrayList<>();
+		children = new ArrayList<>();
 		this.originalString = originalString;
 		this.columnName = columnName;
 		this.index = index;
-		this.relationNameValue = new NameValue(TableTypeSystem.getRowPropertyName(columnName), originalString);
-		this.relationConsecutiveNameValue = new NameValue(TableTypeSystem.getRowConsecutivePropertyName(columnName), originalString);
-		this.cellTypeString = TableTypeSystem.getCellType(columnName);
-		this.cellTypeValue = new NameValue(this.cellTypeString, originalString);
-		this.cellSemType = SemType.newAtomicSemType(this.cellTypeString);
+		relationNameValue = new NameValue(TableTypeSystem.getRowPropertyName(columnName), originalString);
+		relationConsecutiveNameValue = new NameValue(TableTypeSystem.getRowConsecutivePropertyName(columnName), originalString);
+		cellTypeString = TableTypeSystem.getCellType(columnName);
+		cellTypeValue = new NameValue(cellTypeString, originalString);
+		cellSemType = SemType.newAtomicSemType(cellTypeString);
 	}
 
 	/** Create a copy without the children field. */
-	public TableColumn(TableColumn old)
+	public TableColumn(final TableColumn old)
 	{
-		this.children = new ArrayList<>();
-		this.originalString = old.originalString;
-		this.columnName = old.columnName;
-		this.index = old.index;
-		this.relationNameValue = old.relationNameValue;
-		this.relationConsecutiveNameValue = old.relationConsecutiveNameValue;
-		this.cellTypeString = old.cellTypeString;
-		this.cellTypeValue = old.cellTypeValue;
-		this.cellSemType = old.cellSemType;
+		children = new ArrayList<>();
+		originalString = old.originalString;
+		columnName = old.columnName;
+		index = old.index;
+		relationNameValue = old.relationNameValue;
+		relationConsecutiveNameValue = old.relationConsecutiveNameValue;
+		cellTypeString = old.cellTypeString;
+		cellTypeValue = old.cellTypeValue;
+		cellSemType = old.cellSemType;
 	}
 
 	public static Set<String> getReservedFieldNames()
 	{
-		Set<String> usedNames = new HashSet<>();
+		final Set<String> usedNames = new HashSet<>();
 		usedNames.add("next");
 		usedNames.add("index");
 		return usedNames;
@@ -66,7 +71,7 @@ public class TableColumn
 	public boolean hasConsecutive()
 	{
 		NameValue previousCell = null;
-		for (TableCell child : children)
+		for (final TableCell child : children)
 		{
 			if (child.properties.nameValue.equals(previousCell))
 				return true;
@@ -77,11 +82,9 @@ public class TableColumn
 
 	public Collection<Value> getAllNormalization()
 	{
-		Set<Value> normalizations = new HashSet<>();
-		for (TableCell cell : children)
-		{
+		final Set<Value> normalizations = new HashSet<>();
+		for (final TableCell cell : children)
 			normalizations.addAll(cell.properties.metadata.keySet());
-		}
 		return normalizations;
 	}
 }

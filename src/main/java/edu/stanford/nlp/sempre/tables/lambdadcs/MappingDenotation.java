@@ -1,7 +1,8 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import edu.stanford.nlp.sempre.*;
 import edu.stanford.nlp.sempre.AggregateFormula.Mode;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException.Type;
 import fig.basic.LispTree;
 
@@ -16,7 +17,7 @@ public class MappingDenotation<PL extends PairList> implements Unarylike
 	protected final String domainVar;
 	protected final PL pairList;
 
-	protected MappingDenotation(String domainVar, PL pairList)
+	protected MappingDenotation(final String domainVar, final PL pairList)
 	{
 		this.domainVar = domainVar;
 		this.pairList = pairList;
@@ -48,7 +49,7 @@ public class MappingDenotation<PL extends PairList> implements Unarylike
 
 	public BinaryDenotation<PL> asBinary()
 	{
-		return new BinaryDenotation<PL>(pairList);
+		return new BinaryDenotation<>(pairList);
 	}
 
 	@Override
@@ -64,25 +65,25 @@ public class MappingDenotation<PL extends PairList> implements Unarylike
 	}
 
 	@Override
-	public UnaryDenotation get(Value key)
+	public UnaryDenotation get(final Value key)
 	{
 		return pairList.get(key);
 	}
 
 	@Override
-	public UnaryDenotation inverseGet(Value value)
+	public UnaryDenotation inverseGet(final Value value)
 	{
 		return pairList.inverseGet(value);
 	}
 
 	@Override
-	public Unarylike aggregate(Mode mode)
+	public Unarylike aggregate(final Mode mode)
 	{
 		return new MappingDenotation<>(domainVar, pairList.aggregate(mode));
 	}
 
 	@Override
-	public Unarylike filter(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public Unarylike filter(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		return new MappingDenotation<>(domainVar, pairList.filter(upperBound, domainUpperBound));
 	}

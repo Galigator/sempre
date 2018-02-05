@@ -1,9 +1,5 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.util.List;
-
-import org.testng.collections.Lists;
-
 import edu.stanford.nlp.sempre.ActionFormula;
 import edu.stanford.nlp.sempre.Derivation;
 import edu.stanford.nlp.sempre.DerivationStream;
@@ -14,6 +10,8 @@ import edu.stanford.nlp.sempre.SemanticFn;
 import edu.stanford.nlp.sempre.SingleDerivationStream;
 import fig.basic.LispTree;
 import fig.basic.Option;
+import java.util.List;
+import org.testng.collections.Lists;
 
 /**
  * Generates formula scoped in various modes sequential: just perform in sequence, no scoping block: basic scoping block blockr: returns selected isolate:
@@ -36,7 +34,7 @@ public class BlockFn extends SemanticFn
 	boolean optional = true;
 
 	@Override
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		if (tree.child(1).value.equals("sequential"))
@@ -54,14 +52,14 @@ public class BlockFn extends SemanticFn
 						mode = ActionFormula.Mode.sequential;
 	}
 
-	public BlockFn(ActionFormula.Mode mode)
+	public BlockFn(final ActionFormula.Mode mode)
 	{
 		this.mode = mode;
 	}
 
 	public BlockFn()
 	{
-		this.mode = ActionFormula.Mode.sequential;
+		mode = ActionFormula.Mode.sequential;
 	}
 
 	@Override
@@ -72,10 +70,10 @@ public class BlockFn extends SemanticFn
 			@Override
 			public Derivation createDerivation()
 			{
-				List<Derivation> args = c.getChildren();
+				final List<Derivation> args = c.getChildren();
 				if (args.size() == 1)
 				{
-					Derivation onlyChild = args.get(0);
+					final Derivation onlyChild = args.get(0);
 					// LogInfo.logs("1 BlockFn %s : %s Example.size=%d, callInfo(%d,%d)",
 					// onlyChild, mode, ex.getTokens().size(), onlyChild.getStart(),
 					// onlyChild.getEnd());
@@ -94,17 +92,17 @@ public class BlockFn extends SemanticFn
 						return null;
 
 					// do not repeat any blocks
-					if (((ActionFormula) onlyChild.formula).mode == BlockFn.this.mode)
+					if (((ActionFormula) onlyChild.formula).mode == mode)
 						return null;
 
-					FeatureVector features = new FeatureVector();
+					final FeatureVector features = new FeatureVector();
 					if (FeatureExtractor.containsDomain(":scope"))
 					{
-						features.add(":scope", BlockFn.this.mode.toString() + "::" + !InteractiveUtils.stripBlock(onlyChild).rule.isInduced());
-						features.add(":scope", BlockFn.this.mode.toString() + "::" + ex.id);
+						features.add(":scope", mode.toString() + "::" + !InteractiveUtils.stripBlock(onlyChild).rule.isInduced());
+						features.add(":scope", mode.toString() + "::" + ex.id);
 					}
 
-					Derivation deriv = new Derivation.Builder().formula(new ActionFormula(mode, Lists.newArrayList(onlyChild.formula))).withCallable(c).localFeatureVector(features).createDerivation();
+					final Derivation deriv = new Derivation.Builder().formula(new ActionFormula(mode, Lists.newArrayList(onlyChild.formula))).withCallable(c).localFeatureVector(features).createDerivation();
 					return deriv;
 				}
 				else

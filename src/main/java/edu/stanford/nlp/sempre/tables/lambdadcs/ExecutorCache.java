@@ -1,8 +1,9 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import fig.basic.*;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Cache the executed values of an executor. The cache should be cleared once the parser finishes each example. The metakey Object specifies the current
@@ -36,31 +37,27 @@ public final class ExecutorCache
 		cache = new HashMap<>();
 	}
 
-	public synchronized Object get(Object metakey, Object key)
+	public synchronized Object get(final Object metakey, final Object key)
 	{
 		if (currentMetakey != metakey)
-		{
 			clearCache(metakey);
-		}
-		Object value = cache.get(key);
+		final Object value = cache.get(key);
 		if (opts.verbose >= 1)
 			LogInfo.logs("[GET =>] %s => %s", key, value);
 		return value;
 	}
 
-	public synchronized void put(Object metakey, Object key, Object value)
+	public synchronized void put(final Object metakey, final Object key, final Object value)
 	{
 		if (currentMetakey != metakey)
-		{
 			clearCache(metakey);
-		}
 		if (opts.verbose >= 1)
 			LogInfo.logs("[<= PUT] %s <= %s", key, value);
 		if (cache.size() < opts.maxCacheSize)
 			cache.put(key, value);
 	}
 
-	public void clearCache(Object metakey)
+	public void clearCache(final Object metakey)
 	{
 		accumSize += cache.size();
 		cache.clear();

@@ -11,12 +11,12 @@ public class CPruneStats
 	public int totalExploit = 0;
 	public int successfulExploit = 0;
 
-	public void reset(String iter)
+	public void reset(final String iter)
 	{
 		this.iter = iter;
-		this.totalExplore = 0;
-		this.successfulExplore = 0;
-		this.totalExploit = 0;
-		this.successfulExploit = 0;
+		totalExplore = 0;
+		successfulExplore = 0;
+		totalExploit = 0;
+		successfulExploit = 0;
 	}
 }

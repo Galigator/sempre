@@ -1,15 +1,31 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
-import java.io.*;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.*;
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.ContextValue;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
 import edu.stanford.nlp.sempre.tables.serialize.SerializedDataset;
 import edu.stanford.nlp.sempre.tables.serialize.SerializedDumper;
 import edu.stanford.nlp.sempre.tables.test.CustomExample;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
 import fig.exec.Execution;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * For each example, - Generate altered tables - Execute the formulas on altered tables. - Select the most informative subset of tables to be sent to MTurk. -
@@ -68,13 +84,13 @@ public class BatchTableAlterer implements Runnable
 		NONE, ENTROPY, CACHED, PURE
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "BatchTableAltererMain", new BatchTableAlterer(), Master.getOptionsParser());
 	}
 
 	private Builder builder;
-	private Map<String, CustomExample> idToAnnotated = new HashMap<>();
+	private final Map<String, CustomExample> idToAnnotated = new HashMap<>();
 	private TableAltererCache tableAltererCache = null;
 	private SerializedDumper representativeDumper = null;
 	private PrintWriter retainedTablesOut = null;
@@ -119,8 +135,8 @@ public class BatchTableAlterer implements Runnable
 			// Prevent verbose output
 			if (CustomExample.opts.verbose > 1)
 				CustomExample.opts.verbose = 1;
-			List<CustomExample> annotated = CustomExample.getDataset(opts.annotatedFormulasPath);
-			for (CustomExample ex : annotated)
+			final List<CustomExample> annotated = CustomExample.getDataset(opts.annotatedFormulasPath);
+			for (final CustomExample ex : annotated)
 			{
 				if (ex == null || ex.targetFormula == null)
 					continue;
@@ -140,9 +156,7 @@ public class BatchTableAlterer implements Runnable
 
 		// Dump equivalent classes (optional)
 		if (opts.dumpRepresentativeFormulas)
-		{
 			representativeDumper = new SerializedDumper("representative", examples.size());
-		}
 
 		// Read Turked data (optional)
 		if (opts.turkedDataPath != null && !opts.turkedDataPath.isEmpty())
@@ -175,15 +189,15 @@ public class BatchTableAlterer implements Runnable
 		// Go through the dataset
 		Execution.putOutput("group", "train");
 		int index = -1;
-		for (Example ex : examples)
+		for (final Example ex : examples)
 		{
 			Execution.putOutput("example", ++index);
-			if (!CustomExample.checkFilterExamples(index) || (opts.skipExistingSaveDirs && tableAltererCache.existsSaveDir(ex.id)))
+			if (!CustomExample.checkFilterExamples(index) || opts.skipExistingSaveDirs && tableAltererCache.existsSaveDir(ex.id))
 			{
 				LogInfo.logs("SKIPPING %s", ex.id);
 				continue;
 			}
-			List<TableKnowledgeGraph> graphs = process(ex);
+			final List<TableKnowledgeGraph> graphs = process(ex);
 			if (!tableAltererCache.existsSaveDir(ex.id) || opts.overwriteExistingSaveDirs)
 				tableAltererCache.dump(graphs, ex.id);
 			ex.predDerivations.clear(); // Save memory
@@ -199,7 +213,7 @@ public class BatchTableAlterer implements Runnable
 			turkMatchDumper.closeFile();
 	}
 
-	private List<TableKnowledgeGraph> process(Example ex)
+	private List<TableKnowledgeGraph> process(final Example ex)
 	{
 		LogInfo.begin_track("Processing %s", ex.id);
 		ex.log();
@@ -207,17 +221,16 @@ public class BatchTableAlterer implements Runnable
 			ex.predDerivations = Collections.emptyList();
 		LogInfo.logs("Read %d derivations", ex.predDerivations.size());
 
-		TableAlterer alterer = new TableAlterer(ex);
+		final TableAlterer alterer = new TableAlterer(ex);
 		// altered tables (alteredGraphs[0] is always the original table)
-		List<TableKnowledgeGraph> alteredGraphs = new ArrayList<>();
+		final List<TableKnowledgeGraph> alteredGraphs = new ArrayList<>();
 		boolean loadedDenotationData = false;
 		DenotationData denotationData = null;
 		if (opts.loadDenotationsFromDir != null && !opts.loadDenotationsFromDir.isEmpty())
 		{
-			File file = new File(opts.loadDenotationsFromDir, ex.id + ".gz");
-			BufferedReader reader = IOUtils.openInEasy(file.toString());
+			final File file = new File(opts.loadDenotationsFromDir, ex.id + ".gz");
+			final BufferedReader reader = IOUtils.openInEasy(file.toString());
 			if (reader != null)
-			{
 				try
 				{
 					if (opts.verbose >= 1)
@@ -225,13 +238,12 @@ public class BatchTableAlterer implements Runnable
 					denotationData = DenotationData.load(reader);
 					loadedDenotationData = true;
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					LogInfo.warnings("File " + file + " contains error: " + e);
 					e.printStackTrace();
 					throw new RuntimeException(e);
 				}
-			}
 		}
 		if (denotationData == null)
 			denotationData = new DenotationData(opts.numAlteredTables, ex.predDerivations.size());
@@ -242,9 +254,7 @@ public class BatchTableAlterer implements Runnable
 			// Use the original table for table #0; an altered table otherwise
 			TableKnowledgeGraph graph;
 			if (tableIndex == 0)
-			{
 				graph = alterer.oldGraph;
-			}
 			else
 			{
 				graph = tableAltererCache.load(ex.id, tableIndex);
@@ -256,19 +266,17 @@ public class BatchTableAlterer implements Runnable
 			alteredGraphs.add(graph);
 			if (!opts.skipFormulaExecution)
 			{
-				ContextValue context = new ContextValue(graph);
+				final ContextValue context = new ContextValue(graph);
 				// Execute all formulas on the new graph
-				List<Value> denotationsForTable = new ArrayList<>();
+				final List<Value> denotationsForTable = new ArrayList<>();
 				for (int k = 0; k < ex.predDerivations.size(); k++)
 				{
 					Value value;
 					if (loadedDenotationData)
-					{
 						value = denotationData.getDenotation(k, tableIndex);
-					}
 					else
 					{
-						Derivation deriv = ex.predDerivations.get(k);
+						final Derivation deriv = ex.predDerivations.get(k);
 						value = builder.executor.execute(deriv.formula, context).value;
 						value = ValueCanonicalizer.canonicalize(value);
 						denotationData.addDenotation(k, tableIndex, value);
@@ -277,7 +285,7 @@ public class BatchTableAlterer implements Runnable
 				}
 				// Annotated formula
 				Value annotatedValue = null;
-				Example annotatedEx = idToAnnotated.get(ex.id);
+				final Example annotatedEx = idToAnnotated.get(ex.id);
 				if (annotatedEx != null && annotatedEx.targetFormula != null)
 				{
 					annotatedValue = builder.executor.execute(annotatedEx.targetFormula, context).value;
@@ -301,20 +309,20 @@ public class BatchTableAlterer implements Runnable
 
 			if (opts.dumpAllDenotations)
 			{
-				File dir = new File(Execution.getFile("denotations"));
+				final File dir = new File(Execution.getFile("denotations"));
 				if (!dir.isDirectory())
 					dir.mkdir();
-				PrintWriter writer = IOUtils.openOutHard(Execution.getFile("denotations/" + ex.id + ".gz"));
+				final PrintWriter writer = IOUtils.openOutHard(Execution.getFile("denotations/" + ex.id + ".gz"));
 				denotationData.dump(writer);
 				writer.close();
 			}
 
 			if (opts.dumpAnnotatedDenotations && denotationData.isAnnotated())
 			{
-				File dir = new File(Execution.getFile("annotated-denotations"));
+				final File dir = new File(Execution.getFile("annotated-denotations"));
 				if (!dir.isDirectory())
 					dir.mkdir();
-				PrintWriter writer = IOUtils.openOutHard(Execution.getFile("annotated-denotations/" + ex.id + ".gz"));
+				final PrintWriter writer = IOUtils.openOutHard(Execution.getFile("annotated-denotations/" + ex.id + ".gz"));
 				denotationData.dumpAnnotated(writer);
 				writer.close();
 			}
@@ -323,8 +331,8 @@ public class BatchTableAlterer implements Runnable
 
 			if (opts.dumpRepresentativeFormulas)
 			{
-				List<Derivation> representatives = new ArrayList<>();
-				for (int index : denotationData.getRepresentativeIndices())
+				final List<Derivation> representatives = new ArrayList<>();
+				for (final int index : denotationData.getRepresentativeIndices())
 					representatives.add(ex.predDerivations.get(index));
 				LogInfo.logs("Dumping %d representatives", representatives.size());
 				representativeDumper.dumpExample(ex, representatives);
@@ -339,10 +347,8 @@ public class BatchTableAlterer implements Runnable
 				{
 					LogInfo.begin_track("All formulas matching annotated formula on all tables");
 					for (int k = 0; k < ex.predDerivations.size(); k++)
-					{
 						if (denotationData.getDenotations(k).equals(denotationData.getAnnotatedDenotations()))
 							LogInfo.logs("%s", ex.predDerivations.get(k));
-					}
 					LogInfo.end_track();
 				}
 				LogInfo.end_track();
@@ -370,7 +376,7 @@ public class BatchTableAlterer implements Runnable
 			// Check with Turked data
 			if (turkedData != null)
 			{
-				Map<Integer, Value> turked = turkedData.get(ex.id);
+				final Map<Integer, Value> turked = turkedData.get(ex.id);
 				if (turked != null && !turked.isEmpty())
 				{
 					LogInfo.logs("TURKED DATA: %s", turked.keySet());
@@ -388,18 +394,18 @@ public class BatchTableAlterer implements Runnable
 		return alteredGraphs;
 	}
 
-	private <T> void logGroups(Map<T, List<Integer>> groups, T annotated, String prefix)
+	private <T> void logGroups(final Map<T, List<Integer>> groups, final T annotated, final String prefix)
 	{
 		// Sort by count
-		List<Map.Entry<T, List<Integer>>> entries = new ArrayList<>(groups.entrySet());
+		final List<Map.Entry<T, List<Integer>>> entries = new ArrayList<>(groups.entrySet());
 		entries.sort((o1, o2) -> o2.getValue().size() - o1.getValue().size());
 		// Log the counts
 		LogInfo.begin_track("Denotation counts");
 		int annotatedCount = 0, totalCount = 0;
-		for (Map.Entry<T, List<Integer>> entry : entries)
+		for (final Map.Entry<T, List<Integer>> entry : entries)
 		{
-			int size = entry.getValue().size();
-			boolean matchAnnotated = entry.getKey().equals(annotated);
+			final int size = entry.getValue().size();
+			final boolean matchAnnotated = entry.getKey().equals(annotated);
 			LogInfo.logs("%3s %5d : %s", matchAnnotated ? "[O]" : "", size, entry.getKey());
 			totalCount += size;
 			if (matchAnnotated)
@@ -411,9 +417,7 @@ public class BatchTableAlterer implements Runnable
 			LogInfo.logs("%s COUNT: %d / %d (%.3f%%)", prefix, annotatedCount, totalCount, annotatedCount * 100.0 / totalCount);
 		}
 		else
-		{
 			LogInfo.logs("Example is NOT ANNOTATED");
-		}
 		LogInfo.end_track();
 	}
 
@@ -421,21 +425,21 @@ public class BatchTableAlterer implements Runnable
 	// Test subset
 	// ============================================================
 
-	public void testSubset(DenotationData denotationData, Subset subset)
+	public void testSubset(final DenotationData denotationData, final Subset subset)
 	{
 		LogInfo.begin_track("testSubset : %s %s", subset.id, subset.indices);
 		// denotations[i][j] for i in representativeDerivs and j in graphIndices
-		Map<List<Value>, Integer> counts = new HashMap<>();
-		for (int i : denotationData.getRepresentativeIndices())
+		final Map<List<Value>, Integer> counts = new HashMap<>();
+		for (final int i : denotationData.getRepresentativeIndices())
 		{
-			List<Value> denotationsForDeriv = new ArrayList<>();
-			for (int j : subset.indices)
+			final List<Value> denotationsForDeriv = new ArrayList<>();
+			for (final int j : subset.indices)
 				denotationsForDeriv.add(denotationData.getDenotation(i, j));
 			MapUtils.incr(counts, denotationsForDeriv);
 		}
 		LogInfo.logs("subset test: %s | score = %8.3f from tables %s", subset.id, subset.score, subset.indices);
 		{
-			List<Integer> values = new ArrayList<>(counts.values());
+			final List<Integer> values = new ArrayList<>(counts.values());
 			Collections.sort(values);
 			Collections.reverse(values);
 			LogInfo.logs("   %s", values);
@@ -443,28 +447,20 @@ public class BatchTableAlterer implements Runnable
 		// Check annotated formulas
 		if (denotationData.isAnnotated())
 		{
-			List<Value> denotationsForDeriv = new ArrayList<>();
-			for (int j : subset.indices)
+			final List<Value> denotationsForDeriv = new ArrayList<>();
+			for (final int j : subset.indices)
 				denotationsForDeriv.add(denotationData.getAnnotatedDenotation(j));
-			Integer count = counts.get(denotationsForDeriv);
+			final Integer count = counts.get(denotationsForDeriv);
 			if (count == null || count == 0)
-			{
 				LogInfo.logs("subset annotation: %s | 0 ANNOTATED DENOTATIONS NOT FOUND!", subset.id);
-			}
 			else
 				if (count == 1)
-				{
 					LogInfo.logs("subset annotation: %s | 1 ANNOTATED DENOTATIONS IS IN ITS OWN CLASS.", subset.id);
-				}
 				else
-				{
 					LogInfo.logs("subset annotation: %s | %d ANNOTATED DENOTATIONS MIX WITH OTHER THINGS!", subset.id, count);
-				}
 		}
 		else
-		{
 			LogInfo.logs("subset annotation: %s | X NOT ANNOTATED!", subset.id);
-		}
 		LogInfo.end_track();
 	}
 
@@ -477,36 +473,36 @@ public class BatchTableAlterer implements Runnable
 	 * - turk-match.gz: LispTrees file where each tree is a serialized example with matching formulas
 	 */
 
-	public void testWithTurkedData(Example ex, DenotationData denotationData, Map<Integer, Value> turked, List<Integer> allTurkedTables)
+	public void testWithTurkedData(final Example ex, final DenotationData denotationData, final Map<Integer, Value> turked, final List<Integer> allTurkedTables)
 	{
 		LogInfo.begin_track("testWithTurkedData: %s", ex.id);
-		TurkEquivalentClassInfo info = new TurkEquivalentClassInfo();
+		final TurkEquivalentClassInfo info = new TurkEquivalentClassInfo();
 		info.id = ex.id;
 		info.numDerivs = ex.predDerivations.size();
 		info.numClasses = denotationData.numClasses();
 		info.allTurkedTables = allTurkedTables;
 		LogInfo.logs("ALL TURKED TABLES: %s", allTurkedTables);
-		for (Map.Entry<Integer, Value> entry : turked.entrySet())
+		for (final Map.Entry<Integer, Value> entry : turked.entrySet())
 			LogInfo.logs("%d : %s", entry.getKey(), entry.getValue());
 		// sort by altered table index
 		info.agreedTurkedTables = new ArrayList<>(turked.keySet());
 		Collections.sort(info.agreedTurkedTables);
-		List<Value> turkedValues = new ArrayList<>();
-		for (int j : info.agreedTurkedTables)
+		final List<Value> turkedValues = new ArrayList<>();
+		for (final int j : info.agreedTurkedTables)
 			turkedValues.add(turked.get(j));
 		// denotations[i][j] for i in representativeDerivs and j in Turked keys
 		// Group equivalent classes based on turked data
-		Map<List<Value>, List<Integer>> equivClassGroups = new HashMap<>();
-		for (int i : denotationData.getRepresentativeIndices())
+		final Map<List<Value>, List<Integer>> equivClassGroups = new HashMap<>();
+		for (final int i : denotationData.getRepresentativeIndices())
 		{
-			List<Value> denotationsForDeriv = new ArrayList<>();
-			for (int j : info.agreedTurkedTables)
+			final List<Value> denotationsForDeriv = new ArrayList<>();
+			for (final int j : info.agreedTurkedTables)
 				denotationsForDeriv.add(denotationData.getDenotation(i, j));
 			MapUtils.addToList(equivClassGroups, denotationsForDeriv, i);
 		}
 		{
-			List<Integer> values = new ArrayList<>();
-			for (List<Integer> equivClassGroupIndices : equivClassGroups.values())
+			final List<Integer> values = new ArrayList<>();
+			for (final List<Integer> equivClassGroupIndices : equivClassGroups.values())
 				values.add(equivClassGroupIndices.size());
 			Collections.sort(values);
 			Collections.reverse(values);
@@ -528,17 +524,17 @@ public class BatchTableAlterer implements Runnable
 		LogInfo.logs("original table: turked = %s", info.origTableTurkedTarget);
 		LogInfo.logs("original table: flag = %s", info.origTableFlag);
 		// Find out how many equivalent classes match the annotation
-		List<Integer> matchedDerivIndices = new ArrayList<>();
-		List<Derivation> matchedDerivs = new ArrayList<>();
-		for (Map.Entry<List<Value>, List<Integer>> entry : equivClassGroups.entrySet())
+		final List<Integer> matchedDerivIndices = new ArrayList<>();
+		final List<Derivation> matchedDerivs = new ArrayList<>();
+		for (final Map.Entry<List<Value>, List<Integer>> entry : equivClassGroups.entrySet())
 		{
 			boolean match = true;
-			List<Value> equivClassDenotations = entry.getKey();
-			List<Integer> equivClassGroupIndices = entry.getValue();
+			final List<Value> equivClassDenotations = entry.getKey();
+			final List<Integer> equivClassGroupIndices = entry.getValue();
 			for (int jj = 0; jj < turkedValues.size(); jj++)
 			{
-				Value equivClassDenotation = equivClassDenotations.get(jj);
-				Value turkedDenotation = turkedValues.get(jj);
+				final Value equivClassDenotation = equivClassDenotations.get(jj);
+				final Value turkedDenotation = turkedValues.get(jj);
 				if (opts.ignoreTurkedAgreedErrors && turkedDenotation instanceof ErrorValue)
 					continue;
 				if (!isCompatible(turkedDenotation, equivClassDenotation))
@@ -551,15 +547,13 @@ public class BatchTableAlterer implements Runnable
 			{
 				LogInfo.logs("Matched %d classes: %s", equivClassGroupIndices.size(), equivClassDenotations);
 				info.numClassesMatched += equivClassGroupIndices.size();
-				for (int equivClassGroupIndex : equivClassGroupIndices)
-				{
-					for (int index : denotationData.getEquivClass(equivClassGroupIndex))
+				for (final int equivClassGroupIndex : equivClassGroupIndices)
+					for (final int index : denotationData.getEquivClass(equivClassGroupIndex))
 					{
 						matchedDerivIndices.add(index);
-						Derivation matchedDeriv = ex.predDerivations.get(index);
+						final Derivation matchedDeriv = ex.predDerivations.get(index);
 						matchedDerivs.add(matchedDeriv);
 					}
-				}
 			}
 		}
 		info.numDerivsMatched = matchedDerivs.size();
@@ -567,17 +561,14 @@ public class BatchTableAlterer implements Runnable
 		LogInfo.logs("turk matching formulas: %d", info.numDerivsMatched);
 		// If there are multiple equivalent classes, find out which other tables we can turk from
 		if (subsetChooser != null)
-		{
 			if (info.numClassesMatched > 1)
 			{
-				DenotationData filtered = new DenotationData(opts.numAlteredTables, matchedDerivs.size());
+				final DenotationData filtered = new DenotationData(opts.numAlteredTables, matchedDerivs.size());
 				for (int i = 0; i < matchedDerivs.size(); i++)
-				{
 					for (int j = 0; j <= opts.numAlteredTables; j++)
 						filtered.addDenotation(i, j, denotationData.getDenotation(matchedDerivIndices.get(i), j));
-				}
 				filtered.computeGroups(matchedDerivs);
-				Subset chosen = subsetChooser.chooseSubset(ex.id, filtered, turked.keySet());
+				final Subset chosen = subsetChooser.chooseSubset(ex.id, filtered, turked.keySet());
 				if (chosen != null)
 				{
 					LogInfo.logs("RETAINED TABLES: %s", chosen.indices);
@@ -586,10 +577,7 @@ public class BatchTableAlterer implements Runnable
 				}
 			}
 			else
-			{
 				LogInfo.logs("Not choosing subset since turk matching equivalent classes = %d", info.numClassesMatched);
-			}
-		}
 		// Dump stuff
 		info.dump(turkInfoWriter);
 		turkMatchDumper.dumpExample(ex, matchedDerivs);
@@ -599,11 +587,10 @@ public class BatchTableAlterer implements Runnable
 	private boolean isCompatible(Value target, Value pred)
 	{
 		if (target instanceof ErrorValue)
-		{
-			return pred instanceof ErrorValue || (pred instanceof ListValue && ((ListValue) pred).values.isEmpty());
-		}
+			return pred instanceof ErrorValue || pred instanceof ListValue && ((ListValue) pred).values.isEmpty();
 		else
-			if (pred instanceof ErrorValue) { return false; }
+			if (pred instanceof ErrorValue)
+				return false;
 		if (!(target instanceof ListValue))
 			target = new ListValue(Collections.singletonList(target));
 		if (!(pred instanceof ListValue))

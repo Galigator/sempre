@@ -119,7 +119,7 @@ public class SerializedDumper implements Runnable
 		writeExampleLispTree(exampleToLispTree(ex, derivations));
 		out.flush();
 		currentIndex++;
-		if (currentIndex == numExamples || (opts.numExamplesPerFile > 0 && currentIndex % opts.numExamplesPerFile == 0))
+		if (currentIndex == numExamples || opts.numExamplesPerFile > 0 && currentIndex % opts.numExamplesPerFile == 0)
 			closeFile();
 	}
 

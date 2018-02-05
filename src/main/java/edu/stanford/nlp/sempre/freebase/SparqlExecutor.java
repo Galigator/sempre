@@ -121,7 +121,7 @@ public class SparqlExecutor extends Executor
 	{
 		private final StatFig timeFig = new StatFig();
 		// Number of each type of error.
-		private final LinkedHashMap<String, Integer> errors = new LinkedHashMap<String, Integer>();
+		private final LinkedHashMap<String, Integer> errors = new LinkedHashMap<>();
 	}
 
 	private final SparqlStats queryStats = new SparqlStats();
@@ -390,10 +390,10 @@ public class SparqlExecutor extends Executor
 		private int numVars = 0; // Used to create new Sparql variables
 
 		// Unit for each SPARQL variable.
-		Map<VariableFormula, String> unitsMap = new HashMap<VariableFormula, String>(); // ?y => fb:en.meter
+		Map<VariableFormula, String> unitsMap = new HashMap<>(); // ?y => fb:en.meter
 
 		// For each variable, a description
-		Map<VariableFormula, String> descriptionsMap = new HashMap<VariableFormula, String>(); // ?y => "Height (meters)"
+		Map<VariableFormula, String> descriptionsMap = new HashMap<>(); // ?y => "Height (meters)"
 
 		String queryStr;
 		SparqlSelect query; // Resulting SPARQL expression
@@ -402,18 +402,18 @@ public class SparqlExecutor extends Executor
 		class Box
 		{
 			// These are the variables that are first selected.
-			List<VariableFormula> initialVars = new ArrayList<VariableFormula>();
+			List<VariableFormula> initialVars = new ArrayList<>();
 
 			// Mapping from lambda DCS variables to SPARQL variables (which are unique across the entire formula, not just this box).
-			Map<VariableFormula, PrimitiveFormula> env = new LinkedHashMap<VariableFormula, PrimitiveFormula>();
+			Map<VariableFormula, PrimitiveFormula> env = new LinkedHashMap<>();
 
 			// Some SPARQL variables are bound to quantities based on the SELECT statement (e.g., COUNT(?x)).
-			Map<VariableFormula, String> asValuesMap = new HashMap<VariableFormula, String>(); // e.g., ?y => COUNT(?x) or ?y => (?x1 + ?x2)
+			Map<VariableFormula, String> asValuesMap = new HashMap<>(); // e.g., ?y => COUNT(?x) or ?y => (?x1 + ?x2)
 		}
 
 		public Converter(Formula rootFormula, final int offset, final int maxResults) throws BadFormulaException
 		{
-			final Ref<PrimitiveFormula> head = new Ref<PrimitiveFormula>();
+			final Ref<PrimitiveFormula> head = new Ref<>();
 			final Box box = new Box();
 
 			rootFormula = stripOuterLambdas(box, rootFormula);
@@ -448,7 +448,7 @@ public class SparqlExecutor extends Executor
 		{
 			while (formula instanceof LambdaFormula)
 			{
-				final LambdaFormula lambda = ((LambdaFormula) formula);
+				final LambdaFormula lambda = (LambdaFormula) formula;
 				final VariableFormula var = newVar();
 				box.env.put(new VariableFormula(lambda.var), var);
 				box.initialVars.add(var);
@@ -673,8 +673,8 @@ public class SparqlExecutor extends Executor
 				LogInfo.begin_track("convert %s: head = %s, modifier = %s, env = %s", rawFormula, head, modifier, box.env);
 
 			// Check binary/unary compatibility
-			final boolean isNameFormula = (rawFormula instanceof ValueFormula) && (((ValueFormula) rawFormula).value instanceof NameValue); // Either binary or unary
-			final boolean needsBinary = (modifier != null);
+			final boolean isNameFormula = rawFormula instanceof ValueFormula && ((ValueFormula) rawFormula).value instanceof NameValue; // Either binary or unary
+			final boolean needsBinary = modifier != null;
 			final boolean providesBinary = rawFormula instanceof LambdaFormula || rawFormula instanceof ReverseFormula;
 			if (!isNameFormula && needsBinary != providesBinary)
 				throw new RuntimeException("Binary/unary mis-match: " + rawFormula + " is " + (providesBinary ? "binary" : "unary") + ", but need " + (needsBinary ? "binary" : "unary"));
@@ -769,7 +769,7 @@ public class SparqlExecutor extends Executor
 							{
 								// Join
 								final JoinFormula formula = (JoinFormula) rawFormula;
-								final Ref<PrimitiveFormula> intermediate = new Ref<PrimitiveFormula>();
+								final Ref<PrimitiveFormula> intermediate = new Ref<>();
 								block.add(convert(formula.child, intermediate, null, box));
 								block.add(convert(formula.relation, head, intermediate, box));
 							}
@@ -827,7 +827,7 @@ public class SparqlExecutor extends Executor
 													// Recurse
 													final Box newBox = createNewBox(formula.head, box); // Create new environment
 													final SparqlBlock newBlock = convert(formula.head, head, null, newBox);
-													final Ref<PrimitiveFormula> degree = new Ref<PrimitiveFormula>();
+													final Ref<PrimitiveFormula> degree = new Ref<>();
 													newBlock.add(convert(formula.relation, head, degree, newBox));
 
 													// Apply the aggregation operation
@@ -867,7 +867,7 @@ public class SparqlExecutor extends Executor
 
 													// Recurse
 													final Box newBox = createNewBox(formula.child, box); // Create new environment
-													final Ref<PrimitiveFormula> newHead = new Ref<PrimitiveFormula>(newVar()); // Stores the aggregated value
+													final Ref<PrimitiveFormula> newHead = new Ref<>(newVar()); // Stores the aggregated value
 													final SparqlBlock newBlock = convert(formula.child, newHead, null, newBox);
 
 													final VariableFormula var = (VariableFormula) head.value; // e.g., ?x
@@ -900,8 +900,8 @@ public class SparqlExecutor extends Executor
 													if (rawFormula instanceof ArithmeticFormula)
 													{ // (+ (number 3) (number 5))
 														final ArithmeticFormula formula = (ArithmeticFormula) rawFormula;
-														final Ref<PrimitiveFormula> newHead1 = new Ref<PrimitiveFormula>();
-														final Ref<PrimitiveFormula> newHead2 = new Ref<PrimitiveFormula>();
+														final Ref<PrimitiveFormula> newHead1 = new Ref<>();
+														final Ref<PrimitiveFormula> newHead2 = new Ref<>();
 														block.add(convert(formula.child1, newHead1, null, box));
 														block.add(convert(formula.child2, newHead2, null, box));
 														if (head.value == null)
@@ -1002,10 +1002,10 @@ public class SparqlExecutor extends Executor
 		{
 			// Special function for taking the difference between dates.
 			LogInfo.logs("%s %s", var1, var2);
-			if (func.equals("-") && (var1 instanceof VariableFormula) && FreebaseInfo.DATE.equals(unitsMap.get(var1)))
+			if (func.equals("-") && var1 instanceof VariableFormula && FreebaseInfo.DATE.equals(unitsMap.get(var1)))
 				return "bif:datediff(\"year\"," + SparqlUtils.dateTimeStr(var2) + "," + SparqlUtils.dateTimeStr(var1) + ")";
 			else
-				if (func.equals("+") && (var1 instanceof VariableFormula) && FreebaseInfo.DATE.equals(unitsMap.get(var1)))
+				if (func.equals("+") && var1 instanceof VariableFormula && FreebaseInfo.DATE.equals(unitsMap.get(var1)))
 					return "bif:dateadd(\"year\"," + Formulas.getString(var2) + "," + SparqlUtils.dateTimeStr(var1) + ")"; // date + number
 				else
 					return '(' + Formulas.getString(var1) + ' ' + func + ' ' + Formulas.getString(var2) + ')';
@@ -1057,8 +1057,8 @@ public class SparqlExecutor extends Executor
 					LogInfo.logs("Header: %s", header);
 			}
 
-			final List<Value> firstValues = new ArrayList<Value>(); // If not returning a table
-			final List<List<Value>> rows = new ArrayList<List<Value>>(); // If returning table
+			final List<Value> firstValues = new ArrayList<>(); // If not returning a table
+			final List<List<Value>> rows = new ArrayList<>(); // If returning table
 
 			for (int i = 0; i < results.getLength(); i++)
 			{

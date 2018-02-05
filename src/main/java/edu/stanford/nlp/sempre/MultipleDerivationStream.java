@@ -25,7 +25,7 @@ public abstract class MultipleDerivationStream implements DerivationStream
 	{
 		if (nextDeriv == null)
 			throw new RuntimeException("No more derivations!");
-		Derivation deriv = nextDeriv;
+		final Derivation deriv = nextDeriv;
 		if (FeatureExtractor.containsDomain("derivRank"))
 		{
 			numGenerated++;

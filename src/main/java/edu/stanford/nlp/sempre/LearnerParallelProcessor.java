@@ -1,12 +1,12 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
 import fig.basic.Evaluation;
 import fig.basic.LogInfo;
 import fig.basic.Parallelizer;
 import fig.basic.StopWatchSet;
 import fig.exec.Execution;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Parallel version of the Learner. Most of the codes are copied from the paraphrase package.
@@ -19,10 +19,10 @@ public class LearnerParallelProcessor implements Parallelizer.Processor<Example>
 	private final Parser parser;
 	private final String prefix;
 	private final boolean computeExpectedCounts;
-	private Params params; // this is common to threads and should be synchronized
-	private Evaluation evaluation; // this is common to threads and should be synchronized
+	private final Params params; // this is common to threads and should be synchronized
+	private final Evaluation evaluation; // this is common to threads and should be synchronized
 
-	public LearnerParallelProcessor(Parser parser, Params params, String prefix, boolean computeExpectedCounts, Evaluation evaluation)
+	public LearnerParallelProcessor(final Parser parser, final Params params, final String prefix, final boolean computeExpectedCounts, final Evaluation evaluation)
 	{
 		this.prefix = prefix;
 		this.parser = parser;
@@ -32,19 +32,19 @@ public class LearnerParallelProcessor implements Parallelizer.Processor<Example>
 	}
 
 	@Override
-	public void process(Example ex, int i, int n)
+	public void process(final Example ex, final int i, final int n)
 	{
 		LogInfo.begin_track_printAll("%s: example %s/%s: %s", prefix, i, n, ex.id);
 		ex.log();
 		Execution.putOutput("example", i);
 
 		StopWatchSet.begin("Parser.parse");
-		ParserState state = parser.parse(params, ex, computeExpectedCounts);
+		final ParserState state = parser.parse(params, ex, computeExpectedCounts);
 		StopWatchSet.end();
 
 		if (computeExpectedCounts)
 		{
-			Map<String, Double> counts = new HashMap<>();
+			final Map<String, Double> counts = new HashMap<>();
 			SempreUtils.addToDoubleMap(counts, state.expectedCounts);
 
 			// Gathered enough examples, update parameters
@@ -53,7 +53,7 @@ public class LearnerParallelProcessor implements Parallelizer.Processor<Example>
 			if (Learner.opts.verbose >= 2)
 				SempreUtils.logMap(counts, "gradient");
 			double sum = 0;
-			for (double v : counts.values())
+			for (final double v : counts.values())
 				sum += v * v;
 			LogInfo.logs("L2 norm: %s", Math.sqrt(sum));
 			synchronized (params)

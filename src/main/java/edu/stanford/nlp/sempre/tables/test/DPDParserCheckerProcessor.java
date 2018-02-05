@@ -1,15 +1,25 @@
 package edu.stanford.nlp.sempre.tables.test;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSExecutor;
 import edu.stanford.nlp.sempre.tables.test.CustomExample.ExampleProcessor;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.StopWatch;
+import fig.basic.StopWatchSet;
 import fig.exec.Execution;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DPDParserCheckerProcessor implements ExampleProcessor
 {
@@ -33,14 +43,12 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 	}
 
 	@Override
-	public void run(CustomExample ex)
+	public void run(final CustomExample ex)
 	{
 		n++;
 		String formulaFlag = "", beamFlag = "";
 		if (ex.targetFormula == null)
-		{
 			formulaFlag = "no";
-		}
 		else
 		{
 			annotated++;
@@ -50,13 +58,11 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 				formulaFlag = "good";
 			}
 			else
-			{
 				formulaFlag = "incorrect";
-			}
 		}
 		if (!opts.onlyCheckAnnotatedFormulas)
 		{
-			ParserState state = builder.parser.parse(builder.params, ex, false);
+			final ParserState state = builder.parser.parse(builder.params, ex, false);
 			LogInfo.logs("utterance: %s", ex.utterance);
 			LogInfo.logs("targetFormula: %s", ex.targetFormula);
 			LogInfo.logs("targetValue: %s", ex.targetValue);
@@ -67,7 +73,7 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 			}
 			else
 			{
-				Derivation correctDeriv = isCorrectFormulaOnBeam(ex, state.predDerivations);
+				final Derivation correctDeriv = isCorrectFormulaOnBeam(ex, state.predDerivations);
 				if (correctDeriv != null)
 				{
 					LogInfo.logs("Found correct formula: %s", correctDeriv);
@@ -93,21 +99,19 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 	}
 
 	// See if all annotated formulas (targetFormula, alternativeFormulas) are correct
-	boolean isAnnotatedFormulaCorrect(CustomExample ex)
+	boolean isAnnotatedFormulaCorrect(final CustomExample ex)
 	{
 		boolean isCorrect = isAnnotatedFormulaCorrect(ex, ex.targetFormula, "targetFormula");
-		for (Formula formula : ex.alternativeFormulas)
-		{
+		for (final Formula formula : ex.alternativeFormulas)
 			isCorrect = isCorrect && isAnnotatedFormulaCorrect(ex, formula, "alternativeFormula");
-		}
 		return isCorrect;
 	}
 
 	// See if a formula executes to the targetValue
-	boolean isAnnotatedFormulaCorrect(CustomExample ex, Formula formula, String prefix)
+	boolean isAnnotatedFormulaCorrect(final CustomExample ex, final Formula formula, final String prefix)
 	{
 		LogInfo.begin_track("isAnnotatedFormulaCorrect(%s): Example %s", prefix, ex.id);
-		StopWatch watch = new StopWatch();
+		final StopWatch watch = new StopWatch();
 		watch.start();
 		LogInfo.logs("TRUE: %s", ex.targetValue);
 		double result = 0;
@@ -124,13 +128,11 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 			LogInfo.logs("PRED: %s", pred);
 			result = builder.valueEvaluator.getCompatibility(ex.targetValue, pred);
 			if (result != 1)
-			{
 				LogInfo.warnings("TRUE != PRED. %s Either targetValue or %s is wrong.", ex.id, prefix);
-			}
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
-			StringWriter sw = new StringWriter();
+			final StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			LogInfo.logs("Example %s: %s", ex.id, ex.getTokens());
 			LogInfo.logs("  targetFormula: %s", formula);
@@ -145,20 +147,18 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 		return result == 1;
 	}
 
-	Derivation isCorrectFormulaOnBeam(CustomExample ex, List<Derivation> predDerivations)
+	Derivation isCorrectFormulaOnBeam(final CustomExample ex, final List<Derivation> predDerivations)
 	{
-		List<Formula> formulas = new ArrayList<>();
+		final List<Formula> formulas = new ArrayList<>();
 		if (ex.targetFormula != null)
 			formulas.add(TableFormulaCanonicalizer.canonicalizeFormula(ex.targetFormula));
 		if (ex.alternativeFormulas != null)
-			for (Formula formula : ex.alternativeFormulas)
+			for (final Formula formula : ex.alternativeFormulas)
 				formulas.add(TableFormulaCanonicalizer.canonicalizeFormula(formula));
-		for (Derivation deriv : predDerivations)
-		{
-			for (Formula formula : formulas)
+		for (final Derivation deriv : predDerivations)
+			for (final Formula formula : formulas)
 				if (formula.equals(TableFormulaCanonicalizer.canonicalizeFormula(deriv.formula)))
 					return deriv;
-		}
 		return null;
 	}
 
@@ -175,9 +175,7 @@ public class DPDParserCheckerProcessor implements ExampleProcessor
 			Execution.putOutput("train.correct.mean", beamHasCorrectFormula * 1.0 / n);
 		}
 		if (builder.executor instanceof LambdaDCSExecutor)
-		{
 			((LambdaDCSExecutor) builder.executor).summarize();
-		}
 		StopWatchSet.logStats();
 	}
 

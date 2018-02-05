@@ -4,12 +4,9 @@ import edu.stanford.nlp.sempre.SemType;
 import edu.stanford.nlp.sempre.SemTypeHierarchy;
 import edu.stanford.nlp.sempre.TypeLookup;
 import fig.basic.IOUtils;
-import fig.basic.Option;
 import fig.basic.LogInfo;
-
+import fig.basic.Option;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Type lookup for the geo880 domain, Mostly for distinguishing locations and numbers. We also use a type hierarchy provided by a file to match
@@ -37,14 +34,13 @@ public class Geo880TypeLookup implements TypeLookup
 
 	public Geo880TypeLookup()
 	{
-		SemTypeHierarchy semTypeHierarchy = SemTypeHierarchy.singleton;
+		final SemTypeHierarchy semTypeHierarchy = SemTypeHierarchy.singleton;
 		if (opts.typeHierarchyPath != null)
-		{
 			try
 			{
-				for (String line : IOUtils.readLines(opts.typeHierarchyPath))
+				for (final String line : IOUtils.readLines(opts.typeHierarchyPath))
 				{
-					String[] tokens = line.split("\\s+");
+					final String[] tokens = line.split("\\s+");
 
 					// Check the file only contains relations about supertypes.
 					assert tokens[1].endsWith("included_types");
@@ -53,84 +49,61 @@ public class Geo880TypeLookup implements TypeLookup
 					semTypeHierarchy.addSupertype(tokens[0], tokens[2]);
 				}
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				e.printStackTrace();
 				throw new RuntimeException("Could not read lines from: " + opts.typeHierarchyPath);
 			}
-		}
 	}
 
 	@Override
-	public SemType getEntityType(String entity)
+	public SemType getEntityType(final String entity)
 	{
 		// Entites are of the form fb:state.florida.
-		int colonIndex = entity.indexOf(':');
-		int dotIndex = entity.indexOf('.');
+		final int colonIndex = entity.indexOf(':');
+		final int dotIndex = entity.indexOf('.');
 		String type = entity.substring(colonIndex + 1, dotIndex);
 
 		if (type.equals("place"))
-		{
 			type = LOCATION;
-		}
 		else
 			if (type.equals("city"))
-			{
 				type = CITY;
-			}
 			else
 				if (type.equals("state"))
-				{
 					type = STATE;
-				}
 				else
 					if (type.equals("river"))
-					{
 						type = RIVER;
-					}
 					else
 						if (type.equals("lake"))
-						{
 							type = LAKE;
-						}
 						else
 							if (type.equals("mountain"))
-							{
 								type = MOUNTAIN;
-							}
 							else
 								if (type.equals("country"))
-								{
 									type = COUNTRY;
-								}
 								else
-								{
 									throw new RuntimeException("Illegal entity: " + entity);
-								}
-		SemType result = SemType.newUnionSemType(type);
+		final SemType result = SemType.newUnionSemType(type);
 		if (opts.verbose >= 1)
-		{
 			LogInfo.logs("Entity=%s, Type=%s", entity, result);
-		}
 		return result;
 	}
 
 	@Override
-	public SemType getPropertyType(String property)
+	public SemType getPropertyType(final String property)
 	{
 		// Properties are of the form fb:location.location.population.
-		String arg1 = property.substring(0, property.lastIndexOf('.'));
-		String suffix = property.substring(property.lastIndexOf('.') + 1);
+		final String arg1 = property.substring(0, property.lastIndexOf('.'));
+		final String suffix = property.substring(property.lastIndexOf('.') + 1);
 		String arg2 = LOCATION;
 		if (suffix.equals("density") || suffix.equals("elevation") || suffix.equals("population") || suffix.equals("size") || suffix.equals("area") || suffix.equals("length"))
-		{
 			arg2 = "fb:type.number";
-		}
-		SemType result = SemType.newFuncSemType(arg2, arg1);
+		final SemType result = SemType.newFuncSemType(arg2, arg1);
 		if (opts.verbose >= 1)
-		{
 			LogInfo.logs("Property=%s, Type=%s", property, result);
-		}
 		return result;
 	}
 }

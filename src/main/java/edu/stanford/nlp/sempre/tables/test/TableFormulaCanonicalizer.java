@@ -1,6 +1,22 @@
 package edu.stanford.nlp.sempre.tables.test;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.ArithmeticFormula;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.MarkFormula;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.ReverseFormula;
+import edu.stanford.nlp.sempre.SuperlativeFormula;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
+import edu.stanford.nlp.sempre.VariableFormula;
 import edu.stanford.nlp.sempre.tables.TableTypeSystem;
 import fig.basic.LogInfo;
 
@@ -10,7 +26,7 @@ public class TableFormulaCanonicalizer
 	{
 	}
 
-	public static Formula canonicalizeFormula(Formula formula)
+	public static Formula canonicalizeFormula(final Formula formula)
 	{
 		return canonicalizePredicates(Formulas.betaReduction(formula));
 	}
@@ -24,36 +40,33 @@ public class TableFormulaCanonicalizer
 	// * (reverse (lambda x (relation (var x)))) => (reverse relation)
 	// * (reverse (lambda x ((reverse relation) (var x))) => relation
 	// * sort the children of merge formulas
-	static Formula canonicalizePredicates(Formula formula)
+	static Formula canonicalizePredicates(final Formula formula)
 	{
 		if (formula instanceof ValueFormula)
 		{
-			ValueFormula<?> valueF = (ValueFormula<?>) formula;
+			final ValueFormula<?> valueF = (ValueFormula<?>) formula;
 			if (valueF.value instanceof NameValue)
 			{
-				String id = ((NameValue) valueF.value).id;
+				final String id = ((NameValue) valueF.value).id;
 				if (id.startsWith("!") && !"!=".equals(id))
-				{
 					return new ReverseFormula(new ValueFormula<Value>(new NameValue(id.substring(1))));
-				}
 				else
-				{
 					return new ValueFormula<Value>(new NameValue(id));
-				}
 			}
 			return valueF;
 		}
 		else
 			if (formula instanceof JoinFormula)
 			{
-				JoinFormula join = (JoinFormula) formula;
+				final JoinFormula join = (JoinFormula) formula;
 				if (join.relation instanceof ValueFormula && join.child instanceof ValueFormula)
 				{
-					Value relation = ((ValueFormula<?>) join.relation).value, child = ((ValueFormula<?>) join.child).value;
+					final Value relation = ((ValueFormula<?>) join.relation).value, child = ((ValueFormula<?>) join.child).value;
 					if (relation.equals(TableTypeSystem.CELL_DATE_VALUE) && child instanceof DateValue)
 					{
-						DateValue date = (DateValue) (((ValueFormula<?>) join.child).value);
-						if (date.month == -1 && date.day == -1) { return new JoinFormula(new ValueFormula<Value>(TableTypeSystem.CELL_NUMBER_VALUE), new ValueFormula<Value>(new NumberValue(date.year))); }
+						final DateValue date = (DateValue) ((ValueFormula<?>) join.child).value;
+						if (date.month == -1 && date.day == -1)
+							return new JoinFormula(new ValueFormula<Value>(TableTypeSystem.CELL_NUMBER_VALUE), new ValueFormula<Value>(new NumberValue(date.year)));
 					}
 				}
 				return new JoinFormula(canonicalizeFormula(join.relation), canonicalizeFormula(join.child));
@@ -61,8 +74,8 @@ public class TableFormulaCanonicalizer
 			else
 				if (formula instanceof MergeFormula)
 				{
-					MergeFormula merge = (MergeFormula) formula;
-					Formula child1 = canonicalizeFormula(merge.child1), child2 = canonicalizeFormula(merge.child2);
+					final MergeFormula merge = (MergeFormula) formula;
+					final Formula child1 = canonicalizeFormula(merge.child1), child2 = canonicalizeFormula(merge.child2);
 					if (child1.toString().compareTo(child2.toString()) <= 0)
 						return new MergeFormula(merge.mode, child1, child2);
 					else
@@ -71,30 +84,28 @@ public class TableFormulaCanonicalizer
 				else
 					if (formula instanceof AggregateFormula)
 					{
-						AggregateFormula aggregate = (AggregateFormula) formula;
+						final AggregateFormula aggregate = (AggregateFormula) formula;
 						return new AggregateFormula(aggregate.mode, canonicalizeFormula(aggregate.child));
 					}
 					else
 						if (formula instanceof SuperlativeFormula)
 						{
-							SuperlativeFormula superlative = (SuperlativeFormula) formula;
+							final SuperlativeFormula superlative = (SuperlativeFormula) formula;
 							return new SuperlativeFormula(superlative.mode, superlative.rank, superlative.count, canonicalizeFormula(superlative.head), canonicalizeFormula(superlative.relation));
 						}
 						else
 							if (formula instanceof ArithmeticFormula)
 							{
-								ArithmeticFormula arithmetic = (ArithmeticFormula) formula;
+								final ArithmeticFormula arithmetic = (ArithmeticFormula) formula;
 								return new ArithmeticFormula(arithmetic.mode, canonicalizeFormula(arithmetic.child1), canonicalizeFormula(arithmetic.child2));
 							}
 							else
 								if (formula instanceof VariableFormula)
-								{
 									return new VariableFormula("x");
-								}
 								else
 									if (formula instanceof MarkFormula)
 									{
-										MarkFormula mark = (MarkFormula) formula;
+										final MarkFormula mark = (MarkFormula) formula;
 										return new MarkFormula("x", canonicalizeFormula(mark.body));
 									}
 									else
@@ -103,7 +114,7 @@ public class TableFormulaCanonicalizer
 											Formula singleRelation;
 											if ((singleRelation = isSingleRelationLambda(formula)) != null)
 												return singleRelation;
-											ReverseFormula reverse = (ReverseFormula) formula;
+											final ReverseFormula reverse = (ReverseFormula) formula;
 											return new ReverseFormula(canonicalizeFormula(reverse.child));
 										}
 										else
@@ -112,13 +123,11 @@ public class TableFormulaCanonicalizer
 												Formula singleRelation;
 												if ((singleRelation = isSingleRelationLambda(formula)) != null)
 													return singleRelation;
-												LambdaFormula lambda = (LambdaFormula) formula;
+												final LambdaFormula lambda = (LambdaFormula) formula;
 												return new LambdaFormula("x", canonicalizeFormula(lambda.body));
 											}
 											else
-											{
 												throw new RuntimeException("Unsupported formula " + formula);
-											}
 	}
 
 	// Detect the following patterns
@@ -143,27 +152,23 @@ public class TableFormulaCanonicalizer
 		formula = ((LambdaFormula) formula).body;
 		if (!(formula instanceof JoinFormula))
 			return null;
-		JoinFormula join = (JoinFormula) formula;
+		final JoinFormula join = (JoinFormula) formula;
 		if (!(join.child instanceof VariableFormula))
 			return null;
 		// Detect relation
 		if (join.relation instanceof ValueFormula)
-		{
 			valueF = (ValueFormula<?>) join.relation;
-		}
 		else
 			if (join.relation instanceof ReverseFormula)
 			{
-				ReverseFormula reverse = (ReverseFormula) join.relation;
+				final ReverseFormula reverse = (ReverseFormula) join.relation;
 				if (!(reverse.child instanceof ValueFormula))
 					return null;
 				isReversed = !isReversed;
 				valueF = (ValueFormula<?>) reverse.child;
 			}
 			else
-			{
 				return null;
-			}
 		if (!(valueF.value instanceof NameValue))
 			return null;
 		relation = (NameValue) valueF.value;
@@ -176,20 +181,16 @@ public class TableFormulaCanonicalizer
 		}
 		// Return the answer
 		if (isReversed)
-		{
-			return new ReverseFormula(new ValueFormula<NameValue>(relation));
-		}
+			return new ReverseFormula(new ValueFormula<>(relation));
 		else
-		{
-			return new ValueFormula<NameValue>(relation);
-		}
+			return new ValueFormula<>(relation);
 	}
 
 	// ============================================================
 	// Test
 	// ============================================================
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		LogInfo.logs("%s", isSingleRelationLambda(Formula.fromString("(lambda x (fb:a.b.c (var x)))")));
 		LogInfo.logs("%s", isSingleRelationLambda(Formula.fromString("(lambda x (!fb:a.b.c (var x)))")));

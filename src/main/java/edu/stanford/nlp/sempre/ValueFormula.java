@@ -11,7 +11,7 @@ public class ValueFormula<T extends Value> extends PrimitiveFormula
 {
 	public final T value;
 
-	public ValueFormula(T value)
+	public ValueFormula(final T value)
 	{
 		this.value = value;
 	}
@@ -25,13 +25,13 @@ public class ValueFormula<T extends Value> extends PrimitiveFormula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		ValueFormula<?> that = (ValueFormula<?>) o;
+		final ValueFormula<?> that = (ValueFormula<?>) o;
 		if (!value.equals(that.value))
 			return false;
 		return true;

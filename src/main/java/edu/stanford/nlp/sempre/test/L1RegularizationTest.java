@@ -1,11 +1,12 @@
 package edu.stanford.nlp.sempre.test;
 
-import java.util.*;
+import static org.testng.AssertJUnit.assertEquals;
 
-import org.testng.annotations.Test;
-
-import static org.testng.AssertJUnit.*;
 import edu.stanford.nlp.sempre.Params;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import org.testng.annotations.Test;
 
 /**
  * Test lazy L1 regularization.
@@ -23,19 +24,19 @@ public class L1RegularizationTest
 		public String l1Reg = "none";
 		public double l1RegCoeff = 0;
 
-		public Options initStepSize(double x)
+		public Options initStepSize(final double x)
 		{
 			initStepSize = x;
 			return this;
 		}
 
-		public Options l1Reg(String x)
+		public Options l1Reg(final String x)
 		{
 			l1Reg = x;
 			return this;
 		}
 
-		public Options l1RegCoeff(double x)
+		public Options l1RegCoeff(final double x)
 		{
 			l1RegCoeff = x;
 			return this;
@@ -49,16 +50,16 @@ public class L1RegularizationTest
 		originalOptions = new Options().initStepSize(Params.opts.initStepSize).l1Reg(Params.opts.l1Reg).l1RegCoeff(Params.opts.l1RegCoeff);
 	}
 
-	private void loadOptions(Options options)
+	private void loadOptions(final Options options)
 	{
 		Params.opts.initStepSize = options.initStepSize;
 		Params.opts.l1Reg = options.l1Reg;
 		Params.opts.l1RegCoeff = options.l1RegCoeff;
 	}
 
-	private Map<String, Double> constructGradient(double a, double b, double c, double d)
+	private Map<String, Double> constructGradient(final double a, final double b, final double c, final double d)
 	{
-		Map<String, Double> gradient = new HashMap<>();
+		final Map<String, Double> gradient = new HashMap<>();
 		if (a != 0)
 			gradient.put("a", a);
 		if (b != 0)
@@ -76,7 +77,7 @@ public class L1RegularizationTest
 		saveOptions();
 		{
 			loadOptions(new Options().l1Reg("none").l1RegCoeff(0));
-			Params params = new Params();
+			final Params params = new Params();
 			assertEquals(0.0, params.getWeight("a"), EPSILON);
 			assertEquals(0.0, params.getWeight("b"), EPSILON);
 			params.update(constructGradient(1.0, 0, 0, 0));
@@ -94,7 +95,7 @@ public class L1RegularizationTest
 		}
 		{
 			loadOptions(new Options().l1Reg("nonlazy").l1RegCoeff(0));
-			Params params = new Params();
+			final Params params = new Params();
 			assertEquals(0.0, params.getWeight("a"), EPSILON);
 			assertEquals(0.0, params.getWeight("b"), EPSILON);
 			params.update(constructGradient(1.0, 0, 0, 0));
@@ -113,7 +114,7 @@ public class L1RegularizationTest
 		}
 		{
 			loadOptions(new Options().l1Reg("lazy").l1RegCoeff(0));
-			Params params = new Params();
+			final Params params = new Params();
 			assertEquals(0.0, params.getWeight("a"), EPSILON);
 			assertEquals(0.0, params.getWeight("b"), EPSILON);
 			params.update(constructGradient(1.0, 0, 0, 0));
@@ -139,7 +140,7 @@ public class L1RegularizationTest
 		saveOptions();
 		{
 			loadOptions(new Options().l1Reg("nonlazy").l1RegCoeff(1.0));
-			Params params = new Params();
+			final Params params = new Params();
 			assertEquals(0.0, params.getWeight("a"), EPSILON);
 			assertEquals(0.0, params.getWeight("b"), EPSILON);
 			params.update(constructGradient(2.0, 0, -3.14, 0));
@@ -169,11 +170,11 @@ public class L1RegularizationTest
 			assertEquals(0.0, params.getWeight("c"), EPSILON);
 		}
 		// LAZY: Randomly access the features in between.
-		Random r = new Random(42);
+		final Random r = new Random(42);
 		for (double t = 1; t > 0; t -= 0.02)
 		{
 			loadOptions(new Options().l1Reg("lazy").l1RegCoeff(1.0));
-			Params params = new Params();
+			final Params params = new Params();
 			if (r.nextDouble() < t)
 				assertEquals(0.0, params.getWeight("a"), EPSILON);
 			if (r.nextDouble() < t)

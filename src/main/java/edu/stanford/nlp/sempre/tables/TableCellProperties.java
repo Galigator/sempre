@@ -2,8 +2,8 @@ package edu.stanford.nlp.sempre.tables;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.Value;
 
 /**
  * Store various properties of a cell. Contract: There is only one TableCellProperties for each unique id.
@@ -17,25 +17,25 @@ public class TableCellProperties
 	public final NameValue nameValue;
 	public final Multimap<Value, Value> metadata;
 
-	public TableCellProperties(String id, String originalString)
+	public TableCellProperties(final String id, final String originalString)
 	{
 		this.id = id;
 		this.originalString = originalString;
-		this.nameValue = new NameValue(id, originalString);
-		this.metadata = ArrayListMultimap.create();
+		nameValue = new NameValue(id, originalString);
+		metadata = ArrayListMultimap.create();
 	}
 
 	/** Create a copy without the columns field. */
-	public TableCellProperties(TableCellProperties old)
+	public TableCellProperties(final TableCellProperties old)
 	{
-		this.id = old.id;
-		this.originalString = old.originalString;
-		this.nameValue = old.nameValue;
-		this.metadata = ArrayListMultimap.create(old.metadata);
+		id = old.id;
+		originalString = old.originalString;
+		nameValue = old.nameValue;
+		metadata = ArrayListMultimap.create(old.metadata);
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (!(o instanceof TableCellProperties))
 			return false;

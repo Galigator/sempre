@@ -5,7 +5,7 @@ package edu.stanford.nlp.sempre;
  */
 public class FormulaMatchExecutor extends Executor
 {
-	public Response execute(Formula formula, ContextValue context)
+	public Response execute(Formula formula, final ContextValue context)
 	{
 		formula = Formulas.betaReduction(formula);
 		Value value;

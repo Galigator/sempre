@@ -1,10 +1,10 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException.Type;
 import fig.basic.Pair;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Impose some constraints on the possible denotation of a Formula. TypeHint is immutable, but one can create a new TypeHint object using the information from
@@ -31,40 +31,36 @@ public abstract class TypeHint
 			freeVar = null;
 		}
 
-		private VariableMap(Map<String, Value> mapping, String freeVar)
+		private VariableMap(final Map<String, Value> mapping, final String freeVar)
 		{
 			this.mapping = new HashMap<>(mapping);
 			this.freeVar = freeVar;
 		}
 
-		public VariableMap plus(String name, Value value)
+		public VariableMap plus(final String name, final Value value)
 		{
 			VariableMap answer;
 			if (name.equals(freeVar))
-			{
 				answer = new VariableMap(mapping, null);
-			}
 			else
-			{
 				answer = new VariableMap(mapping, freeVar);
-			}
 			answer.mapping.put(name, value);
 			return answer;
 		}
 
-		public VariableMap plusFreeVar(String name)
+		public VariableMap plusFreeVar(final String name)
 		{
 			if (freeVar != null)
 				throw new LambdaDCSException(Type.invalidFormula, "TypeHint already has a free variable %s", freeVar);
 			if (mapping.containsKey(name))
 				throw new LambdaDCSException(Type.invalidFormula, "Variable %s is already bound to %s", name, mapping.get(name));
-			VariableMap answer = new VariableMap(mapping, name);
+			final VariableMap answer = new VariableMap(mapping, name);
 			return answer;
 		}
 
-		public Value get(String name)
+		public Value get(final String name)
 		{
-			Value value = mapping.get(name);
+			final Value value = mapping.get(name);
 			if (value == null && !name.equals(freeVar))
 				throw new LambdaDCSException(Type.invalidFormula, "Unbound variable: " + name);
 			return value;
@@ -74,29 +70,25 @@ public abstract class TypeHint
 		{
 			if (mapping.size() != 1)
 				return null;
-			Map.Entry<String, Value> entry = mapping.entrySet().iterator().next();
+			final Map.Entry<String, Value> entry = mapping.entrySet().iterator().next();
 			return new Pair<>(entry.getKey(), entry.getValue());
 		}
 
 		@Override
 		public String toString()
 		{
-			StringBuilder builder = new StringBuilder();
+			final StringBuilder builder = new StringBuilder();
 			if (freeVar != null)
-			{
 				builder.append("(").append(freeVar).append(")");
-			}
-			for (Map.Entry<String, Value> entry : mapping.entrySet())
-			{
+			for (final Map.Entry<String, Value> entry : mapping.entrySet())
 				builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
-			}
 			return "{" + builder.append("}").toString();
 		}
 	}
 
 	public VariableMap variableMap;
 
-	public Value get(String name)
+	public Value get(final String name)
 	{
 		return variableMap.get(name);
 	}
@@ -128,32 +120,32 @@ public abstract class TypeHint
 
 	// Restricted type hints
 
-	public static UnarylikeTypeHint newRestrictedUnary(UnaryDenotation upperBound)
+	public static UnarylikeTypeHint newRestrictedUnary(final UnaryDenotation upperBound)
 	{
 		return new UnarylikeTypeHint(upperBound, null, new VariableMap());
 	}
 
-	public static UnarylikeTypeHint newRestrictedUnary(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public static UnarylikeTypeHint newRestrictedUnary(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		return new UnarylikeTypeHint(upperBound, domainUpperBound, new VariableMap());
 	}
 
-	public static BinaryTypeHint newRestrictedBinary(UnaryDenotation first, UnaryDenotation second)
+	public static BinaryTypeHint newRestrictedBinary(final UnaryDenotation first, final UnaryDenotation second)
 	{
 		return new BinaryTypeHint(first, second, new VariableMap());
 	}
 
-	public UnarylikeTypeHint restrictedUnary(UnaryDenotation upperBound)
+	public UnarylikeTypeHint restrictedUnary(final UnaryDenotation upperBound)
 	{
 		return new UnarylikeTypeHint(upperBound, null, variableMap);
 	}
 
-	public UnarylikeTypeHint restrictedUnary(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public UnarylikeTypeHint restrictedUnary(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		return new UnarylikeTypeHint(upperBound, domainUpperBound, variableMap);
 	}
 
-	public BinaryTypeHint restrictedBinary(UnaryDenotation first, UnaryDenotation second)
+	public BinaryTypeHint restrictedBinary(final UnaryDenotation first, final UnaryDenotation second)
 	{
 		return new BinaryTypeHint(first, second, variableMap);
 	}

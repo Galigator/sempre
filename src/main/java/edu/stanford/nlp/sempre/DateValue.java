@@ -22,12 +22,12 @@ public class DateValue extends Value
 		//   - "30 A.D" since its value is "+0030"
 		//   - "Dec 20, 2009 10:04am" since its value is "2009-12-20T10:04"
 		int year = -1, month = -1, day = -1;
-		boolean isBC = dateStr.startsWith("-");
+		final boolean isBC = dateStr.startsWith("-");
 		if (isBC)
 			dateStr = dateStr.substring(1);
 
 		// Ignore time
-		int t = dateStr.indexOf('T');
+		final int t = dateStr.indexOf('T');
 		if (t != -1)
 			dateStr = dateStr.substring(0, t);
 
@@ -50,14 +50,14 @@ public class DateValue extends Value
 		return new DateValue(year, month, day);
 	}
 
-	private static int parseIntRobust(String i)
+	private static int parseIntRobust(final String i)
 	{
 		int val;
 		try
 		{
 			val = Integer.parseInt(i);
 		}
-		catch (NumberFormatException ex)
+		catch (final NumberFormatException ex)
 		{
 			val = -1;
 		}
@@ -66,30 +66,30 @@ public class DateValue extends Value
 
 	public static DateValue now()
 	{
-		Calendar cal = Calendar.getInstance();
-		int year = cal.get(Calendar.YEAR);
-		int month = cal.get(Calendar.MONTH);
-		int day = cal.get(Calendar.DAY_OF_MONTH);
+		final Calendar cal = Calendar.getInstance();
+		final int year = cal.get(Calendar.YEAR);
+		final int month = cal.get(Calendar.MONTH);
+		final int day = cal.get(Calendar.DAY_OF_MONTH);
 		return new DateValue(year, month, day);
 	}
 
-	public DateValue(int year, int month, int day)
+	public DateValue(final int year, final int month, final int day)
 	{
 		this.year = year;
 		this.month = month;
 		this.day = day;
 	}
 
-	public DateValue(LispTree tree)
+	public DateValue(final LispTree tree)
 	{
-		this.year = Integer.valueOf(tree.child(1).value);
-		this.month = Integer.valueOf(tree.child(2).value);
-		this.day = Integer.valueOf(tree.child(3).value);
+		year = Integer.valueOf(tree.child(1).value);
+		month = Integer.valueOf(tree.child(2).value);
+		day = Integer.valueOf(tree.child(3).value);
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("date");
 		tree.addChild(String.valueOf(year));
 		tree.addChild(String.valueOf(month));
@@ -125,18 +125,18 @@ public class DateValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		DateValue that = (DateValue) o;
-		if (this.year != that.year)
+		final DateValue that = (DateValue) o;
+		if (year != that.year)
 			return false;
-		if (this.month != that.month)
+		if (month != that.month)
 			return false;
-		if (this.day != that.day)
+		if (day != that.day)
 			return false;
 		return true;
 	}

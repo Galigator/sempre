@@ -2,11 +2,21 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.IntRef;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.SetUtils;
+import fig.basic.StopWatchSet;
 import fig.exec.Execution;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A simple bottom-up chart-based parser that keeps the |beamSize| top derivations for each chart cell (cat, start, end). Also supports fast indexing of
@@ -26,25 +36,25 @@ public class BeamParser extends Parser
 
 	Trie trie; // For non-cat-unary rules
 
-	public BeamParser(Spec spec)
+	public BeamParser(final Spec spec)
 	{
 		super(spec);
 
 		// Index the non-cat-unary rules
 		trie = new Trie();
-		for (Rule rule : grammar.rules)
+		for (final Rule rule : grammar.rules)
 			addRule(rule);
 		if (Parser.opts.visualizeChartFilling)
-			this.chartFillOut = IOUtils.openOutAppendEasy(Execution.getFile("chartfill"));
+			chartFillOut = IOUtils.openOutAppendEasy(Execution.getFile("chartfill"));
 	}
 
-	public synchronized void addRule(Rule rule)
+	public synchronized void addRule(final Rule rule)
 	{
 		if (!rule.isCatUnary())
 			trie.add(rule);
 	}
 
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		BeamParserState coarseState = null;
 		if (Parser.opts.coarsePrune)
@@ -80,7 +90,7 @@ class BeamParserState extends ChartParserState
 	private final BeamParser parser;
 	private final BeamParserState coarseState; // Used to prune
 
-	public BeamParserState(BeamParser parser, Params params, Example ex, boolean computeExpectedCounts, Mode mode, BeamParserState coarseState)
+	public BeamParserState(final BeamParser parser, final Params params, final Example ex, final boolean computeExpectedCounts, final Mode mode, final BeamParserState coarseState)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 		this.parser = parser;
@@ -97,7 +107,7 @@ class BeamParserState extends ChartParserState
 			LogInfo.begin_track("ParserState.infer");
 
 		// Base case
-		for (Derivation deriv : gatherTokenAndPhraseDerivations())
+		for (final Derivation deriv : gatherTokenAndPhraseDerivations())
 		{
 			featurizeAndScoreDerivation(deriv);
 			addToChart(deriv);
@@ -112,7 +122,7 @@ class BeamParserState extends ChartParserState
 			LogInfo.end_track();
 
 		// Visualize
-		if (parser.chartFillOut != null && Parser.opts.visualizeChartFilling && this.mode != Mode.bool)
+		if (parser.chartFillOut != null && Parser.opts.visualizeChartFilling && mode != Mode.bool)
 		{
 			parser.chartFillOut.println(Json.writeValueAsStringHard(new ChartFillingData(ex.id, chartFillingList, ex.utterance, ex.numTokens())));
 			parser.chartFillOut.flush();
@@ -133,24 +143,24 @@ class BeamParserState extends ChartParserState
 	}
 
 	// Create all the derivations for the span [start, end).
-	protected void build(int start, int end)
+	protected void build(final int start, final int end)
 	{
 		applyNonCatUnaryRules(start, end, start, parser.trie, new ArrayList<Derivation>(), new IntRef(0));
 
-		Set<String> cellsPruned = new HashSet<>();
+		final Set<String> cellsPruned = new HashSet<>();
 		applyCatUnaryRules(start, end, cellsPruned);
 
-		for (Map.Entry<String, List<Derivation>> entry : chart[start][end].entrySet())
+		for (final Map.Entry<String, List<Derivation>> entry : chart[start][end].entrySet())
 			pruneCell(cellsPruned, entry.getKey(), start, end, entry.getValue());
 	}
 
-	private static String cellString(String cat, int start, int end)
+	private static String cellString(final String cat, final int start, final int end)
 	{
 		return cat + ":" + start + ":" + end;
 	}
 
 	// Return number of new derivations added
-	private int applyRule(int start, int end, Rule rule, List<Derivation> children)
+	private int applyRule(final int start, final int end, final Rule rule, final List<Derivation> children)
 	{
 		if (Parser.opts.verbose >= 5)
 			LogInfo.logs("applyRule %s %s %s %s", start, end, rule, children);
@@ -159,11 +169,11 @@ class BeamParserState extends ChartParserState
 			if (mode == Mode.full)
 			{
 				StopWatchSet.begin(rule.getSemRepn());
-				DerivationStream results = rule.sem.call(ex, new SemanticFn.CallInfo(rule.lhs, start, end, rule, ImmutableList.copyOf(children)));
+				final DerivationStream results = rule.sem.call(ex, new SemanticFn.CallInfo(rule.lhs, start, end, rule, ImmutableList.copyOf(children)));
 				StopWatchSet.end();
 				while (results.hasNext())
 				{
-					Derivation newDeriv = results.next();
+					final Derivation newDeriv = results.next();
 					featurizeAndScoreDerivation(newDeriv);
 					addToChart(newDeriv);
 				}
@@ -172,16 +182,14 @@ class BeamParserState extends ChartParserState
 			else
 				if (mode == Mode.bool)
 				{
-					Derivation deriv = new Derivation.Builder().cat(rule.lhs).start(start).end(end).rule(rule).children(ImmutableList.copyOf(children)).formula(Formula.nullFormula).createDerivation();
+					final Derivation deriv = new Derivation.Builder().cat(rule.lhs).start(start).end(end).rule(rule).children(ImmutableList.copyOf(children)).formula(Formula.nullFormula).createDerivation();
 					addToChart(deriv);
 					return 1;
 				}
 				else
-				{
 					throw new RuntimeException("Invalid mode");
-				}
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			LogInfo.errors("Composition failed: rule = %s, children = %s", rule, children);
 			e.printStackTrace();
@@ -190,9 +198,9 @@ class BeamParserState extends ChartParserState
 	}
 
 	// Don't prune the same cell more than once.
-	protected void pruneCell(Set<String> cellsPruned, String cat, int start, int end, List<Derivation> derivations)
+	protected void pruneCell(final Set<String> cellsPruned, final String cat, final int start, final int end, final List<Derivation> derivations)
 	{
-		String cell = cellString(cat, start, end);
+		final String cell = cellString(cat, start, end);
 		if (cellsPruned.contains(cell))
 			return;
 		cellsPruned.add(cell);
@@ -202,14 +210,14 @@ class BeamParserState extends ChartParserState
 	// Apply all unary rules with RHS category.
 	// Before applying each unary rule (rule.lhs -> rhsCat), we can prune the cell of rhsCat
 	// because we assume acyclicity, so rhsCat's cell will never grow.
-	private void applyCatUnaryRules(int start, int end, Set<String> cellsPruned)
+	private void applyCatUnaryRules(final int start, final int end, final Set<String> cellsPruned)
 	{
-		for (Rule rule : parser.catUnaryRules)
+		for (final Rule rule : parser.catUnaryRules)
 		{
 			if (!coarseAllows(rule.lhs, start, end))
 				continue;
-			String rhsCat = rule.rhs.get(0);
-			List<Derivation> derivations = chart[start][end].get(rhsCat);
+			final String rhsCat = rule.rhs.get(0);
+			final List<Derivation> derivations = chart[start][end].get(rhsCat);
 			if (Parser.opts.verbose >= 5)
 				LogInfo.logs("applyCatUnaryRules %s %s %s %s", start, end, rule, derivations);
 			if (derivations == null)
@@ -217,7 +225,7 @@ class BeamParserState extends ChartParserState
 
 			pruneCell(cellsPruned, rhsCat, start, end, derivations); // Prune before applying rules to eliminate cruft!
 
-			for (Derivation deriv : derivations)
+			for (final Derivation deriv : derivations)
 				applyRule(start, end, rule, Collections.singletonList(deriv));
 		}
 	}
@@ -229,7 +237,7 @@ class BeamParserState extends ChartParserState
 	// node: contains a link to the RHS that could apply.
 	// children: the derivations that't we're building up.
 	// numNew: Keep track of number of new derivations created
-	private void applyNonCatUnaryRules(int start, int end, int i, Trie node, ArrayList<Derivation> children, IntRef numNew)
+	private void applyNonCatUnaryRules(final int start, final int end, final int i, final Trie node, final ArrayList<Derivation> children, final IntRef numNew)
 	{
 		if (node == null)
 			return;
@@ -237,21 +245,15 @@ class BeamParserState extends ChartParserState
 			return;
 
 		if (Parser.opts.verbose >= 5)
-		{
 			LogInfo.logs("applyNonCatUnaryRules(start=%d, end=%d, i=%d, children=[%s], %s rules)", start, end, i, Joiner.on(", ").join(children), node.rules.size());
-		}
 
 		// Base case: our fencepost has walked to the end of the span, so
 		// apply the rule on all the children gathered during the walk.
 		if (i == end)
 		{
-			for (Rule rule : node.rules)
-			{
+			for (final Rule rule : node.rules)
 				if (coarseAllows(rule.lhs, start, end))
-				{
 					numNew.value += applyRule(start, end, rule, children);
-				}
-			}
 			return;
 		}
 
@@ -260,11 +262,10 @@ class BeamParserState extends ChartParserState
 
 		// Advance non-terminal category
 		for (int j = i + 1; j <= end; j++)
-		{
-			for (Map.Entry<String, List<Derivation>> entry : chart[i][j].entrySet())
+			for (final Map.Entry<String, List<Derivation>> entry : chart[i][j].entrySet())
 			{
-				Trie nextNode = node.next(entry.getKey());
-				for (Derivation arg : entry.getValue())
+				final Trie nextNode = node.next(entry.getKey());
+				for (final Derivation arg : entry.getValue())
 				{
 					children.add(arg);
 					applyNonCatUnaryRules(start, end, j, nextNode, children, numNew);
@@ -275,7 +276,6 @@ class BeamParserState extends ChartParserState
 						return;
 				}
 			}
-		}
 	}
 
 	// -- Coarse state pruning --
@@ -287,72 +287,60 @@ class BeamParserState extends ChartParserState
 		if (numTokens == 0)
 			return;
 
-		Set<String> reachable = new HashSet<>();
+		final Set<String> reachable = new HashSet<>();
 		collectReachable(reachable, Rule.rootCat, 0, numTokens);
 
 		// Remove all derivations associated with (cat, start, end) that aren't reachable.
 		for (int start = 0; start < numTokens; start++)
-		{
 			for (int end = start + 1; end <= numTokens; end++)
 			{
-				List<String> toRemoveCats = new LinkedList<>();
-				for (String cat : chart[start][end].keySet())
+				final List<String> toRemoveCats = new LinkedList<>();
+				for (final String cat : chart[start][end].keySet())
 				{
-					String key = catStartEndKey(cat, start, end);
+					final String key = catStartEndKey(cat, start, end);
 					if (!reachable.contains(key))
-					{
 						toRemoveCats.add(cat);
-					}
 				}
 				Collections.sort(toRemoveCats);
-				for (String cat : toRemoveCats)
+				for (final String cat : toRemoveCats)
 				{
 					if (parser.verbose(4))
-					{
 						LogInfo.logs("Pruning chart %s(%s,%s)", cat, start, end);
-					}
 					chart[start][end].remove(cat);
 				}
 			}
-		}
 	}
 
-	private void collectReachable(Set<String> reachable, String cat, int start, int end)
+	private void collectReachable(final Set<String> reachable, final String cat, final int start, final int end)
 	{
-		String key = catStartEndKey(cat, start, end);
+		final String key = catStartEndKey(cat, start, end);
 		if (reachable.contains(key))
 			return;
 
 		if (!chart[start][end].containsKey(cat))
-		{
 			// This should only happen for the root when there are no parses.
 			return;
-		}
 
 		reachable.add(key);
-		for (Derivation deriv : chart[start][end].get(cat))
-		{
-			for (Derivation subderiv : deriv.children)
-			{
+		for (final Derivation deriv : chart[start][end].get(cat))
+			for (final Derivation subderiv : deriv.children)
 				collectReachable(reachable, subderiv.cat, subderiv.start, subderiv.end);
-			}
-		}
 	}
 
-	private String catStartEndKey(String cat, int start, int end)
+	private String catStartEndKey(final String cat, final int start, final int end)
 	{
 		return cat + ":" + start + ":" + end;
 	}
 
 	// For pruning with the coarse state
-	protected boolean coarseAllows(Trie node, int start, int end)
+	protected boolean coarseAllows(final Trie node, final int start, final int end)
 	{
 		if (coarseState == null)
 			return true;
 		return SetUtils.intersects(node.cats, coarseState.chart[start][end].keySet());
 	}
 
-	protected boolean coarseAllows(String cat, int start, int end)
+	protected boolean coarseAllows(final String cat, final int start, final int end)
 	{
 		if (coarseState == null)
 			return true;

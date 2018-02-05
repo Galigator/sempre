@@ -1,20 +1,18 @@
 package edu.stanford.nlp.sempre.interactive;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.interactive.GrammarInducer.ParseStatus;
+import fig.basic.LogInfo;
+import fig.basic.Option;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import edu.stanford.nlp.sempre.Derivation;
-import edu.stanford.nlp.sempre.Rule;
-import edu.stanford.nlp.sempre.interactive.GrammarInducer.ParseStatus;
-import fig.basic.LogInfo;
-import fig.basic.Option;
 
 /**
  * Takes the definition and the head, then induce rules through alignment
@@ -27,7 +25,7 @@ public class DefinitionAligner
 	public static class Options
 	{
 		@Option(gloss = "categories that can serve as rules")
-		public Set<String> alignedCats = new HashSet<String>();
+		public Set<String> alignedCats = new HashSet<>();
 		@Option(gloss = "phrase size")
 		public int phraseSize = 2;
 		@Option(gloss = "max length difference")
@@ -63,7 +61,7 @@ public class DefinitionAligner
 			return "Match [deriv=" + deriv + ", start=" + start + ", end=" + end + "]";
 		}
 
-		public Match(Derivation def, int start, int end)
+		public Match(final Derivation def, final int start, final int end)
 		{
 			deriv = def;
 			this.start = start;
@@ -80,29 +78,29 @@ public class DefinitionAligner
 	List<String> headTokens;
 	List<String> defTokens;
 
-	public static List<Rule> getRules(List<String> head, List<String> def, Derivation deriv, List<Derivation> chartList)
+	public static List<Rule> getRules(final List<String> head, final List<String> def, final Derivation deriv, final List<Derivation> chartList)
 	{
 		if (opts.verbose > 0)
 			LogInfo.logs("DefinitionAligner.chartList: %s", chartList);
 
-		DefinitionAligner aligner = new DefinitionAligner(head, def, deriv, chartList);
+		final DefinitionAligner aligner = new DefinitionAligner(head, def, deriv, chartList);
 
-		List<Rule> allAlignedRules = Lists.newArrayList();
+		final List<Rule> allAlignedRules = Lists.newArrayList();
 		if (opts.verbose > 0)
 			LogInfo.logs("DefinitionAligner.allMatches.size(): %d", aligner.allMatches.size());
 
 		for (int i = 0; i < aligner.allMatches.size() && i <= opts.maxMatches; i++)
 		{
-			Match match = aligner.allMatches.get(i);
+			final Match match = aligner.allMatches.get(i);
 
-			List<Derivation> filteredList = chartList.stream().filter(d -> d.start >= match.deriv.start && d.end <= match.deriv.end).collect(Collectors.toList());
+			final List<Derivation> filteredList = chartList.stream().filter(d -> d.start >= match.deriv.start && d.end <= match.deriv.end).collect(Collectors.toList());
 
 			// filter out core
-			List<Derivation> currentParses = chartList.stream().filter(d ->
+			final List<Derivation> currentParses = chartList.stream().filter(d ->
 			{
 				if (opts.verbose > 1)
 					LogInfo.logs("DefinitionAligner.chartList.d: %s", d);
-				return (d.start == match.start && d.end == match.end);
+				return d.start == match.start && d.end == match.end;
 			}).collect(Collectors.toList());
 
 			if (opts.verbose > 1)
@@ -114,7 +112,7 @@ public class DefinitionAligner
 			{
 				if (opts.verbose > 1)
 					LogInfo.logs("DefinitionAligner.NotCore: %s", currentParses);
-				GrammarInducer grammarInducer = new GrammarInducer(head, match.deriv, filteredList);
+				final GrammarInducer grammarInducer = new GrammarInducer(head, match.deriv, filteredList);
 				allAlignedRules.addAll(grammarInducer.getRules());
 			}
 		}
@@ -124,11 +122,11 @@ public class DefinitionAligner
 	public List<Match> allMatches = new ArrayList<>();
 	private Map<String, List<Derivation>> chartMap;
 
-	public DefinitionAligner(List<String> headTokens, List<String> defTokens, Derivation def, List<Derivation> chartList)
+	public DefinitionAligner(final List<String> headTokens, final List<String> defTokens, final Derivation def, final List<Derivation> chartList)
 	{
 		this.headTokens = headTokens;
 		this.defTokens = defTokens;
-		this.chartMap = GrammarInducer.makeChartMap(chartList);
+		chartMap = GrammarInducer.makeChartMap(chartList);
 		if (opts.verbose > 0)
 			LogInfo.logs("DefinitionAligner: head '%s' as body: '%s'", headTokens, defTokens);
 		if (Math.abs(headTokens.size() - defTokens.size()) >= 4)
@@ -136,11 +134,10 @@ public class DefinitionAligner
 		recursiveMatch(def);
 	}
 
-	void recursiveMatch(Derivation def)
+	void recursiveMatch(final Derivation def)
 	{
 		// LogInfo.logs("Considering (%d,%d): %s", def.start, def.end, def);
 		for (int start = 0; start < headTokens.size(); start++)
-		{
 			for (int end = headTokens.size(); end > start; end--)
 			{
 				// LogInfo.logs("Testing (%d,%d)", start, end);
@@ -154,15 +151,12 @@ public class DefinitionAligner
 					return;
 				}
 			}
-		}
 
-		for (Derivation d : def.children)
-		{
+		for (final Derivation d : def.children)
 			recursiveMatch(d);
-		}
 	}
 
-	boolean isMatch(Derivation def, int start, int end)
+	boolean isMatch(final Derivation def, final int start, final int end)
 	{
 		if (def.start == -1 || def.end == -1)
 			return false;
@@ -170,7 +164,7 @@ public class DefinitionAligner
 			return false;
 		if (opts.verbose > 0)
 			LogInfo.logs("checkingLengths (%d, %d) - (%d, %d)", start, end, def.start, def.end);
-		if (Math.abs((end - start) - (def.end - def.start)) >= opts.maxLengthDifference)
+		if (Math.abs(end - start - (def.end - def.start)) >= opts.maxLengthDifference)
 			return false;
 		if (opts.strategies.contains(Strategies.ExactExclusion) && exactExclusion(def, start, end))
 			return true;
@@ -182,7 +176,7 @@ public class DefinitionAligner
 		return false;
 	}
 
-	private boolean setExclusion(Derivation def, int start, int end)
+	private boolean setExclusion(final Derivation def, final int start, final int end)
 	{
 		// the span under consideration does not match anythign
 		if (end - start > opts.maxSetExclusionLength)
@@ -200,28 +194,26 @@ public class DefinitionAligner
 		return true;
 	}
 
-	private List<String> window(int lower, int upper, List<String> list)
+	private List<String> window(final int lower, final int upper, final List<String> list)
 	{
-		List<String> ret = new ArrayList<>();
+		final List<String> ret = new ArrayList<>();
 		for (int i = lower; i < upper; i++)
-		{
 			if (i < 0 || i >= list.size())
 				ret.add("(*)");
 			else
 				ret.add(list.get(i));
-		}
 		return ret;
 	}
 
-	private boolean exactExclusion(Derivation def, int start, int end)
+	private boolean exactExclusion(final Derivation def, final int start, final int end)
 	{
 		if (opts.verbose > 0)
 			LogInfo.log("In exactExclusion");
 		if (end - start > opts.maxExactExclusionLength)
 			return false;
 
-		boolean prefixEq = window(start - opts.windowSize, start, headTokens).equals(window(def.start - opts.windowSize, def.start, defTokens));
-		boolean sufixEq = window(end, end + opts.windowSize, headTokens).equals(window(def.end, def.end + opts.windowSize, defTokens));
+		final boolean prefixEq = window(start - opts.windowSize, start, headTokens).equals(window(def.start - opts.windowSize, def.start, defTokens));
+		final boolean sufixEq = window(end, end + opts.windowSize, headTokens).equals(window(def.end, def.end + opts.windowSize, defTokens));
 		if (opts.verbose > 0)
 			LogInfo.logs("%b : %b", prefixEq, sufixEq);
 		if (opts.verbose > 0)
@@ -235,12 +227,12 @@ public class DefinitionAligner
 	}
 
 	// exact match plus big
-	private boolean cmdSet(Derivation def, int start, int end)
+	private boolean cmdSet(final Derivation def, final int start, final int end)
 	{
 		if (opts.verbose > 0)
 			LogInfo.log("In exactPlusBig");
 		// match only beginning and end
-		boolean cmdSet = (end == headTokens.size()) && (start > 0) && def.end == defTokens.size() && def.start > 0;
+		final boolean cmdSet = end == headTokens.size() && start > 0 && def.end == defTokens.size() && def.start > 0;
 		if (cmdSet && headTokens.subList(0, start).equals(defTokens.subList(0, start)))
 			return true;
 

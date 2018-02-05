@@ -1,7 +1,6 @@
 package edu.stanford.nlp.sempre.cache;
 
 import fig.basic.MemUsage;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,12 +16,12 @@ public class LruMap<K, V> extends LinkedHashMap<K, V>
 	private final LruCallback<K, V> callback;
 	private int bytes = 0;
 
-	public LruMap(int capacity)
+	public LruMap(final int capacity)
 	{
 		this(capacity, null);
 	}
 
-	public LruMap(int capacity, LruCallback<K, V> evictCallback)
+	public LruMap(final int capacity, final LruCallback<K, V> evictCallback)
 	{
 		// "As a general rule, the default load factor (.75) offers a good
 		// tradeoff between time and space costs."
@@ -44,27 +43,23 @@ public class LruMap<K, V> extends LinkedHashMap<K, V>
 	}
 
 	@Override
-	public V put(K key, V value)
+	public V put(final K key, final V value)
 	{
-		boolean replacing = containsKey(key);
-		V old = super.get(key);
+		final boolean replacing = containsKey(key);
+		final V old = super.get(key);
 		bytes += MemUsage.getBytes(value);
 		if (replacing)
-		{
 			bytes -= MemUsage.getBytes(old);
-		}
 		else
-		{
 			bytes += MemUsage.getBytes(key);
-		}
 		return super.put(key, value);
 	}
 
 	@Override
-	public V remove(Object key)
+	public V remove(final Object key)
 	{
-		boolean decr = containsKey(key);
-		V old = super.remove(key);
+		final boolean decr = containsKey(key);
+		final V old = super.remove(key);
 		if (decr)
 		{
 			bytes -= MemUsage.getBytes(key);
@@ -77,12 +72,12 @@ public class LruMap<K, V> extends LinkedHashMap<K, V>
 	 * Ignore the argument, iterate in access order and remove until memory constraints are satisfied. Always return false, since we did our own removal.
 	 */
 	@Override
-	protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
+	protected boolean removeEldestEntry(final Map.Entry<K, V> eldest)
 	{
 		while (getBytes() > cap && !isEmpty())
 		{
 			Map.Entry<K, V> toRemove = null;
-			for (Map.Entry<K, V> entry : entrySet())
+			for (final Map.Entry<K, V> entry : entrySet())
 			{
 				toRemove = entry;
 				break;

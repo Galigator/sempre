@@ -1,12 +1,12 @@
 package edu.stanford.nlp.sempre.freebase.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
+import edu.stanford.nlp.sempre.Formula;
 import edu.stanford.nlp.sempre.freebase.FbFormulasInfo;
 import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.BinaryFormulaInfo;
 import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.UnaryFormulaInfo;
-import edu.stanford.nlp.sempre.Formula;
 import org.testng.annotations.Test;
-
-import static org.testng.AssertJUnit.assertEquals;
 
 public class FbFormulasTest
 {
@@ -14,7 +14,7 @@ public class FbFormulasTest
 	@Test
 	public void formulaInfo()
 	{
-		FbFormulasInfo infoRepos = FbFormulasInfo.getSingleton();
+		final FbFormulasInfo infoRepos = FbFormulasInfo.getSingleton();
 
 		// 1
 		BinaryFormulaInfo bInfo = infoRepos.getBinaryInfo(Formula.fromString("(lambda x (!fb:education.education.specialization (!fb:education.field_of_study.students_majoring (var x))))"));

@@ -2,15 +2,31 @@ package edu.stanford.nlp.sempre.freebase;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.SemTypeHierarchy;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
 import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.BinaryFormulaInfo;
 import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.UnaryFormulaInfo;
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
-
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class for keeping info from Freebase schema
@@ -65,28 +81,28 @@ public final class FreebaseInfo
 	public static final String ALIAS = "fb:common.topic.alias";
 
 	// mapping from master property to its opposite (e.g., fb:people.person.place_of_birth => fb:location.location.people_born_here)
-	private BiMap<String, String> masterToOppositeMap = HashBiMap.create();
+	private final BiMap<String, String> masterToOppositeMap = HashBiMap.create();
 
-	private Set<String> cvts = new HashSet<>();
-	private Map<String, String> type1Map = new HashMap<>(); // property => type of arg1
-	private Map<String, String> type2Map = new HashMap<>(); // property => type of arg2
-	private Map<String, String> unit2Map = new HashMap<>(); // property => unit of arg2 (if exists)
-	private Map<String, List<String>> bDescriptionsMap = new HashMap<>(); // property => descriptions
-	private Map<String, Integer> bPopularityMap = new HashMap<>(); // property => popularity
+	private final Set<String> cvts = new HashSet<>();
+	private final Map<String, String> type1Map = new HashMap<>(); // property => type of arg1
+	private final Map<String, String> type2Map = new HashMap<>(); // property => type of arg2
+	private final Map<String, String> unit2Map = new HashMap<>(); // property => unit of arg2 (if exists)
+	private final Map<String, List<String>> bDescriptionsMap = new HashMap<>(); // property => descriptions
+	private final Map<String, Integer> bPopularityMap = new HashMap<>(); // property => popularity
 	// unary maps
-	private Map<String, Integer> professionPopularityMap = new HashMap<>(); // property => popularity
-	private Map<String, Integer> typePopularityMap = new HashMap<>(); // property => popularity
-	private Map<String, List<String>> professionDescriptionsMap = new HashMap<>(); // property => descriptions
-	private Map<String, List<String>> typeDescriptionsMap = new HashMap<>(); // property => descriptions
+	private final Map<String, Integer> professionPopularityMap = new HashMap<>(); // property => popularity
+	private final Map<String, Integer> typePopularityMap = new HashMap<>(); // property => popularity
+	private final Map<String, List<String>> professionDescriptionsMap = new HashMap<>(); // property => descriptions
+	private final Map<String, List<String>> typeDescriptionsMap = new HashMap<>(); // property => descriptions
 
-	private Map<String, String> nameMap = new HashMap<String, String>(); // id => name of id
+	private final Map<String, String> nameMap = new HashMap<>(); // id => name of id
 
-	public String getArg1Type(String property)
+	public String getArg1Type(final String property)
 	{
 		return type1Map.get(property);
 	}
 
-	public String getArg2Type(String property)
+	public String getArg2Type(final String property)
 	{
 		return type2Map.get(property);
 	}
@@ -97,11 +113,11 @@ public final class FreebaseInfo
 		{
 			readSchema();
 		}
-		catch (NumberFormatException e)
+		catch (final NumberFormatException e)
 		{
 			throw new RuntimeException(e);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -126,12 +142,12 @@ public final class FreebaseInfo
 		String line;
 		while ((line = in.readLine()) != null)
 		{
-			String[] tokens = edu.stanford.nlp.sempre.freebase.Utils.parseTriple(line);
+			final String[] tokens = edu.stanford.nlp.sempre.freebase.Utils.parseTriple(line);
 			if (tokens == null)
 				continue;
-			String arg1 = tokens[0];
-			String property = tokens[1];
-			String arg2 = tokens[2];
+			final String arg1 = tokens[0];
+			final String property = tokens[1];
+			final String arg2 = tokens[2];
 
 			if (property.equals("fb:type.property.reverse_property"))
 			{ // reverse_property => opposite_property
@@ -139,15 +155,11 @@ public final class FreebaseInfo
 				// reverse properties are not 1:1.  We should monitor this and make
 				// sure we don't lose any alignments.
 				if (masterToOppositeMap.containsKey(arg1))
-				{
 					// LogInfo.errors("arg1 exists multiple times: %s", line);
 					continue;
-				}
 				if (masterToOppositeMap.inverse().containsKey(arg2))
-				{
 					// LogInfo.errors("arg2 exists multiple times: %s", line);
 					continue;
-				}
 				masterToOppositeMap.put(arg1, arg2);
 			}
 			else
@@ -184,24 +196,16 @@ public final class FreebaseInfo
 							}
 							else
 								if (property.equals("fb:type.property.unit"))
-								{
 									unit2Map.put(arg1, arg2);
-								}
 								else
 									if (property.equals("fb:user.custom.type.property.num_instances"))
-									{
 										bPopularityMap.put(arg1, edu.stanford.nlp.sempre.freebase.Utils.parseInt(arg2));
-									}
 									else
 										if (property.equals("fb:user.custom.people.person.profession.num_instances"))
-										{
 											professionPopularityMap.put(arg1, edu.stanford.nlp.sempre.freebase.Utils.parseInt(arg2));
-										}
 										else
 											if (property.equals("fb:user.custom.type.object.type.num_instances"))
-											{
 												typePopularityMap.put(arg1, edu.stanford.nlp.sempre.freebase.Utils.parseInt(arg2));
-											}
 		}
 		in.close();
 
@@ -209,30 +213,22 @@ public final class FreebaseInfo
 		in = IOUtils.openInHard(opts.schemaPath);
 		while ((line = in.readLine()) != null)
 		{
-			String[] tokens = edu.stanford.nlp.sempre.freebase.Utils.parseTriple(line);
+			final String[] tokens = edu.stanford.nlp.sempre.freebase.Utils.parseTriple(line);
 			if (tokens == null)
 				continue;
-			String arg1 = tokens[0];
-			String property = tokens[1];
-			String arg2 = tokens[2];
+			final String arg1 = tokens[0];
+			final String property = tokens[1];
+			final String arg2 = tokens[2];
 
 			if (property.equals(NAME) || property.equals(ALIAS))
-			{
 				if (bPopularityMap.containsKey(arg1))
-				{
 					MapUtils.addToList(bDescriptionsMap, arg1, edu.stanford.nlp.sempre.freebase.Utils.parseStr(arg2).toLowerCase());
-				}
 				else
 					if (professionPopularityMap.containsKey(arg1))
-					{
 						MapUtils.addToList(professionDescriptionsMap, arg1, edu.stanford.nlp.sempre.freebase.Utils.parseStr(arg2).toLowerCase());
-					}
 					else
 						if (typePopularityMap.containsKey(arg1))
-						{
 							MapUtils.addToList(typeDescriptionsMap, arg1, edu.stanford.nlp.sempre.freebase.Utils.parseStr(arg2).toLowerCase());
-						}
-			}
 
 			if (property.equals(NAME))
 				nameMap.put(arg1, edu.stanford.nlp.sempre.freebase.Utils.parseStr(arg2));
@@ -244,15 +240,13 @@ public final class FreebaseInfo
 	public Map<Formula, BinaryFormulaInfo> createBinaryFormulaInfoMap()
 	{
 
-		Map<Formula, FbFormulasInfo.BinaryFormulaInfo> res = new HashMap<>();
-		for (String property : bPopularityMap.keySet())
+		final Map<Formula, FbFormulasInfo.BinaryFormulaInfo> res = new HashMap<>();
+		for (final String property : bPopularityMap.keySet())
 		{
-			Formula f = Formulas.fromLispTree(LispTree.proto.parseFromString(property));
-			BinaryFormulaInfo info = new BinaryFormulaInfo(f, type1Map.get(property), type2Map.get(property), unit2Map.get(property), "", bDescriptionsMap.get(property), bPopularityMap.get(property));
+			final Formula f = Formulas.fromLispTree(LispTree.proto.parseFromString(property));
+			final BinaryFormulaInfo info = new BinaryFormulaInfo(f, type1Map.get(property), type2Map.get(property), unit2Map.get(property), "", bDescriptionsMap.get(property), bPopularityMap.get(property));
 			if (!info.isComplete())
-			{
 				continue;
-			}
 			res.put(f, info);
 		}
 		return res;
@@ -261,40 +255,36 @@ public final class FreebaseInfo
 	public Map<Formula, UnaryFormulaInfo> createUnaryFormulaInfoMap()
 	{
 
-		Map<Formula, FbFormulasInfo.UnaryFormulaInfo> res = new HashMap<Formula, FbFormulasInfo.UnaryFormulaInfo>();
+		final Map<Formula, FbFormulasInfo.UnaryFormulaInfo> res = new HashMap<>();
 		// professions
-		for (String profession : professionPopularityMap.keySet())
+		for (final String profession : professionPopularityMap.keySet())
 		{
-			Formula f = new JoinFormula(PROF, new ValueFormula<Value>(new NameValue(profession)));
-			UnaryFormulaInfo info = new UnaryFormulaInfo(f, professionPopularityMap.get(profession), MapUtils.get(professionDescriptionsMap, profession, new LinkedList<String>()), Collections.singleton(PERSON));
+			final Formula f = new JoinFormula(PROF, new ValueFormula<Value>(new NameValue(profession)));
+			final UnaryFormulaInfo info = new UnaryFormulaInfo(f, professionPopularityMap.get(profession), MapUtils.get(professionDescriptionsMap, profession, new LinkedList<String>()), Collections.singleton(PERSON));
 			if (!info.isComplete())
-			{
 				continue;
-			}
 			res.put(f, info);
 		}
 		// types
-		for (String type : typePopularityMap.keySet())
+		for (final String type : typePopularityMap.keySet())
 		{
-			Formula f = new JoinFormula(TYPE, new ValueFormula<Value>(new NameValue(type)));
-			UnaryFormulaInfo info = new UnaryFormulaInfo(f, typePopularityMap.get(type), MapUtils.get(typeDescriptionsMap, type, new LinkedList<String>()), Collections.singleton(type));
+			final Formula f = new JoinFormula(TYPE, new ValueFormula<Value>(new NameValue(type)));
+			final UnaryFormulaInfo info = new UnaryFormulaInfo(f, typePopularityMap.get(type), MapUtils.get(typeDescriptionsMap, type, new LinkedList<String>()), Collections.singleton(type));
 			if (!info.isComplete())
-			{
 				continue;
-			}
 			res.put(f, info);
 		}
 		return res;
 	}
 
 	// fb:people.person.place_of_birth => true
-	public boolean propertyHasOpposite(String property)
+	public boolean propertyHasOpposite(final String property)
 	{
 		return masterToOppositeMap.containsKey(property) || masterToOppositeMap.inverse().containsKey(property);
 	}
 
 	// fb:people.person.place_of_birth => fb:location.location.people_born_here
-	public String getOppositeFbProperty(String property)
+	public String getOppositeFbProperty(final String property)
 	{
 		if (masterToOppositeMap.containsKey(property))
 			return masterToOppositeMap.get(property);
@@ -303,12 +293,12 @@ public final class FreebaseInfo
 		throw new RuntimeException("Property does not have an opposite: " + property);
 	}
 
-	public String getUnit1(String property)
+	public String getUnit1(final String property)
 	{
 		return typeToUnit(type1Map.get(property), property);
 	}
 
-	public String getUnit2(String property)
+	public String getUnit2(final String property)
 	{
 		return typeToUnit(type2Map.get(property), property);
 	}
@@ -316,21 +306,17 @@ public final class FreebaseInfo
 	// Get the measurement unit associated with this type.
 	// If something is not a number, then return something crude (e.g. fb:type.cvt).
 	// Return null if we don't know anything.
-	public String typeToUnit(String type, String property)
+	public String typeToUnit(final String type, final String property)
 	{
 		if (type == null)
-		{
 			// LogInfo.errors("No type information for property: %s", property);
 			return null;
-		}
 		if (type.equals(INT) || type.equals(FLOAT))
 		{
-			String unit = unit2Map.get(property);
+			final String unit = unit2Map.get(property);
 			if (unit == null)
-			{
 				// LogInfo.errors("No unit information for property: %s", property);
 				return NumberValue.unitless;
-			}
 			return unit;
 		}
 		if (type.equals(BOOLEAN) || type.equals(TEXT) || type.equals(DATE)) // Use the type as the unit
@@ -340,30 +326,30 @@ public final class FreebaseInfo
 		return ENTITY; // Entity
 	}
 
-	public boolean isCvt(String type)
+	public boolean isCvt(final String type)
 	{
 		return cvts.contains(type);
 	}
 
-	public String getPropertyName(String property)
+	public String getPropertyName(final String property)
 	{
-		List<String> names = bDescriptionsMap.get(property);
+		final List<String> names = bDescriptionsMap.get(property);
 		if (names == null)
 			return null;
 		return names.get(0);
 	}
 
-	public String getName(String id)
+	public String getName(final String id)
 	{
 		return nameMap.get(id);
 	}
 
-	public static boolean isReverseProperty(String property)
+	public static boolean isReverseProperty(final String property)
 	{
 		return CanonicalNames.isReverseProperty(property);
 	}
 
-	public static String reverseProperty(String property)
+	public static String reverseProperty(final String property)
 	{
 		return CanonicalNames.reverseProperty(property);
 	}
@@ -371,13 +357,13 @@ public final class FreebaseInfo
 	// fb:en.barack_obama => http://rdf.freebase.com/ns/en/barack_obama
 	public static final String freebaseNamespace = "http://rdf.freebase.com/ns/";
 
-	public static String id2uri(String id)
+	public static String id2uri(final String id)
 	{
 		assert id.startsWith("fb:") : id;
 		return freebaseNamespace + id.substring(3).replaceAll("\\.", "/");
 	}
 
-	public static String uri2id(String uri)
+	public static String uri2id(final String uri)
 	{
 		if (!uri.startsWith(freebaseNamespace))
 		{

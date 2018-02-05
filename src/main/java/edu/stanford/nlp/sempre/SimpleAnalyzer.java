@@ -13,14 +13,12 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 	// Stanford tokenizer doesn't break hyphens.
 	// Replace hypens with spaces for utterances like
 	// "Spanish-speaking countries" but not for "2012-03-28".
-	public static String breakHyphens(String utterance)
+	public static String breakHyphens(final String utterance)
 	{
-		StringBuilder buf = new StringBuilder(utterance);
+		final StringBuilder buf = new StringBuilder(utterance);
 		for (int i = 0; i < buf.length(); i++)
-		{
-			if (buf.charAt(i) == '-' && (i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1))))
+			if (buf.charAt(i) == '-' && i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1)))
 				buf.setCharAt(i, ' ');
-		}
 		return buf.toString();
 	}
 
@@ -28,7 +26,7 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 
 	public LanguageInfo analyze(String utterance)
 	{
-		LanguageInfo languageInfo = new LanguageInfo();
+		final LanguageInfo languageInfo = new LanguageInfo();
 
 		// Clear these so that analyze can hypothetically be called
 		// multiple times.
@@ -42,19 +40,19 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 		utterance = breakHyphens(utterance);
 
 		// Default analysis - create tokens crudely
-		StringBuilder buf = new StringBuilder();
+		final StringBuilder buf = new StringBuilder();
 		for (int i = 0; i < utterance.length(); i++)
 		{
-			char c = utterance.charAt(i);
+			final char c = utterance.charAt(i);
 			// Put whitespace around certain characters.
 			// TODO(pliang): handle contractions such as "can't" properly.
-			boolean boundaryBefore = !(i - 1 >= 0) || utterance.charAt(i - 1) == ' ';
-			boolean boundaryAfter = !(i + 1 < utterance.length()) || utterance.charAt(i + 1) == ' ';
+			final boolean boundaryBefore = !(i - 1 >= 0) || utterance.charAt(i - 1) == ' ';
+			final boolean boundaryAfter = !(i + 1 < utterance.length()) || utterance.charAt(i + 1) == ' ';
 			boolean separate;
 			if (c == '.') // Break off period if already space around it (to preserve numbers like 3.5)
 				separate = boundaryBefore || boundaryAfter;
 			else
-				separate = (",?'\"[]".indexOf(c) != -1);
+				separate = ",?'\"[]".indexOf(c) != -1;
 
 			if (separate)
 				buf.append(' ');
@@ -72,8 +70,8 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 		utterance = buf.toString().trim();
 		if (!utterance.equals(""))
 		{
-			String[] tokens = utterance.split("\\s+");
-			for (String token : tokens)
+			final String[] tokens = utterance.split("\\s+");
+			for (final String token : tokens)
 			{
 				languageInfo.tokens.add(LanguageAnalyzer.opts.lowerCaseTokens ? token.toLowerCase() : token);
 				String lemma = token;
@@ -82,7 +80,7 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 				languageInfo.lemmaTokens.add(LanguageAnalyzer.opts.lowerCaseTokens ? lemma.toLowerCase() : lemma);
 
 				// Is it a written out number?
-				int x = Arrays.asList(numbers).indexOf(token);
+				final int x = Arrays.asList(numbers).indexOf(token);
 				if (x != -1)
 				{
 					languageInfo.posTags.add("CD");
@@ -98,7 +96,7 @@ public class SimpleAnalyzer extends LanguageAnalyzer
 					languageInfo.nerTags.add("NUMBER");
 					languageInfo.nerValues.add(token);
 				}
-				catch (NumberFormatException e)
+				catch (final NumberFormatException e)
 				{
 					// Guess that capitalized nouns are proper
 					if (Character.isUpperCase(token.charAt(0)))

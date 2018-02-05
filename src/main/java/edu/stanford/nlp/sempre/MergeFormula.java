@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Function;
 import fig.basic.LispTree;
-
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ public class MergeFormula extends Formula
 	public final Formula child1;
 	public final Formula child2;
 
-	public MergeFormula(Mode mode, Formula child1, Formula child2)
+	public MergeFormula(final Mode mode, final Formula child1, final Formula child2)
 	{
 		this.mode = mode;
 		this.child1 = child1;
@@ -30,7 +29,7 @@ public class MergeFormula extends Formula
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild(mode.toString());
 		tree.addChild(child1.toLispTree());
 		tree.addChild(child2.toLispTree());
@@ -38,7 +37,7 @@ public class MergeFormula extends Formula
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
 		{
@@ -48,16 +47,16 @@ public class MergeFormula extends Formula
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> func)
+	public Formula map(final Function<Formula, Formula> func)
 	{
-		Formula result = func.apply(this);
+		final Formula result = func.apply(this);
 		return result == null ? new MergeFormula(mode, child1.map(func), child2.map(func)) : result;
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> func, final boolean alwaysRecurse)
 	{
-		List<Formula> res = func.apply(this);
+		final List<Formula> res = func.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
 		{
 			res.addAll(child1.mapToList(func, alwaysRecurse));
@@ -66,7 +65,7 @@ public class MergeFormula extends Formula
 		return res;
 	}
 
-	public static Mode parseMode(String mode)
+	public static Mode parseMode(final String mode)
 	{
 		if ("and".equals(mode))
 			return Mode.and;
@@ -77,16 +76,16 @@ public class MergeFormula extends Formula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof MergeFormula))
 			return false;
-		MergeFormula that = (MergeFormula) thatObj;
-		if (this.mode != that.mode)
+		final MergeFormula that = (MergeFormula) thatObj;
+		if (mode != that.mode)
 			return false;
-		if (!this.child1.equals(that.child1))
+		if (!child1.equals(that.child1))
 			return false;
-		if (!this.child2.equals(that.child2))
+		if (!child2.equals(that.child2))
 			return false;
 		return true;
 	}

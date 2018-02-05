@@ -1,14 +1,32 @@
 package edu.stanford.nlp.sempre.tables.grow;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.ChildDerivationsGroup;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.ReverseFormula;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.SemanticFn;
+import edu.stanford.nlp.sempre.SingleDerivationStream;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.DenotationTypeInference;
 import edu.stanford.nlp.sempre.tables.ScopedFormula;
 import edu.stanford.nlp.sempre.tables.ScopedValue;
 import fig.basic.LispTree;
 import fig.basic.MapUtils;
 import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Apply the function on the children from left to right. Example: (lambda x (lambda y ((var x) (count (var y))))) on x = population, y = (type cake) ==>
@@ -35,32 +53,24 @@ public class ApplyFn extends SemanticFn
 	boolean hasTypeInfo = false, sameType = false;
 	SemType arg1Type = null, arg2Type = null;
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		formula = Formulas.fromLispTree(tree.child(1));
 		for (int i = 2; i < tree.children.size(); i++)
 		{
 			hasTypeInfo = true;
-			LispTree typeInfo = tree.child(i);
+			final LispTree typeInfo = tree.child(i);
 			if (typeInfo.isLeaf() && "same-type".equals(typeInfo.value))
-			{
 				sameType = true;
-			}
 			else
 				if (!typeInfo.isLeaf() && typeInfo.children.size() == 2 && "arg1-type".equals(typeInfo.child(0).value))
-				{
 					arg1Type = SemType.fromLispTree(typeInfo.child(1));
-				}
 				else
 					if (!typeInfo.isLeaf() && typeInfo.children.size() == 2 && "arg2-type".equals(typeInfo.child(0).value))
-					{
 						arg2Type = SemType.fromLispTree(typeInfo.child(1));
-					}
 					else
-					{
 						throw new RuntimeException("Cannot parse type information: " + typeInfo);
-					}
 		}
 	}
 
@@ -90,7 +100,7 @@ public class ApplyFn extends SemanticFn
 	}
 
 	@Override
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{
@@ -100,12 +110,12 @@ public class ApplyFn extends SemanticFn
 				Formula result = formula, head = null;
 				Value headValue = null;
 				// Check the scopes
-				for (Derivation child : c.getChildren())
+				for (final Derivation child : c.getChildren())
 				{
 					if (!(child.formula instanceof ScopedFormula))
 						continue;
-					ScopedFormula scoped = (ScopedFormula) child.formula;
-					ScopedValue scopedValue = (ScopedValue) child.value;
+					final ScopedFormula scoped = (ScopedFormula) child.formula;
+					final ScopedValue scopedValue = (ScopedValue) child.value;
 					if (head == null)
 					{
 						head = scoped.head;
@@ -113,13 +123,11 @@ public class ApplyFn extends SemanticFn
 							headValue = scopedValue.head;
 					}
 					else
-					{
-						if ((exactScopeHead && !head.equals(scoped.head)) || (!exactScopeHead && !headValue.equals(scopedValue.head)))
+						if (exactScopeHead && !head.equals(scoped.head) || !exactScopeHead && !headValue.equals(scopedValue.head))
 							return null;
-					}
 				}
 				// Apply the function on the arguments
-				for (Derivation child : c.getChildren())
+				for (final Derivation child : c.getChildren())
 				{
 					if (!(result instanceof LambdaFormula))
 						throw new RuntimeException("Too many arguments: " + c.getChildren() + " for " + formula);
@@ -134,7 +142,7 @@ public class ApplyFn extends SemanticFn
 				else
 					if (result instanceof LambdaFormula && ((LambdaFormula) result).body instanceof JoinFormula)
 					{
-						LambdaFormula lambda = (LambdaFormula) result;
+						final LambdaFormula lambda = (LambdaFormula) result;
 						if (lambda.body instanceof JoinFormula)
 							result = new LambdaFormula(lambda.var, hackJoin(lambda.body));
 					}
@@ -144,23 +152,23 @@ public class ApplyFn extends SemanticFn
 		};
 	}
 
-	private Formula hackJoin(Formula formula)
+	private Formula hackJoin(final Formula formula)
 	{
 		if (formula instanceof JoinFormula)
 		{
-			JoinFormula join = (JoinFormula) formula;
+			final JoinFormula join = (JoinFormula) formula;
 			if (join.relation instanceof ReverseFormula)
 			{
-				ReverseFormula reverse = (ReverseFormula) join.relation;
+				final ReverseFormula reverse = (ReverseFormula) join.relation;
 				if (reverse.child instanceof LambdaFormula)
 				{
-					LambdaFormula lambda = (LambdaFormula) reverse.child;
+					final LambdaFormula lambda = (LambdaFormula) reverse.child;
 					if (lambda.body instanceof JoinFormula)
 					{
-						JoinFormula join2 = (JoinFormula) lambda.body;
+						final JoinFormula join2 = (JoinFormula) lambda.body;
 						if (join2.child instanceof JoinFormula)
 						{
-							JoinFormula join3 = (JoinFormula) join2.child;
+							final JoinFormula join3 = (JoinFormula) join2.child;
 							// YAY!
 							return new JoinFormula(new ReverseFormula(join3.relation), new JoinFormula(new ReverseFormula(join2.relation), join.child));
 						}
@@ -179,54 +187,42 @@ public class ApplyFn extends SemanticFn
 	}
 
 	@Override
-	public Collection<ChildDerivationsGroup> getFilteredDerivations(List<Derivation> derivations1, List<Derivation> derivations2)
+	public Collection<ChildDerivationsGroup> getFilteredDerivations(final List<Derivation> derivations1, final List<Derivation> derivations2)
 	{
 		if (!hasTypeInfo)
 			return Collections.singleton(new ChildDerivationsGroup(derivations1, derivations2));
 		// TODO: Currently this works only for lists of values, not mappings
-		Map<String, List<Derivation>> grouped1 = groupByType(derivations1, getArg1Type()), grouped2 = (derivations2 == null) ? null : groupByType(derivations2, getArg2Type());
-		List<ChildDerivationsGroup> groups = new ArrayList<>();
+		final Map<String, List<Derivation>> grouped1 = groupByType(derivations1, getArg1Type()), grouped2 = derivations2 == null ? null : groupByType(derivations2, getArg2Type());
+		final List<ChildDerivationsGroup> groups = new ArrayList<>();
 		if (sameType)
-		{ // Matching pairs
-			for (String valueType : grouped1.keySet())
+			for (final String valueType : grouped1.keySet())
 			{
 				if (!grouped2.containsKey(valueType))
 					continue;
 				groups.add(new ChildDerivationsGroup(grouped1.get(valueType), grouped2.get(valueType)));
 			}
-		}
 		else
 			if (derivations2 != null)
-			{ // All pairs
-				for (List<Derivation> filtered1 : grouped1.values())
-				{
-					for (List<Derivation> filtered2 : grouped2.values())
-					{
+				for (final List<Derivation> filtered1 : grouped1.values())
+					for (final List<Derivation> filtered2 : grouped2.values())
 						groups.add(new ChildDerivationsGroup(filtered1, filtered2));
-					}
-				}
-			}
 			else
-			{
-				for (List<Derivation> filtered : grouped1.values())
-				{
+				for (final List<Derivation> filtered : grouped1.values())
 					groups.add(new ChildDerivationsGroup(filtered));
-				}
-			}
 		return groups;
 	}
 
-	private Map<String, List<Derivation>> groupByType(List<Derivation> derivations, SemType parentType)
+	private Map<String, List<Derivation>> groupByType(final List<Derivation> derivations, final SemType parentType)
 	{
-		Map<String, List<Derivation>> typeToDerivs = new HashMap<>();
-		for (Derivation deriv : derivations)
+		final Map<String, List<Derivation>> typeToDerivs = new HashMap<>();
+		for (final Derivation deriv : derivations)
 		{
-			String valueType = DenotationTypeInference.getValueType(deriv.value);
+			final String valueType = DenotationTypeInference.getValueType(deriv.value);
 			MapUtils.addToList(typeToDerivs, valueType, deriv);
 		}
-		for (Iterator<String> itr = typeToDerivs.keySet().iterator(); itr.hasNext();)
+		for (final Iterator<String> itr = typeToDerivs.keySet().iterator(); itr.hasNext();)
 		{
-			String valueType = itr.next();
+			final String valueType = itr.next();
 			if (!parentType.meet(SemType.newAtomicSemType(valueType)).isValid())
 				itr.remove();
 		}

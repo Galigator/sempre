@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,7 +15,7 @@ public class DateRangeFn extends SemanticFn
 {
 
 	@Override
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new LazyDateRangeFnDerivs(ex, c);
 	}
@@ -27,7 +28,7 @@ public class DateRangeFn extends SemanticFn
 		int index = 0;
 		List<Formula> formulas;
 
-		public LazyDateRangeFnDerivs(Example ex, Callable c)
+		public LazyDateRangeFnDerivs(final Example ex, final Callable c)
 		{
 			this.ex = ex;
 			this.c = c;
@@ -41,7 +42,7 @@ public class DateRangeFn extends SemanticFn
 
 			if (index >= formulas.size())
 				return null;
-			Formula formula = formulas.get(index++);
+			final Formula formula = formulas.get(index++);
 
 			return new Derivation.Builder().withCallable(c).formula(formula).type(SemType.numberType).createDerivation();
 		}
@@ -52,11 +53,12 @@ public class DateRangeFn extends SemanticFn
 		private void populateFormulas()
 		{
 			formulas = new ArrayList<>();
-			String query = c.childStringValue(0);
-			Matcher matcher = YEAR_RANGE.matcher(query);
+			final String query = c.childStringValue(0);
+			final Matcher matcher = YEAR_RANGE.matcher(query);
 			if (!matcher.matches())
 				return;
-			int year = Integer.parseInt(matcher.group(1)), range = 10;
+			final int year = Integer.parseInt(matcher.group(1));
+			int range = 10;
 			while (year % range == 0)
 			{
 				// Put "<" before ">=" to keep the children of MergeFormula sorted

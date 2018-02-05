@@ -1,16 +1,17 @@
 package edu.stanford.nlp.sempre.freebase;
 
 import fig.basic.IOUtils;
-import fig.basic.MapUtils;
-import fig.basic.StrUtils;
 import fig.basic.LogInfo;
+import fig.basic.MapUtils;
 import fig.basic.Option;
+import fig.basic.StrUtils;
 import fig.exec.Execution;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Input: canonical Freebase dump fb:en.arnold_schwarzenegger fb:type.object.type fb:people.person. ... Output: map from ids to comma-separated list of types
@@ -29,19 +30,19 @@ public class BuildTypesMap implements Runnable
 	@Option(gloss = "keep only fb:en.*")
 	public boolean keepOnlyEnIds = true;
 
-	Map<String, List<String>> types = new LinkedHashMap<String, List<String>>();
+	Map<String, List<String>> types = new LinkedHashMap<>();
 
 	public void run()
 	{
 		LogInfo.begin_track("Reading %s", inPath);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(inPath);
+			final BufferedReader in = IOUtils.openIn(inPath);
 			String line;
 			int numLines = 0;
 			while ((line = in.readLine()) != null)
 			{
-				String[] triple = Utils.parseTriple(line);
+				final String[] triple = Utils.parseTriple(line);
 				if (++numLines % 100000000 == 0)
 					LogInfo.logs("%d lines", numLines);
 				if (triple == null)
@@ -54,23 +55,21 @@ public class BuildTypesMap implements Runnable
 			}
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 		LogInfo.end_track();
 
 		LogInfo.begin_track("Writing to %s", outPath);
-		PrintWriter out = IOUtils.openOutHard(outPath);
-		for (Map.Entry<String, List<String>> e : types.entrySet())
-		{
+		final PrintWriter out = IOUtils.openOutHard(outPath);
+		for (final Map.Entry<String, List<String>> e : types.entrySet())
 			out.println(e.getKey() + "\t" + StrUtils.join(e.getValue(), ","));
-		}
 		out.close();
 		LogInfo.end_track();
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new BuildTypesMap());
 	}

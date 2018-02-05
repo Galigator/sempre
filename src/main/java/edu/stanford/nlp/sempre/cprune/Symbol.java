@@ -10,24 +10,22 @@ public class Symbol implements Comparable<Symbol>
 	Integer frequency;
 	Integer index;
 
-	public Symbol(String category, String formula, int frequency)
+	public Symbol(final String category, final String formula, final int frequency)
 	{
 		this.category = category;
 		this.formula = formula;
 		this.frequency = frequency;
 	}
 
-	public void computeIndex(String referenceString)
+	public void computeIndex(final String referenceString)
 	{
 		index = referenceString.indexOf(formula);
 		if (index < 0)
-		{
 			index = Integer.MAX_VALUE;
-		}
 	}
 
 	@Override
-	public int compareTo(Symbol that)
+	public int compareTo(final Symbol that)
 	{
 		return index.compareTo(that.index);
 	}

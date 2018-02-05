@@ -1,17 +1,16 @@
 package edu.stanford.nlp.sempre.freebase.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import edu.stanford.nlp.sempre.freebase.BinaryLexicon;
+import edu.stanford.nlp.sempre.freebase.UnaryLexicon;
 import edu.stanford.nlp.sempre.freebase.lexicons.EntrySource;
 import edu.stanford.nlp.sempre.freebase.lexicons.LexicalEntry.BinaryLexicalEntry;
 import edu.stanford.nlp.sempre.freebase.lexicons.LexicalEntry.UnaryLexicalEntry;
-import edu.stanford.nlp.sempre.freebase.UnaryLexicon;
 import fig.basic.LogInfo;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.List;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 public class LexiconTest
 {
@@ -19,17 +18,15 @@ public class LexiconTest
 	public void unary() throws IOException
 	{
 		UnaryLexicon.opts.unaryLexiconFilePath = "unittest-files/unaryInfoStringAndAlignment.txt";
-		UnaryLexicon unary = UnaryLexicon.getInstance();
+		final UnaryLexicon unary = UnaryLexicon.getInstance();
 		boolean existsAlignment = false, existsStringMatch = false;
 		double popularity = 0.0;
 		double intersection = 0.0;
 
 		List<UnaryLexicalEntry> entries = unary.lookupEntries("continent");
 		LogInfo.logs("Num of unary entries for 'continent': %s", entries.size());
-		for (UnaryLexicalEntry entry : entries)
-		{
+		for (final UnaryLexicalEntry entry : entries)
 			if (entry.formula.toString().equals("(fb:type.object.type fb:location.continent)"))
-			{
 				if (entry.source == EntrySource.ALIGNMENT)
 				{
 					existsAlignment = true;
@@ -41,8 +38,6 @@ public class LexiconTest
 						existsStringMatch = true;
 						popularity = entry.popularity;
 					}
-			}
-		}
 		assertEquals(true, existsAlignment);
 		assertEquals(true, existsStringMatch);
 		assertEquals(7.0, popularity, 0.0001);
@@ -54,10 +49,8 @@ public class LexiconTest
 		intersection = 0.0;
 		entries = unary.lookupEntries("lawyer");
 		LogInfo.logs("Num of unary entries for 'lawyer': %s", entries.size());
-		for (UnaryLexicalEntry entry : entries)
-		{
+		for (final UnaryLexicalEntry entry : entries)
 			if (entry.formula.toString().equals("(fb:people.person.profession fb:en.attorney)"))
-			{
 				if (entry.source == EntrySource.ALIGNMENT)
 				{
 					existsAlignment = true;
@@ -69,8 +62,6 @@ public class LexiconTest
 						existsStringMatch = true;
 						popularity = entry.popularity;
 					}
-			}
-		}
 		assertEquals(true, existsAlignment);
 		assertEquals(true, existsStringMatch);
 		assertEquals(12282.0, popularity, 0.0001); // Based on 93.exec (full Freebase)
@@ -83,10 +74,10 @@ public class LexiconTest
 		BinaryLexicon.opts.binaryLexiconFilesPath = "unittest-files/binaryInfoStringAndAlignment.txt";
 		BinaryLexicon.opts.keyToSortBy = BinaryLexicon.INTERSECTION;
 
-		BinaryLexicon lexicon = BinaryLexicon.getInstance();
-		List<BinaryLexicalEntry> entries = lexicon.lookupEntries("bear in");
+		final BinaryLexicon lexicon = BinaryLexicon.getInstance();
+		final List<BinaryLexicalEntry> entries = lexicon.lookupEntries("bear in");
 		LogInfo.logs("Num of binary entries for 'bear in': %s", entries.size());
-		BinaryLexicalEntry top = entries.get(0);
+		final BinaryLexicalEntry top = entries.get(0);
 		assertEquals("people born here", top.fbDescriptions.iterator().next());
 		assertEquals("!fb:location.location.people_born_here", top.formula.toString());
 		assertEquals("ALIGNMENT", top.source.toString());

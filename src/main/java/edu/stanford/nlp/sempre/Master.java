@@ -3,14 +3,25 @@ package edu.stanford.nlp.sempre;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import fig.basic.*;
-import jline.console.ConsoleReader;
-
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.OptionsParser;
+import fig.basic.StopWatchSet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import jline.console.ConsoleReader;
 
 /**
  * A Master manages multiple sessions. Currently, they all share the same model, but they need not in the future.
@@ -66,7 +77,7 @@ public class Master
 					return "(not selected)";
 				else
 				{
-					Derivation deriv = getDerivation();
+					final Derivation deriv = getDerivation();
 					return deriv.getFormula() + " => " + deriv.getValue();
 				}
 		}
@@ -80,7 +91,7 @@ public class Master
 					return "(not selected)";
 				else
 				{
-					Derivation deriv = getDerivation();
+					final Derivation deriv = getDerivation();
 					deriv.ensureExecuted(builder.executor, ex.context);
 					return deriv.getValue().toString();
 				}
@@ -111,10 +122,10 @@ public class Master
 	protected Learner learner;
 	protected HashMap<String, Session> sessions = new LinkedHashMap<>();
 
-	public Master(Builder builder)
+	public Master(final Builder builder)
 	{
 		this.builder = builder;
-		this.learner = new Learner(builder.parser, builder.params, new Dataset());
+		learner = new Learner(builder.parser, builder.params, new Dataset());
 	}
 
 	public Params getParams()
@@ -124,15 +135,15 @@ public class Master
 
 	// Return the unique session identified by session id |id|.
 	// Create a new session if one doesn't exist.
-	public Session getSession(String id)
+	public Session getSession(final String id)
 	{
 		Session session = sessions.get(id);
 		if (session == null)
 		{
 			session = new Session(id);
-			for (String path : opts.scriptPaths)
+			for (final String path : opts.scriptPaths)
 				processScript(session, path);
-			for (String command : opts.commands)
+			for (final String command : opts.commands)
 				processQuery(session, command);
 			if (id != null)
 				sessions.put(id, session);
@@ -163,29 +174,29 @@ public class Master
 
 	public void runServer()
 	{
-		Server server = new Server(this);
+		final Server server = new Server(this);
 		server.run();;
 	}
 
 	public void runInteractivePrompt()
 	{
-		Session session = getSession("stdin");
+		final Session session = getSession("stdin");
 
 		if (opts.printHelp)
 			printHelp();
 		try
 		{
-			ConsoleReader reader = new ConsoleReader();
+			final ConsoleReader reader = new ConsoleReader();
 			reader.setPrompt("> ");
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				int indent = LogInfo.getIndLevel();
+				final int indent = LogInfo.getIndLevel();
 				try
 				{
 					processQuery(session, line);
 				}
-				catch (Throwable t)
+				catch (final Throwable t)
 				{
 					while (LogInfo.getIndLevel() > indent)
 						LogInfo.end_track();
@@ -193,19 +204,19 @@ public class Master
 				}
 			}
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 	}
 
 	// Read LispTrees from |scriptPath| and process each of them.
-	public void processScript(Session session, String scriptPath)
+	public void processScript(final Session session, final String scriptPath)
 	{
-		Iterator<LispTree> it = LispTree.proto.parseFromFile(scriptPath);
+		final Iterator<LispTree> it = LispTree.proto.parseFromFile(scriptPath);
 		while (it.hasNext())
 		{
-			LispTree tree = it.next();
+			final LispTree tree = it.next();
 			processQuery(session, tree.toString());
 		}
 	}
@@ -214,15 +225,15 @@ public class Master
 	// Currently, synchronize a very crude level.
 	// In the future, refine this.
 	// Currently need the synchronization because of writing to stdout.
-	public synchronized Response processQuery(Session session, String line)
+	public synchronized Response processQuery(final Session session, String line)
 	{
 		line = line.trim();
-		Response response = new Response();
+		final Response response = new Response();
 
 		// Capture log output and put it into response.
 		// Hack: modifying a static variable to capture the logging.
 		// Make sure we're synchronized!
-		StringWriter stringOut = new StringWriter();
+		final StringWriter stringOut = new StringWriter();
 		LogInfo.setFileOut(new PrintWriter(stringOut));
 
 		if (line.startsWith("("))
@@ -231,14 +242,14 @@ public class Master
 			handleUtterance(session, line, response);
 
 		// Clean up
-		for (String outLine : stringOut.toString().split("\n"))
+		for (final String outLine : stringOut.toString().split("\n"))
 			response.lines.add(outLine);
 		LogInfo.setFileOut(null);
 
 		// Log interaction to disk
 		if (!Strings.isNullOrEmpty(opts.logPath))
 		{
-			PrintWriter out = IOUtils.openOutAppendHard(opts.logPath);
+			final PrintWriter out = IOUtils.openOutAppendHard(opts.logPath);
 			out.println(Joiner.on("\t").join(Lists.newArrayList("date=" + new Date().toString(), "sessionId=" + session.id, "remote=" + session.remoteHost, "format=" + session.format, "query=" + line, "response=" + summaryString(response))));
 			out.close();
 		}
@@ -246,7 +257,7 @@ public class Master
 		return response;
 	}
 
-	String summaryString(Response response)
+	String summaryString(final Response response)
 	{
 		if (response.getExample() != null)
 			return response.getFormulaAnswer();
@@ -255,16 +266,16 @@ public class Master
 		return null;
 	}
 
-	private void handleUtterance(Session session, String query, Response response)
+	private void handleUtterance(final Session session, final String query, final Response response)
 	{
 		session.updateContext();
 
 		// Create example
-		Example.Builder b = new Example.Builder();
+		final Example.Builder b = new Example.Builder();
 		b.setId("session:" + session.id);
 		b.setUtterance(query);
 		b.setContext(session.context);
-		Example ex = b.createExample();
+		final Example ex = b.createExample();
 
 		ex.preprocess();
 
@@ -281,15 +292,15 @@ public class Master
 		session.updateContext(ex, opts.contextMaxExchanges);
 	}
 
-	private void printDerivation(Derivation deriv)
+	private void printDerivation(final Derivation deriv)
 	{
 		// Print features
-		HashMap<String, Double> featureVector = new HashMap<>();
+		final HashMap<String, Double> featureVector = new HashMap<>();
 		deriv.incrementAllFeatureVector(1, featureVector);
 		FeatureVector.logFeatureWeights("Pred", featureVector, builder.params);
 
 		// Print choices
-		Map<String, Integer> choices = new LinkedHashMap<>();
+		final Map<String, Integer> choices = new LinkedHashMap<>();
 		deriv.incrementAllChoices(1, choices);
 		FeatureVector.logChoices("Pred", choices);
 
@@ -305,37 +316,31 @@ public class Master
 		}
 	}
 
-	private void handleCommand(Session session, String line, Response response)
+	private void handleCommand(final Session session, final String line, final Response response)
 	{
 		LispTree tree = LispTree.proto.parseFromString(line);
 		tree = builder.grammar.applyMacros(tree);
 
-		String command = tree.child(0).value;
+		final String command = tree.child(0).value;
 
 		if (command == null || command.equals("help"))
-		{
 			printHelp();
-		}
 		else
 			if (command.equals("status"))
 			{
 				LogInfo.begin_track("%d sessions", sessions.size());
-				for (Session otherSession : sessions.values())
+				for (final Session otherSession : sessions.values())
 					LogInfo.log(otherSession + (session == otherSession ? " *" : ""));
 				LogInfo.end_track();
 				StopWatchSet.logStats();
 			}
 			else
 				if (command.equals("reload"))
-				{
 					builder.build();
-				}
 				else
 					if (command.equals("grammar"))
-					{
-						for (Rule rule : builder.grammar.rules)
+						for (final Rule rule : builder.grammar.rules)
 							LogInfo.logs("%s", rule.toLispTree());
-					}
 					else
 						if (command.equals("params"))
 						{
@@ -346,9 +351,7 @@ public class Master
 									builder.params.write(LogInfo.getFileOut());
 							}
 							else
-							{
 								builder.params.write(tree.child(1).value);
-							}
 						}
 						else
 							if (command.equals("get"))
@@ -358,7 +361,7 @@ public class Master
 									LogInfo.log("Invalid usage: (get |option|)");
 									return;
 								}
-								String option = tree.child(1).value;
+								final String option = tree.child(1).value;
 								LogInfo.logs("%s", getOptionsParser().getValue(option));
 							}
 							else
@@ -369,8 +372,8 @@ public class Master
 										LogInfo.log("Invalid usage: (set |option| |value|)");
 										return;
 									}
-									String option = tree.child(1).value;
-									String value = tree.child(2).value;
+									final String option = tree.child(1).value;
+									final String value = tree.child(2).value;
 									if (!getOptionsParser().parse(new String[] { "-" + option, value }))
 										LogInfo.log("Unknown option: " + option);
 								}
@@ -384,13 +387,13 @@ public class Master
 											return;
 										}
 
-										Example ex = session.getLastExample();
+										final Example ex = session.getLastExample();
 										if (ex == null)
 										{
 											LogInfo.log("No examples - please enter a query first.");
 											return;
 										}
-										int index = Integer.parseInt(tree.child(1).value);
+										final int index = Integer.parseInt(tree.child(1).value);
 										if (index < 0 || index >= ex.predDerivations.size())
 										{
 											LogInfo.log("Candidate index out of range: " + index);
@@ -423,12 +426,10 @@ public class Master
 										if (command.equals("answer"))
 										{
 											if (tree.children.size() != 2)
-											{
 												LogInfo.log("Missing answer.");
-											}
 
 											// Set the target value.
-											Example ex = session.getLastExample();
+											final Example ex = session.getLastExample();
 											if (ex == null)
 											{
 												LogInfo.log("Please enter a query first.");
@@ -440,7 +441,7 @@ public class Master
 										else
 											if (command.equals("rule"))
 											{
-												int n = builder.grammar.rules.size();
+												final int n = builder.grammar.rules.size();
 												builder.grammar.addStatement(tree.toString());
 												for (int i = n; i < builder.grammar.rules.size(); i++)
 													LogInfo.logs("Added %s", builder.grammar.rules.get(i));
@@ -450,52 +451,42 @@ public class Master
 											}
 											else
 												if (command.equals("type"))
-												{
 													LogInfo.logs("%s", TypeInference.inferType(Formulas.fromLispTree(tree.child(1))));
-												}
 												else
 													if (command.equals("execute"))
 													{
-														Example ex = session.getLastExample();
-														ContextValue context = (ex != null ? ex.context : session.context);
-														Executor.Response execResponse = builder.executor.execute(Formulas.fromLispTree(tree.child(1)), context);
+														final Example ex = session.getLastExample();
+														final ContextValue context = ex != null ? ex.context : session.context;
+														final Executor.Response execResponse = builder.executor.execute(Formulas.fromLispTree(tree.child(1)), context);
 														LogInfo.logs("%s", execResponse.value);
 													}
 													else
 														if (command.equals("def"))
-														{
 															builder.grammar.interpretMacroDef(tree);
-														}
 														else
 															if (command.equals("context"))
 															{
 																if (tree.children.size() == 1)
-																{
 																	LogInfo.logs("%s", session.context);
-																}
 																else
-																{
 																	session.context = new ContextValue(tree);
-																}
 															}
 															else
 																if (command.equals("loadgraph"))
 																{
 																	if (tree.children.size() != 2 || !tree.child(1).isLeaf())
 																		throw new RuntimeException("Invalid argument: argument should be a file path");
-																	KnowledgeGraph graph = NaiveKnowledgeGraph.fromFile(tree.child(1).value);
+																	final KnowledgeGraph graph = NaiveKnowledgeGraph.fromFile(tree.child(1).value);
 																	session.context = new ContextValue(session.context.user, session.context.date, session.context.exchanges, graph);
 																}
 																else
-																{
 																	LogInfo.log("Invalid command: " + tree);
-																}
 	}
 
-	void addNewExample(Example origEx)
+	void addNewExample(final Example origEx)
 	{
 		// Create the new example, but only add relevant information.
-		Example ex = new Example.Builder().setId(origEx.id).setUtterance(origEx.utterance).setContext(origEx.context).setTargetFormula(origEx.targetFormula).setTargetValue(origEx.targetValue).createExample();
+		final Example ex = new Example.Builder().setId(origEx.id).setUtterance(origEx.utterance).setContext(origEx.context).setTargetFormula(origEx.targetFormula).setTargetValue(origEx.targetValue).createExample();
 
 		if (!Strings.isNullOrEmpty(opts.newExamplesPath))
 		{
@@ -516,44 +507,44 @@ public class Master
 
 	public static OptionsParser getOptionsParser()
 	{
-		OptionsParser parser = new OptionsParser();
+		final OptionsParser parser = new OptionsParser();
 		// Dynamically figure out which options we need to load
 		// To specify this:
 		//   java -Dmodules=core,freebase
-		List<String> modules = Arrays.asList(System.getProperty("modules", "core").split(","));
+		final List<String> modules = Arrays.asList(System.getProperty("modules", "core").split(","));
 
 		// All options are assumed to be of the form <class>opts.
 		// Read the module-classes.txt file, which specifies which classes are
 		// associated with each module.
-		List<Object> args = new ArrayList<Object>();
-		for (String line : IOUtils.readLinesHard("module-classes.txt"))
+		final List<Object> args = new ArrayList<>();
+		for (final String line : IOUtils.readLinesHard("module-classes.txt"))
 		{
 
 			// Example: core edu.stanford.nlp.sempre.Grammar
-			String[] tokens = line.split(" ");
+			final String[] tokens = line.split(" ");
 			if (tokens.length != 2)
 				throw new RuntimeException("Invalid: " + line);
-			String module = tokens[0];
-			String className = tokens[1];
+			final String module = tokens[0];
+			final String className = tokens[1];
 			if (!modules.contains(tokens[0]))
 				continue;
 
 			// Group (e.g., Grammar)
-			String[] classNameTokens = className.split("\\.");
-			String group = classNameTokens[classNameTokens.length - 1];
+			final String[] classNameTokens = className.split("\\.");
+			final String group = classNameTokens[classNameTokens.length - 1];
 
 			// Object (e.g., Grammar.opts)
 			Object opts = null;
 			try
 			{
-				for (Field field : Class.forName(className).getDeclaredFields())
+				for (final Field field : Class.forName(className).getDeclaredFields())
 				{
 					if (!"opts".equals(field.getName()))
 						continue;
 					opts = field.get(null);
 				}
 			}
-			catch (Throwable t)
+			catch (final Throwable t)
 			{
 				System.out.println("Problem processing: " + line);
 				throw new RuntimeException(t);

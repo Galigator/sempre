@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import fig.basic.LogInfo;
 import fig.basic.PriorityQueue;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,7 +30,7 @@ public interface ParserAgenda<PrioritizedDerivationStream> extends Iterable<Prio
 class ListParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 {
 
-	private List<PrioritizedDerivationStream> agenda = new ArrayList<>();
+	private final List<PrioritizedDerivationStream> agenda = new ArrayList<>();
 
 	@Override
 	public void sort()
@@ -40,7 +39,7 @@ class ListParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 	}
 
 	@Override
-	public boolean add(PrioritizedDerivationStream item, double priority)
+	public boolean add(final PrioritizedDerivationStream item, final double priority)
 	{
 		return agenda.add(item);
 	}
@@ -62,21 +61,21 @@ class ListParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 	{
 		// todo - replace sort with finding max (check if makes it faster)
 		sort();
-		PrioritizedDerivationStream pds = agenda.get(0);
+		final PrioritizedDerivationStream pds = agenda.get(0);
 		remove(pds, 0);
 		return pds;
 	}
 
 	@Override
-	public PrioritizedDerivationStream get(int i)
+	public PrioritizedDerivationStream get(final int i)
 	{
 		return agenda.get(i);
 	}
 
 	@Override
-	public void remove(PrioritizedDerivationStream pds, int index)
+	public void remove(final PrioritizedDerivationStream pds, final int index)
 	{
-		PrioritizedDerivationStream last = agenda.remove(agenda.size() - 1);
+		final PrioritizedDerivationStream last = agenda.remove(agenda.size() - 1);
 		if (last != pds)
 			agenda.set(index, last);
 	}
@@ -91,7 +90,7 @@ class ListParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 class QueueParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 {
 
-	private PriorityQueue<PrioritizedDerivationStream> agenda = new PriorityQueue<>();
+	private final PriorityQueue<PrioritizedDerivationStream> agenda = new PriorityQueue<>();
 
 	@Override
 	public void sort()
@@ -99,7 +98,7 @@ class QueueParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 	}
 
 	@Override
-	public boolean add(PrioritizedDerivationStream item, double priority)
+	public boolean add(final PrioritizedDerivationStream item, final double priority)
 	{
 		return agenda.add(item, priority);
 	}
@@ -126,13 +125,13 @@ class QueueParserAgenda implements ParserAgenda<PrioritizedDerivationStream>
 	}
 
 	@Override
-	public PrioritizedDerivationStream get(int i)
+	public PrioritizedDerivationStream get(final int i)
 	{
 		throw new RuntimeException("Not supported");
 	}
 
 	@Override
-	public void remove(PrioritizedDerivationStream pds, int index)
+	public void remove(final PrioritizedDerivationStream pds, final int index)
 	{
 		throw new RuntimeException("Not supported");
 	}

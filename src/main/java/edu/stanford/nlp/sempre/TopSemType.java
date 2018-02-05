@@ -10,12 +10,12 @@ public class TopSemType extends SemType
 		return true;
 	}
 
-	public SemType meet(SemType that)
+	public SemType meet(final SemType that)
 	{
 		return that;
 	}
 
-	public SemType apply(SemType that)
+	public SemType apply(final SemType that)
 	{
 		return this;
 	}

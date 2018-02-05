@@ -1,7 +1,11 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-import fig.basic.*;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Maintain a hierarchy (DAG) over strings. subtype < type < supertype
@@ -21,8 +25,8 @@ public class SemTypeHierarchy
 	public static final SemTypeHierarchy singleton = new SemTypeHierarchy();
 
 	// type => list of all supertypes (assume we don't have that many supertypes)
-	private Map<String, Set<String>> supertypesMap = new HashMap<>(); // type => supertypes of type
-	private Map<String, Set<String>> subtypesMap = new HashMap<>(); // type => subtype of type
+	private final Map<String, Set<String>> supertypesMap = new HashMap<>(); // type => supertypes of type
+	private final Map<String, Set<String>> subtypesMap = new HashMap<>(); // type => subtype of type
 	// Note: don't always need this, so can maybe remove later
 
 	public SemTypeHierarchy()
@@ -48,7 +52,7 @@ public class SemTypeHierarchy
 	}
 
 	// Add standard supertypes of entity
-	public void addEntitySupertypes(String type)
+	public void addEntitySupertypes(final String type)
 	{
 		// LogInfo.logs("addEntitySupertypes %s", type);
 		addSupertype(type, type);
@@ -57,13 +61,13 @@ public class SemTypeHierarchy
 	}
 
 	// Add: subtype < supertype
-	public void addSupertype(String subtype, String supertype)
+	public void addSupertype(final String subtype, final String supertype)
 	{
 		MapUtils.addToSet(supertypesMap, subtype, supertype);
 		MapUtils.addToSet(subtypesMap, supertype, subtype);
 	}
 
-	public Set<String> getSupertypes(String type)
+	public Set<String> getSupertypes(final String type)
 	{
 		Set<String> set = supertypesMap.get(type);
 		if (set == null)
@@ -76,7 +80,7 @@ public class SemTypeHierarchy
 		return set;
 	}
 
-	public Set<String> getSubtypes(String type)
+	public Set<String> getSubtypes(final String type)
 	{
 		Set<String> set = subtypesMap.get(type);
 		if (set == null)

@@ -16,22 +16,20 @@ public class ConstantFn extends SemanticFn
 	{
 	}
 
-	public ConstantFn(Formula formula)
+	public ConstantFn(final Formula formula)
 	{
 		init(LispTree.proto.newList("ConstantFn", formula.toLispTree()));
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
-		this.formula = Formulas.fromLispTree(tree.child(1));
+		formula = Formulas.fromLispTree(tree.child(1));
 		if (2 < tree.children.size())
-			this.type = SemType.fromLispTree(tree.child(2));
+			type = SemType.fromLispTree(tree.child(2));
 		else
-		{
-			this.type = TypeInference.inferType(formula);
-		}
-		if (!this.type.isValid())
+			type = TypeInference.inferType(formula);
+		if (!type.isValid())
 			throw new RuntimeException("ConstantFn: " + formula + " does not type check");
 	}
 
@@ -42,7 +40,7 @@ public class ConstantFn extends SemanticFn
 			@Override
 			public Derivation createDerivation()
 			{
-				Derivation res = new Derivation.Builder().withCallable(c).formula(formula).type(type).createDerivation();
+				final Derivation res = new Derivation.Builder().withCallable(c).formula(formula).type(type).createDerivation();
 				// don't generate feature if it is not grounded to a string
 				if (FeatureExtractor.containsDomain("constant") && c.getStart() != -1)
 					res.addFeature("constant", ex.phraseString(c.getStart(), c.getEnd()) + " --- " + formula.toString());

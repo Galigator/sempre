@@ -1,13 +1,26 @@
 package edu.stanford.nlp.sempre.test;
 
-import edu.stanford.nlp.sempre.*;
-import fig.basic.LogInfo;
-import org.testng.annotations.Test;
+import static org.testng.AssertJUnit.assertEquals;
 
+import edu.stanford.nlp.sempre.BeamParser;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.ExactValueEvaluator;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Executor;
+import edu.stanford.nlp.sempre.FeatureExtractor;
+import edu.stanford.nlp.sempre.FloatingParser;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.JavaExecutor;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.ReinforcementParser;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueEvaluator;
+import fig.basic.LogInfo;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * Test parsers.
@@ -22,31 +35,31 @@ public class ParserTest
 	{
 		public Grammar grammar;
 
-		ParseTest(Grammar g)
+		ParseTest(final Grammar g)
 		{
-			this.grammar = g;
+			grammar = g;
 		}
 
 		public Parser.Spec getParserSpec()
 		{
-			Executor executor = new JavaExecutor();
-			FeatureExtractor extractor = new FeatureExtractor(executor);
+			final Executor executor = new JavaExecutor();
+			final FeatureExtractor extractor = new FeatureExtractor(executor);
 			FeatureExtractor.opts.featureDomains.add("rule");
-			ValueEvaluator valueEvaluator = new ExactValueEvaluator();
+			final ValueEvaluator valueEvaluator = new ExactValueEvaluator();
 			return new Parser.Spec(grammar, extractor, executor, valueEvaluator);
 		}
 
 		public abstract void test(Parser parser);
 	}
 
-	private static void checkNumDerivations(Parser parser, Params params, String utterance, String targetValue, int numExpected)
+	private static void checkNumDerivations(final Parser parser, final Params params, final String utterance, final String targetValue, final int numExpected)
 	{
 		Parser.opts.verbose = 5;
-		Example ex = TestUtils.makeSimpleExample(utterance, targetValue != null ? Value.fromString(targetValue) : null);
-		ParserState state = parser.parse(params, ex, targetValue != null);
+		final Example ex = TestUtils.makeSimpleExample(utterance, targetValue != null ? Value.fromString(targetValue) : null);
+		final ParserState state = parser.parse(params, ex, targetValue != null);
 
 		// Debug information
-		for (Derivation deriv : state.predDerivations)
+		for (final Derivation deriv : state.predDerivations)
 		{
 			LogInfo.dbg(deriv.getAllFeatureVector());
 			LogInfo.dbg(params.getWeights());
@@ -58,7 +71,7 @@ public class ParserTest
 			assertEquals(targetValue, ex.getPredDerivations().get(0).value.toString());
 	}
 
-	private static void checkNumDerivations(Parser parser, String utterance, String targetValue, int numExpected)
+	private static void checkNumDerivations(final Parser parser, final String utterance, final String targetValue, final int numExpected)
 	{
 		checkNumDerivations(parser, new Params(), utterance, targetValue, numExpected);
 	}
@@ -68,7 +81,7 @@ public class ParserTest
 		return new ParseTest(TestUtils.makeAbcGrammar())
 		{
 			@Override
-			public void test(Parser parser)
+			public void test(final Parser parser)
 			{
 				checkNumDerivations(parser, "a +", null, 0);
 				checkNumDerivations(parser, "a", "(string a)", 1);
@@ -84,7 +97,7 @@ public class ParserTest
 		return new ParseTest(TestUtils.makeArithmeticGrammar())
 		{
 			@Override
-			public void test(Parser parser)
+			public void test(final Parser parser)
 			{
 				checkNumDerivations(parser, "1 + ", null, 0);
 				checkNumDerivations(parser, "1 plus 2", "(number 3)", 1);
@@ -134,7 +147,7 @@ public class ParserTest
 	{
 		FloatingParser.opts.defaultIsFloating = true;
 		FloatingParser.opts.useSizeInsteadOfDepth = true;
-		Parser parser = new FloatingParser(ABCTest().getParserSpec());
+		final Parser parser = new FloatingParser(ABCTest().getParserSpec());
 		FloatingParser.opts.maxDepth = 2;
 		checkNumDerivations(parser, "ignore", null, 3);
 		FloatingParser.opts.maxDepth = 4;
@@ -142,10 +155,10 @@ public class ParserTest
 	}
 
 	// TODO(chaganty): verify that things are ranked appropriately
-	public void checkRankingArithmetic(Parser parser)
+	public void checkRankingArithmetic(final Parser parser)
 	{
 		Params params = new Params();
-		Map<String, Double> features = new HashMap<>();
+		final Map<String, Double> features = new HashMap<>();
 		features.put("rule :: $Operator -> and (ConstantFn (lambda y (lambda x (call + (var x) (var y)))))", 1.0);
 		features.put("rule :: $Operator -> and (ConstantFn (lambda y (lambda x (call * (var x) (var y)))))", -1.0);
 		params.update(features);
@@ -176,15 +189,15 @@ public class ParserTest
 		FloatingParser.opts.defaultIsFloating = true;
 		FloatingParser.opts.maxDepth = 4;
 		FloatingParser.opts.useAnchorsOnce = true;
-		Parser parser = new FloatingParser(new ParseTest(TestUtils.makeArithmeticFloatingGrammar())
+		final Parser parser = new FloatingParser(new ParseTest(TestUtils.makeArithmeticFloatingGrammar())
 		{
 			@Override
-			public void test(Parser parser)
+			public void test(final Parser parser)
 			{
 			}
 		}.getParserSpec());
 		Params params = new Params();
-		Map<String, Double> features = new HashMap<>();
+		final Map<String, Double> features = new HashMap<>();
 		features.put("rule :: $Operator -> nothing (ConstantFn (lambda y (lambda x (call + (var x) (var y)))))", 1.0);
 		features.put("rule :: $Operator -> nothing (ConstantFn (lambda y (lambda x (call * (var x) (var y)))))", -1.0);
 		params.update(features);

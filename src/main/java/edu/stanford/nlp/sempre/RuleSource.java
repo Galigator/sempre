@@ -1,11 +1,10 @@
 package edu.stanford.nlp.sempre;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Tracking where the rule comes from in the grammar induction process.
@@ -35,12 +34,12 @@ public class RuleSource
 	@JsonProperty
 	public String alignInfo = "";
 
-	public RuleSource(String uid, String head, List<String> body)
+	public RuleSource(final String uid, final String head, final List<String> body)
 	{
 		this.uid = uid;
 		this.head = head;
 		this.body = body;
-		this.time = LocalDateTime.now();
+		time = LocalDateTime.now();
 	}
 
 	public String toJson()

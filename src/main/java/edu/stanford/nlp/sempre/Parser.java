@@ -1,9 +1,18 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
 import fig.basic.Evaluation;
+import fig.basic.Fmt;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.StopWatch;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 ////////////////////////////////////////////////////////////
 
@@ -64,7 +73,7 @@ public abstract class Parser
 
 	public static final Options opts = new Options();
 
-	public boolean verbose(int level)
+	public boolean verbose(final int level)
 	{
 		return opts.verbose >= level;
 	}
@@ -77,7 +86,7 @@ public abstract class Parser
 		public final Executor executor;
 		public final ValueEvaluator valueEvaluator;
 
-		public Spec(Grammar grammar, FeatureExtractor extractor, Executor executor, ValueEvaluator valueEvaluator)
+		public Spec(final Grammar grammar, final FeatureExtractor extractor, final Executor executor, final ValueEvaluator valueEvaluator)
 		{
 			this.grammar = grammar;
 			this.extractor = extractor;
@@ -103,19 +112,19 @@ public abstract class Parser
 	// TODO(joberant): move this to a separate class in charge of visualizing charts
 	public PrintWriter chartFillOut = null; // For printing a machine-readable json file
 
-	public Parser(Spec spec)
+	public Parser(final Spec spec)
 	{
-		this.grammar = spec.grammar;
-		this.extractor = spec.extractor;
-		this.executor = spec.executor;
-		this.valueEvaluator = spec.valueEvaluator;
+		grammar = spec.grammar;
+		extractor = spec.extractor;
+		executor = spec.executor;
+		valueEvaluator = spec.valueEvaluator;
 
 		computeCatUnaryRules();
 		LogInfo.logs("%s: %d catUnaryRules (sorted), %d nonCatUnaryRules (in trie)", this.getClass().getSimpleName(), catUnaryRules.size(), grammar.rules.size() - catUnaryRules.size());
 	}
 
 	// If grammar changes, then we might need to update aspects of the parser.
-	public synchronized void addRule(Rule rule)
+	public synchronized void addRule(final Rule rule)
 	{
 		if (rule.isCatUnary())
 			catUnaryRules.add(rule);
@@ -125,27 +134,27 @@ public abstract class Parser
 	{
 		// Handle catUnaryRules
 		catUnaryRules = new ArrayList<>();
-		Map<String, List<Rule>> graph = new HashMap<>(); // Node from LHS to list of rules
-		for (Rule rule : grammar.rules)
+		final Map<String, List<Rule>> graph = new HashMap<>(); // Node from LHS to list of rules
+		for (final Rule rule : grammar.rules)
 			if (rule.isCatUnary())
 				MapUtils.addToList(graph, rule.lhs, rule);
 
 		// Topologically sort catUnaryRules so that B->C occurs before A->B
-		Map<String, Boolean> done = new HashMap<>();
-		for (String node : graph.keySet())
+		final Map<String, Boolean> done = new HashMap<>();
+		for (final String node : graph.keySet())
 			traverse(catUnaryRules, node, graph, done);
 	}
 
 	// Helper function for transitive closure of unary rules.
-	protected void traverse(List<Rule> catUnaryRules, String node, Map<String, List<Rule>> graph, Map<String, Boolean> done)
+	protected void traverse(final List<Rule> catUnaryRules, final String node, final Map<String, List<Rule>> graph, final Map<String, Boolean> done)
 	{
-		Boolean d = done.get(node);
+		final Boolean d = done.get(node);
 		if (Boolean.TRUE.equals(d))
 			return;
 		if (Boolean.FALSE.equals(d))
 			throw new RuntimeException("Found cycle of unaries involving " + node);
 		done.put(node, false);
-		for (Rule rule : MapUtils.getList(graph, node))
+		for (final Rule rule : MapUtils.getList(graph, node))
 		{
 			traverse(catUnaryRules, rule.rhs.get(0), graph, done);
 			catUnaryRules.add(rule);
@@ -157,7 +166,7 @@ public abstract class Parser
 	 * Override this method to change the parser's behavior based on current group name and iteration number. This method will be called at the beginning of
 	 * each data group.
 	 */
-	public void onBeginDataGroup(int iter, int numIters, String group)
+	public void onBeginDataGroup(final int iter, final int numIters, final String group)
 	{
 		// DEFAULT: Do nothing.
 	}
@@ -165,7 +174,7 @@ public abstract class Parser
 	// Main thing for parsers to implement.
 	public abstract ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts);
 
-	public Params getSearchParams(Params params)
+	public Params getSearchParams(final Params params)
 	{
 		return params;
 	}
@@ -174,17 +183,17 @@ public abstract class Parser
 	 * Parse the given example |ex| using the given parameters |params| and populate the fields of |ex| (e.g., predDerivations). Note: |ex| is modified in
 	 * place.
 	 */
-	public ParserState parse(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState parse(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		// Execute target formula (if applicable).
 		if (ex.targetFormula != null && ex.targetValue == null)
 			ex.targetValue = executor.execute(ex.targetFormula, ex.context).value;
 
 		// Parse
-		StopWatch watch = new StopWatch();
+		final StopWatch watch = new StopWatch();
 		watch.start();
 		LogInfo.begin_track_printAll("Parser.parse: parse");
-		ParserState state = newParserState(params, ex, computeExpectedCounts);
+		final ParserState state = newParserState(params, ex, computeExpectedCounts);
 		state.infer();
 		LogInfo.end_track();
 		watch.stop();
@@ -202,7 +211,7 @@ public abstract class Parser
 		}
 		// Clean up temporary state used during parsing
 		ex.clearTempState();
-		for (Derivation deriv : ex.predDerivations)
+		for (final Derivation deriv : ex.predDerivations)
 			deriv.clearTempState();
 		return state;
 	}
@@ -210,13 +219,13 @@ public abstract class Parser
 	/**
 	 * Compute the evaluation based on the results of parsing and add it to |evaluation|
 	 */
-	public void addToEvaluation(ParserState state, Evaluation evaluation)
+	public void addToEvaluation(final ParserState state, final Evaluation evaluation)
 	{
-		Example ex = state.ex;
-		List<Derivation> predDerivations = state.predDerivations;
+		final Example ex = state.ex;
+		final List<Derivation> predDerivations = state.predDerivations;
 
-		boolean printAllPredictions = opts.printAllPredictions;
-		int numCandidates = predDerivations.size();
+		final boolean printAllPredictions = opts.printAllPredictions;
+		final int numCandidates = predDerivations.size();
 		LogInfo.begin_track_printAll("Parser.setEvaluation: %d candidates", numCandidates);
 
 		// Each derivation has a compatibility score (in [0, 1]) as well as a model probability.
@@ -237,7 +246,7 @@ public abstract class Parser
 			compatibilities = new double[numCandidates];
 			for (int i = 0; i < numCandidates; i++)
 			{
-				Derivation deriv = predDerivations.get(i);
+				final Derivation deriv = predDerivations.get(i);
 				compatibilities[i] = deriv.compatibility;
 				// Must be fully compatible to count as correct.
 				if (compatibilities[i] == 1 && correctIndex == -1)
@@ -246,35 +255,27 @@ public abstract class Parser
 				maxCompatibility = Math.max(compatibilities[i], maxCompatibility);
 				// Count
 				if (compatibilities[i] == 1)
-				{
 					numCorrect++;
-				}
 				else
 					if (compatibilities[i] == 0)
-					{
 						numIncorrect++;
-					}
 					else
-					{
 						numPartialCorrect++;
-					}
 			}
 			// What if we only had parsed bottom up?
 			for (int i = 0; i < numCandidates; i++)
-			{
 				if (compatibilities[i] == 1)
 				{
 					correctIndexAfterParse = i;
 					break;
 				}
-			}
 		}
 
 		// Compute probabilities
-		double[] probs = Derivation.getProbs(predDerivations, 1);
+		final double[] probs = Derivation.getProbs(predDerivations, 1);
 		for (int i = 0; i < numCandidates; i++)
 		{
-			Derivation deriv = predDerivations.get(i);
+			final Derivation deriv = predDerivations.get(i);
 			deriv.prob = probs[i];
 		}
 
@@ -282,38 +283,34 @@ public abstract class Parser
 		int numTop = 0;
 		double topMass = 0;
 		if (ex.targetValue != null)
-		{
 			while (numTop < numCandidates && Math.abs(predDerivations.get(numTop).score - predDerivations.get(0).score) < 1e-10)
 			{
 				topMass += probs[numTop];
 				numTop++;
 			}
-		}
 		double correct = 0, partCorrect = 0;
 		if (ex.targetValue != null)
-		{
 			for (int i = 0; i < numTop; i++)
 			{
 				if (compatibilities[i] == 1)
 					correct += probs[i] / topMass;
 				if (compatibilities[i] > 0)
-					partCorrect += (compatibilities[i] * probs[i]) / topMass;
+					partCorrect += compatibilities[i] * probs[i] / topMass;
 			}
-		}
 
 		// Print features (note this is only with respect to the first correct, is NOT the gradient).
 		// Things are not printed if there is only partial compatability.
 		if (correctIndex != -1 && correct != 1)
 		{
-			Derivation trueDeriv = predDerivations.get(correctIndex);
-			Derivation predDeriv = predDerivations.get(0);
-			HashMap<String, Double> featureDiff = new HashMap<>();
+			final Derivation trueDeriv = predDerivations.get(correctIndex);
+			final Derivation predDeriv = predDerivations.get(0);
+			final HashMap<String, Double> featureDiff = new HashMap<>();
 			trueDeriv.incrementAllFeatureVector(+1, featureDiff);
 			predDeriv.incrementAllFeatureVector(-1, featureDiff);
-			String heading = String.format("TopTrue (%d) - Pred (%d) = Diff", correctIndex, 0);
+			final String heading = String.format("TopTrue (%d) - Pred (%d) = Diff", correctIndex, 0);
 			FeatureVector.logFeatureWeights(heading, featureDiff, state.params);
 
-			HashMap<String, Integer> choiceDiff = new LinkedHashMap<>();
+			final HashMap<String, Integer> choiceDiff = new LinkedHashMap<>();
 			trueDeriv.incrementAllChoices(+1, choiceDiff);
 			predDeriv.incrementAllChoices(-1, choiceDiff);
 			FeatureVector.logChoices(heading, choiceDiff);
@@ -323,10 +320,10 @@ public abstract class Parser
 		int numPrintedSoFar = 0;
 		for (int i = 0; i < predDerivations.size(); i++)
 		{
-			Derivation deriv = predDerivations.get(i);
+			final Derivation deriv = predDerivations.get(i);
 			if (compatibilities != null && compatibilities[i] == 1)
 			{
-				boolean print = printAllPredictions || (numPrintedSoFar < opts.maxPrintedTrue);
+				final boolean print = printAllPredictions || numPrintedSoFar < opts.maxPrintedTrue;
 				if (print)
 				{
 					LogInfo.logs("True@%04d: %s [score=%s, prob=%s%s]", i, deriv.toString(), Fmt.D(deriv.score), Fmt.D(probs[i]), compatibilities != null ? ", comp=" + Fmt.D(compatibilities[i]) : "");
@@ -340,10 +337,10 @@ public abstract class Parser
 		numPrintedSoFar = 0;
 		for (int i = 0; i < predDerivations.size(); i++)
 		{
-			Derivation deriv = predDerivations.get(i);
+			final Derivation deriv = predDerivations.get(i);
 			if (compatibilities != null && compatibilities[i] > 0 && compatibilities[i] < 1)
 			{
-				boolean print = printAllPredictions || (numPrintedSoFar < opts.maxPrintedTrue);
+				final boolean print = printAllPredictions || numPrintedSoFar < opts.maxPrintedTrue;
 				if (print)
 				{
 					LogInfo.logs("Part@%04d: %s [score=%s, prob=%s%s]", i, deriv.toString(), Fmt.D(deriv.score), Fmt.D(probs[i]), compatibilities != null ? ", comp=" + Fmt.D(compatibilities[i]) : "");
@@ -356,10 +353,10 @@ public abstract class Parser
 		// Anything that's predicted.
 		for (int i = 0; i < predDerivations.size(); i++)
 		{
-			Derivation deriv = predDerivations.get(i);
+			final Derivation deriv = predDerivations.get(i);
 
 			// Either print all predictions or this prediction is worse by some amount.
-			boolean print = printAllPredictions || ((probs[i] >= probs[0] / 2 || i < 10) && i < opts.maxPrintedPredictions);
+			final boolean print = printAllPredictions || (probs[i] >= probs[0] / 2 || i < 10) && i < opts.maxPrintedPredictions;
 			if (print)
 			{
 				LogInfo.logs("Pred@%04d: %s [score=%s, prob=%s%s]", i, deriv.toString(), Fmt.D(deriv.score), Fmt.D(probs[i]), compatibilities != null ? ", comp=" + Fmt.D(compatibilities[i]) : "");
@@ -393,11 +390,9 @@ public abstract class Parser
 		evaluation.add(state.evaluation);
 
 		// Add executor stats
-		for (Derivation deriv : predDerivations)
-		{
+		for (final Derivation deriv : predDerivations)
 			if (deriv.executorStats != null)
 				evaluation.add(deriv.executorStats);
-		}
 
 		LogInfo.end_track();
 	}

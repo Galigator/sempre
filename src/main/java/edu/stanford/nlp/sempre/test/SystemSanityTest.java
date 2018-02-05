@@ -1,19 +1,23 @@
 package edu.stanford.nlp.sempre.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.Pair;
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.FeatureExtractor;
+import edu.stanford.nlp.sempre.FormulaMatchExecutor;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.Learner;
+import edu.stanford.nlp.sempre.SimpleAnalyzer;
 import fig.basic.Evaluation;
-
-import org.testng.annotations.Test;
-
+import fig.basic.Pair;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * Various end-to-end sanity checks.
@@ -23,12 +27,12 @@ import static org.testng.AssertJUnit.assertEquals;
  */
 public class SystemSanityTest
 {
-	private static Builder makeBuilder(String grammarPath)
+	private static Builder makeBuilder(final String grammarPath)
 	{
-		Grammar g = new Grammar();
+		final Grammar g = new Grammar();
 		g.read(grammarPath);
 
-		Builder b = new Builder();
+		final Builder b = new Builder();
 		b.grammar = g;
 		b.executor = new FormulaMatchExecutor();
 		b.buildUnspecified();
@@ -37,14 +41,14 @@ public class SystemSanityTest
 
 	private static Dataset makeDataset()
 	{
-		Dataset d = new Dataset();
+		final Dataset d = new Dataset();
 		d.readFromPathPairs(Collections.singletonList(Pair.newPair("train", "freebase/data/unittest-learn.examples")));
 		return d;
 	}
 
-	private static Map<String, List<Evaluation>> learn(Builder builder, Dataset dataset)
+	private static Map<String, List<Evaluation>> learn(final Builder builder, final Dataset dataset)
 	{
-		Map<String, List<Evaluation>> evals = Maps.newHashMap();
+		final Map<String, List<Evaluation>> evals = Maps.newHashMap();
 		new Learner(builder.parser, builder.params, dataset).learn(3, evals);
 		return evals;
 	}
@@ -54,13 +58,13 @@ public class SystemSanityTest
 	{
 		LanguageAnalyzer.setSingleton(new SimpleAnalyzer());
 		// Make sure learning works
-		Dataset dataset = makeDataset();
-		String[] grammarPaths = new String[] { "freebase/data/unittest-learn.grammar", "freebase/data/unittest-learn-ccg.grammar", };
-		for (String grammarPath : grammarPaths)
+		final Dataset dataset = makeDataset();
+		final String[] grammarPaths = new String[] { "freebase/data/unittest-learn.grammar", "freebase/data/unittest-learn-ccg.grammar", };
+		for (final String grammarPath : grammarPaths)
 		{
-			Builder builder = makeBuilder(grammarPath);
+			final Builder builder = makeBuilder(grammarPath);
 			FeatureExtractor.opts.featureDomains.add("rule");
-			Map<String, List<Evaluation>> evals = learn(builder, dataset);
+			final Map<String, List<Evaluation>> evals = learn(builder, dataset);
 			assertEquals(1.0d, Iterables.getLast(evals.get("train")).getFig("correct").min());
 		}
 	}

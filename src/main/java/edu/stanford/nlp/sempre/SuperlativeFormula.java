@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Function;
 import fig.basic.LispTree;
-
 import java.util.List;
 
 /**
@@ -23,7 +22,7 @@ public class SuperlativeFormula extends Formula
 	public final Formula head;
 	public final Formula relation; // Apply relation(head, degree) and sort by degree.
 
-	public SuperlativeFormula(Mode mode, Formula rank, Formula count, Formula head, Formula relation)
+	public SuperlativeFormula(final Mode mode, final Formula rank, final Formula count, final Formula head, final Formula relation)
 	{
 		this.mode = mode;
 		this.rank = rank;
@@ -32,7 +31,7 @@ public class SuperlativeFormula extends Formula
 		this.relation = relation;
 	}
 
-	public static Mode parseMode(String mode)
+	public static Mode parseMode(final String mode)
 	{
 		if ("argmin".equals(mode))
 			return Mode.argmin;
@@ -43,7 +42,7 @@ public class SuperlativeFormula extends Formula
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild(mode + "");
 		tree.addChild(rank.toLispTree());
 		tree.addChild(count.toLispTree());
@@ -53,7 +52,7 @@ public class SuperlativeFormula extends Formula
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
 		{
@@ -65,16 +64,16 @@ public class SuperlativeFormula extends Formula
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> func)
+	public Formula map(final Function<Formula, Formula> func)
 	{
-		Formula result = func.apply(this);
+		final Formula result = func.apply(this);
 		return result == null ? new SuperlativeFormula(mode, rank.map(func), count.map(func), head.map(func), relation.map(func)) : result;
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> func, final boolean alwaysRecurse)
 	{
-		List<Formula> res = func.apply(this);
+		final List<Formula> res = func.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
 		{
 			res.addAll(rank.mapToList(func, alwaysRecurse));
@@ -87,20 +86,20 @@ public class SuperlativeFormula extends Formula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof SuperlativeFormula))
 			return false;
-		SuperlativeFormula that = (SuperlativeFormula) thatObj;
-		if (this.mode != that.mode)
+		final SuperlativeFormula that = (SuperlativeFormula) thatObj;
+		if (mode != that.mode)
 			return false;
-		if (!this.rank.equals(that.rank))
+		if (!rank.equals(that.rank))
 			return false;
-		if (!this.count.equals(that.count))
+		if (!count.equals(that.count))
 			return false;
-		if (!this.head.equals(that.head))
+		if (!head.equals(that.head))
 			return false;
-		if (!this.relation.equals(that.relation))
+		if (!relation.equals(that.relation))
 			return false;
 		return true;
 	}

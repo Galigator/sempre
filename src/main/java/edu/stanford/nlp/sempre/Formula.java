@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Function;
 import fig.basic.LispTree;
-
 import java.util.List;
 
 /**
@@ -42,7 +41,7 @@ public abstract class Formula
 	}
 
 	@JsonCreator
-	public static Formula fromString(String str)
+	public static Formula fromString(final String str)
 	{
 		return Formulas.fromLispTree(LispTree.proto.parseFromString(str));
 	}
@@ -69,7 +68,7 @@ public abstract class Formula
 
 		@SuppressWarnings({ "equalshashcode" })
 		@Override
-		public boolean equals(Object o)
+		public boolean equals(final Object o)
 		{
 			return this == o;
 		}

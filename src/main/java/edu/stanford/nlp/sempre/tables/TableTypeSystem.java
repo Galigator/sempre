@@ -1,8 +1,13 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.FuncSemType;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.Value;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Typing System for table. Affects naming convention and how the types of formulas are inferred. ROW: name = fb:row.r[index] | type = fb:type.row CELL: name =
@@ -64,7 +69,7 @@ public abstract class TableTypeSystem
 	/**
 	 * Convert string entry to an alpha-numeric name
 	 */
-	public static String canonicalizeName(String originalString)
+	public static String canonicalizeName(final String originalString)
 	{
 		String id = originalString;
 		id = id.replaceAll("[^\\w]", "_"); // Replace abnormal characters with _
@@ -79,18 +84,16 @@ public abstract class TableTypeSystem
 	/**
 	 * Add suffix to make the name unique. (Does not modify usedNames)
 	 */
-	public static String getUnusedName(String baseName, Collection<String> usedNames, String sep)
+	public static String getUnusedName(final String baseName, final Collection<String> usedNames, final String sep)
 	{
 		int suffix = 2;
 		String appendedId = baseName;
 		while (usedNames.contains(appendedId))
-		{
-			appendedId = baseName + sep + (suffix++);
-		}
+			appendedId = baseName + sep + suffix++;
 		return appendedId;
 	}
 
-	public static String getUnusedName(String baseName, Collection<String> usedNames)
+	public static String getUnusedName(final String baseName, final Collection<String> usedNames)
 	{
 		return getUnusedName(baseName, usedNames, "_");
 	}
@@ -98,7 +101,7 @@ public abstract class TableTypeSystem
 	/**
 	 * When id = [prefix]_[1].[2], get [1]. For example: - fb:row_[tableId].r[index] --> [tableId] - fb:cell_[fieldName].[string] --> [fieldName]
 	 */
-	public static String getIdAfterUnderscore(String id, String prefix)
+	public static String getIdAfterUnderscore(final String id, final String prefix)
 	{
 		return id.substring(prefix.length() + 1).split("\\.", 2)[0];
 	}
@@ -107,22 +110,22 @@ public abstract class TableTypeSystem
 	 * When id = [prefix]_[1].[2], get [2]. For example: - fb:row_[tableId].r[index] --> r[index] - fb:cell.[string] or fb:cell_[fieldName].[string] -->
 	 * [string]
 	 */
-	public static String getIdAfterPeriod(String id, String prefix)
+	public static String getIdAfterPeriod(final String id, final String prefix)
 	{
 		return id.substring(prefix.length()).split("\\.", 2)[1];
 	}
 
-	public static boolean isRowProperty(Value r)
+	public static boolean isRowProperty(final Value r)
 	{
 		return r instanceof NameValue && ((NameValue) r).id.startsWith(ROW_PROPERTY_NAME_PREFIX);
 	}
 
-	public static boolean isRowConsecutiveProperty(Value r)
+	public static boolean isRowConsecutiveProperty(final Value r)
 	{
 		return r instanceof NameValue && ((NameValue) r).id.startsWith(ROW_CONSECUTIVE_PROPERTY_NAME_PREFIX);
 	}
 
-	public static boolean isCellProperty(Value r)
+	public static boolean isCellProperty(final Value r)
 	{
 		return r instanceof NameValue && ((NameValue) r).id.startsWith(CELL_PROPERTY_NAME_PREFIX);
 	}
@@ -131,80 +134,80 @@ public abstract class TableTypeSystem
 	// Main Functions
 	// ============================================================
 
-	public static String getRowName(int index)
+	public static String getRowName(final int index)
 	{
 		return ROW_NAME_PREFIX + ".r" + index;
 	}
 
-	public static String getCellName(String id, String fieldName)
+	public static String getCellName(final String id, final String fieldName)
 	{
 		return CELL_NAME_PREFIX + "_" + fieldName + "." + id;
 	}
 
-	public static String getPartName(String id, String fieldName)
+	public static String getPartName(final String id, final String fieldName)
 	{
 		return PART_NAME_PREFIX + "_" + fieldName + "." + id;
 	}
 
-	public static String getCellType(String fieldName)
+	public static String getCellType(final String fieldName)
 	{
 		return CELL_SPECIFIC_TYPE_PREFIX + "." + fieldName;
 	}
 
-	public static String getPartType(String fieldName)
+	public static String getPartType(final String fieldName)
 	{
 		return PART_SPECIFIC_TYPE_PREFIX + "." + fieldName;
 	}
 
-	public static String getRowPropertyName(String fieldName)
+	public static String getRowPropertyName(final String fieldName)
 	{
 		return ROW_PROPERTY_NAME_PREFIX + "." + fieldName;
 	}
 
-	public static String getRowConsecutivePropertyName(String fieldName)
+	public static String getRowConsecutivePropertyName(final String fieldName)
 	{
 		return ROW_CONSECUTIVE_PROPERTY_NAME_PREFIX + "." + fieldName;
 	}
 
-	public static SemType getEntityTypeFromId(String entity)
+	public static SemType getEntityTypeFromId(final String entity)
 	{
 		if (entity.startsWith(CELL_NAME_PREFIX))
 		{
-			String fieldName = getIdAfterUnderscore(entity, CELL_NAME_PREFIX);
+			final String fieldName = getIdAfterUnderscore(entity, CELL_NAME_PREFIX);
 			return SemType.newUnionSemType(CELL_GENERIC_TYPE, getCellType(fieldName));
 		}
 		else
 			if (entity.startsWith(PART_NAME_PREFIX))
 			{
-				String fieldName = getIdAfterUnderscore(entity, PART_NAME_PREFIX);
+				final String fieldName = getIdAfterUnderscore(entity, PART_NAME_PREFIX);
 				return SemType.newUnionSemType(PART_GENERIC_TYPE, getPartType(fieldName));
 			}
 		return null;
 	}
 
-	public static SemType getPropertyTypeFromId(String property)
+	public static SemType getPropertyTypeFromId(final String property)
 	{
 		if (property.startsWith(ROW_PROPERTY_NAME_PREFIX))
 		{
-			SemType rowPropertyType = ROW_RELATIONS.get(new NameValue(property));
+			final SemType rowPropertyType = ROW_RELATIONS.get(new NameValue(property));
 			if (rowPropertyType != null)
 				return rowPropertyType;
-			String fieldName = getIdAfterPeriod(property, ROW_PROPERTY_NAME_PREFIX);
+			final String fieldName = getIdAfterPeriod(property, ROW_PROPERTY_NAME_PREFIX);
 			return new FuncSemType(SemType.newUnionSemType(getCellType(fieldName), CELL_GENERIC_TYPE), ROW_SEMTYPE);
 		}
 		if (property.startsWith(CELL_PROPERTY_NAME_PREFIX))
 		{
-			SemType cellPropertyType = CELL_PROPERTIES.get(new NameValue(property));
+			final SemType cellPropertyType = CELL_PROPERTIES.get(new NameValue(property));
 			return cellPropertyType;
 		}
 		return null;
 	}
 
-	public static String getPropertyOfEntity(String entity)
+	public static String getPropertyOfEntity(final String entity)
 	{
 		if (entity.startsWith(CELL_NAME_PREFIX))
 		{
-			String fieldName = getIdAfterUnderscore(entity, CELL_NAME_PREFIX);
+			final String fieldName = getIdAfterUnderscore(entity, CELL_NAME_PREFIX);
 			return getRowPropertyName(fieldName);
 		}
 		return null;

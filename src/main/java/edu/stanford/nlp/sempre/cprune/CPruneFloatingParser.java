@@ -1,9 +1,15 @@
 package edu.stanford.nlp.sempre.cprune;
 
-import java.util.List;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FloatingParser;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.Rule;
 import fig.basic.LogInfo;
+import java.util.List;
 
 /**
  * A parser that first tries to exploit the macro grammar and only fall back to full search when needed.
@@ -13,14 +19,14 @@ public class CPruneFloatingParser extends FloatingParser
 
 	FloatingParser exploreParser;
 
-	public CPruneFloatingParser(Spec spec)
+	public CPruneFloatingParser(final Spec spec)
 	{
 		super(spec);
 		exploreParser = new FloatingParser(spec).setEarlyStopping(true, CollaborativePruner.opts.maxDerivations);
 	}
 
 	@Override
-	public void onBeginDataGroup(int iter, int numIters, String group)
+	public void onBeginDataGroup(final int iter, final int numIters, final String group)
 	{
 		if (CollaborativePruner.uidToCachedNeighbors == null)
 		{
@@ -31,7 +37,7 @@ public class CPruneFloatingParser extends FloatingParser
 	}
 
 	@Override
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		return new CPruneFloatingParserState(this, params, ex, computeExpectedCounts);
 	}
@@ -41,7 +47,7 @@ public class CPruneFloatingParser extends FloatingParser
 class CPruneFloatingParserState extends ParserState
 {
 
-	public CPruneFloatingParserState(Parser parser, Params params, Example ex, boolean computeExpectedCounts)
+	public CPruneFloatingParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 	}
@@ -50,7 +56,7 @@ class CPruneFloatingParserState extends ParserState
 	public void infer()
 	{
 		LogInfo.begin_track("CPruneFloatingParser.infer()");
-		boolean exploitSucceeds = exploit();
+		final boolean exploitSucceeds = exploit();
 		if (computeExpectedCounts)
 		{
 			LogInfo.begin_track("Summary of Collaborative Pruning");
@@ -59,7 +65,7 @@ class CPruneFloatingParserState extends ParserState
 			LogInfo.end_track();
 		}
 		// Explore only on the first training iteration
-		if (CollaborativePruner.stats.iter.equals("0.train") && computeExpectedCounts && !exploitSucceeds && (CollaborativePruner.stats.totalExplore <= CollaborativePruner.opts.maxExplorationIters))
+		if (CollaborativePruner.stats.iter.equals("0.train") && computeExpectedCounts && !exploitSucceeds && CollaborativePruner.stats.totalExplore <= CollaborativePruner.opts.maxExplorationIters)
 		{
 			explore();
 			LogInfo.logs("Consistent pattern: " + CollaborativePruner.getConsistentPattern(ex));
@@ -72,16 +78,14 @@ class CPruneFloatingParserState extends ParserState
 	{
 		LogInfo.begin_track("Explore");
 		CollaborativePruner.initialize(ex, CollaborativePruner.Mode.EXPLORE);
-		ParserState exploreParserState = ((CPruneFloatingParser) parser).exploreParser.newParserState(params, ex, computeExpectedCounts);
+		final ParserState exploreParserState = ((CPruneFloatingParser) parser).exploreParser.newParserState(params, ex, computeExpectedCounts);
 		exploreParserState.infer();
 		predDerivations.clear();
 		predDerivations.addAll(exploreParserState.predDerivations);
 		expectedCounts = exploreParserState.expectedCounts;
 		if (computeExpectedCounts)
-		{
-			for (Derivation deriv : predDerivations)
+			for (final Derivation deriv : predDerivations)
 				CollaborativePruner.updateConsistentPattern(parser.valueEvaluator, ex, deriv);
-		}
 		CollaborativePruner.stats.totalExplore += 1;
 		if (CollaborativePruner.foundConsistentDerivation)
 			CollaborativePruner.stats.successfulExplore += 1;
@@ -92,19 +96,17 @@ class CPruneFloatingParserState extends ParserState
 	{
 		LogInfo.begin_track("Exploit");
 		CollaborativePruner.initialize(ex, CollaborativePruner.Mode.EXPLOIT);
-		Grammar miniGrammar = new MiniGrammar(CollaborativePruner.predictedRules);
-		Parser exploitParser = new FloatingParser(new Parser.Spec(miniGrammar, parser.extractor, parser.executor, parser.valueEvaluator));
-		ParserState exploitParserState = exploitParser.newParserState(params, ex, computeExpectedCounts);
+		final Grammar miniGrammar = new MiniGrammar(CollaborativePruner.predictedRules);
+		final Parser exploitParser = new FloatingParser(new Parser.Spec(miniGrammar, parser.extractor, parser.executor, parser.valueEvaluator));
+		final ParserState exploitParserState = exploitParser.newParserState(params, ex, computeExpectedCounts);
 		exploitParserState.infer();
 		predDerivations.clear();
 		predDerivations.addAll(exploitParserState.predDerivations);
 		expectedCounts = exploitParserState.expectedCounts;
 		if (computeExpectedCounts)
-		{
-			for (Derivation deriv : predDerivations)
+			for (final Derivation deriv : predDerivations)
 				CollaborativePruner.updateConsistentPattern(parser.valueEvaluator, ex, deriv);
-		}
-		boolean succeeds = CollaborativePruner.foundConsistentDerivation;
+		final boolean succeeds = CollaborativePruner.foundConsistentDerivation;
 		CollaborativePruner.stats.totalExploit += 1;
 		if (succeeds)
 			CollaborativePruner.stats.successfulExploit += 1;
@@ -120,13 +122,13 @@ class CPruneFloatingParserState extends ParserState
 class MiniGrammar extends Grammar
 {
 
-	public MiniGrammar(List<Rule> rules)
+	public MiniGrammar(final List<Rule> rules)
 	{
 		this.rules.addAll(rules);
 		if (CollaborativePruner.opts.verbose >= 2)
 		{
 			LogInfo.begin_track("MiniGrammar Rules");
-			for (Rule rule : rules)
+			for (final Rule rule : rules)
 				LogInfo.logs("%s %s", rule, rule.isAnchored() ? "[A]" : "[F]");
 			LogInfo.end_track();
 		}

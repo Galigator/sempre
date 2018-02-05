@@ -1,6 +1,11 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * List of canonical names that we borrowed from Freebase. These names and helper methods are independent from the Freebase schema (even though the names begin
@@ -65,7 +70,7 @@ public final class CanonicalNames
 
 	// Unary: fb:domain.type [contains exactly one period]
 	// Special Unary: star (*)
-	public static boolean isUnary(String s)
+	public static boolean isUnary(final String s)
 	{
 		if (STAR.equals(s))
 			return true;
@@ -78,15 +83,15 @@ public final class CanonicalNames
 		return false;
 	}
 
-	public static boolean isUnary(Value value)
+	public static boolean isUnary(final Value value)
 	{
-		return value instanceof NameValue && isUnary((((NameValue) value).id));
+		return value instanceof NameValue && isUnary(((NameValue) value).id);
 	}
 
 	// Binary: fb:domain.type.property [contains two periods]
 	// Also catch reversed binary shorthand [!fb:people.person.parent]
 	// Special Binaries: comparison (<, >, etc.) and colon (:)
-	public static boolean isBinary(String s)
+	public static boolean isBinary(final String s)
 	{
 		if (COMPARATORS.contains(s) || COLON.equals(s))
 			return true;
@@ -99,25 +104,25 @@ public final class CanonicalNames
 		return true;
 	}
 
-	public static boolean isBinary(Value value)
+	public static boolean isBinary(final Value value)
 	{
-		return value instanceof NameValue && isBinary((((NameValue) value).id));
+		return value instanceof NameValue && isBinary(((NameValue) value).id);
 	}
 
 	// Return whether |property| is the name of a reverse property.
 	// Convention: ! is the prefix for reverses.
-	public static boolean isReverseProperty(String property)
+	public static boolean isReverseProperty(final String property)
 	{
 		return property.startsWith("!") && !property.equals("!=");
 	}
 
-	public static boolean isReverseProperty(Value value)
+	public static boolean isReverseProperty(final Value value)
 	{
 		return value instanceof NameValue && isReverseProperty(((NameValue) value).id);
 	}
 
 	// Return the reverse property as a String
-	public static String reverseProperty(String property)
+	public static String reverseProperty(final String property)
 	{
 		if (COMPARATORS.contains(property))
 			return COMPARATOR_REVERSE.get(property);
@@ -127,7 +132,7 @@ public final class CanonicalNames
 			return "!" + property;
 	}
 
-	public static NameValue reverseProperty(Value value)
+	public static NameValue reverseProperty(final Value value)
 	{
 		if (!(value instanceof NameValue))
 			throw new RuntimeException("Cannot call reverseProperty on " + value);

@@ -1,18 +1,28 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.text.*;
-import java.util.*;
-import java.util.regex.*;
-
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.DescriptionValue;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.LanguageInfo;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.text.Normalizer;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
 
 /**
  * Utilities for string normalization.
@@ -43,11 +53,11 @@ public final class StringNormalizationUtils
 	 * Analyze the content of the cells in the same column, and then generate possible normalizations. Modify the property map in each cell. TODO(ice): Take the
 	 * homogeneity of the cells into account.
 	 */
-	public static void analyzeColumn(TableColumn column)
+	public static void analyzeColumn(final TableColumn column)
 	{
 		// Parts in the same column with the same string content gets the same id.
-		Map<String, String> originalStringToPartId = new HashMap<>();
-		for (TableCell cell : column.children)
+		final Map<String, String> originalStringToPartId = new HashMap<>();
+		for (final TableCell cell : column.children)
 		{
 			if (!cell.properties.metadata.isEmpty())
 				continue; // Already analyzed.
@@ -64,12 +74,12 @@ public final class StringNormalizationUtils
 	public static final Pattern COMMA = Pattern.compile("\\s*(,\\s|\\n|/)\\s*");
 	public static final Pattern SPACE = Pattern.compile("\\s+");
 
-	public static void analyzeString(String o, Multimap<Value, Value> metadata, TableColumn column, Map<String, String> originalStringToPartId)
+	public static void analyzeString(final String o, final Multimap<Value, Value> metadata, final TableColumn column, final Map<String, String> originalStringToPartId)
 	{
 		metadata.clear();
 		Value value;
-		LanguageAnalyzer analyzer = LanguageAnalyzer.getSingleton();
-		LanguageInfo languageInfo = analyzer.analyze(o);
+		final LanguageAnalyzer analyzer = LanguageAnalyzer.getSingleton();
+		final LanguageInfo languageInfo = analyzer.analyze(o);
 		// ===== Number: Also handle "2,000 ft." --> (number 2000) =====
 		value = parseNumberLenient(o);
 		if (value == null && opts.useLanguageAnalyzer)
@@ -96,30 +106,26 @@ public final class StringNormalizationUtils
 				splitted = SPACE.split(o);
 			if (splitted.length == 2)
 			{
-				NumberValue first = parseNumberStrict(splitted[0]), second = parseNumberStrict(splitted[1]);
+				final NumberValue first = parseNumberStrict(splitted[0]), second = parseNumberStrict(splitted[1]);
 				if (first != null && second != null)
-				{
 					metadata.put(TableTypeSystem.CELL_NUM2_VALUE, second);
-				}
 			}
 		}
 		// ===== List: "apple, banana, carrot" --> fb:part.apple, etc. =====
-		String[] splitted = COMMA.split(o);
+		final String[] splitted = COMMA.split(o);
 		if (splitted.length > 1)
-		{
-			for (String partName : splitted)
+			for (final String partName : splitted)
 			{
-				String normalizedPartName = StringNormalizationUtils.characterNormalize(partName).toLowerCase();
+				final String normalizedPartName = StringNormalizationUtils.characterNormalize(partName).toLowerCase();
 				String id = originalStringToPartId.get(normalizedPartName);
 				if (id == null)
 				{
-					String canonicalName = TableTypeSystem.canonicalizeName(normalizedPartName);
+					final String canonicalName = TableTypeSystem.canonicalizeName(normalizedPartName);
 					id = TableTypeSystem.getUnusedName(TableTypeSystem.getPartName(canonicalName, column.columnName), originalStringToPartId.values());
 					originalStringToPartId.put(normalizedPartName, id);
 				}
 				metadata.put(TableTypeSystem.CELL_PART_VALUE, new NameValue(id, partName));
 			}
-		}
 	}
 
 	// ============================================================
@@ -137,10 +143,10 @@ public final class StringNormalizationUtils
 		{
 			if (opts.numberCanStartAnywhere)
 				s = s.replaceAll("^[^0-9.]*", "");
-			Number parsed = numberFormat.parse(s.replace(" ", ""));
+			final Number parsed = numberFormat.parse(s.replace(" ", ""));
 			return new NumberValue(parsed.doubleValue());
 		}
-		catch (ParseException e)
+		catch (final ParseException e)
 		{
 			return null;
 		}
@@ -154,7 +160,7 @@ public final class StringNormalizationUtils
 		s = s.replace(" ", "");
 		if (opts.numberCanStartAnywhere)
 			s = s.replaceAll("^[^0-9.]*", "");
-		ParsePosition parsePosition = new ParsePosition(0);
+		final ParsePosition parsePosition = new ParsePosition(0);
 		Number parsed = numberFormat.parse(s, parsePosition);
 		if (parsed == null)
 			return null;
@@ -170,10 +176,10 @@ public final class StringNormalizationUtils
 	/**
 	 * Convert string to number. Partial match is not allowed: "9,000 cakes" --> null
 	 */
-	public static NumberValue parseNumberStrict(String s)
+	public static NumberValue parseNumberStrict(final String s)
 	{
-		ParsePosition pos = new ParsePosition(0);
-		Number parsed = numberFormat.parse(s, pos);
+		final ParsePosition pos = new ParsePosition(0);
+		final Number parsed = numberFormat.parse(s, pos);
 		if (parsed == null || s.length() != pos.getIndex())
 			return null;
 		return new NumberValue(parsed.doubleValue());
@@ -182,67 +188,59 @@ public final class StringNormalizationUtils
 	/**
 	 * Convert string to number + unit. Must exactly match the pattern "number unit" (e.g., "9,000 cakes")
 	 */
-	public static NumberValue parseNumberWithUnitStrict(String s)
+	public static NumberValue parseNumberWithUnitStrict(final String s)
 	{
-		String[] tokens = s.split(" ");
+		final String[] tokens = s.split(" ");
 		if (tokens.length != 2)
 			return null;
-		ParsePosition pos = new ParsePosition(0);
-		Number parsed = numberFormat.parse(tokens[0], pos);
+		final ParsePosition pos = new ParsePosition(0);
+		final Number parsed = numberFormat.parse(tokens[0], pos);
 		if (parsed == null || tokens[0].length() != pos.getIndex())
 			return null;
 		return new NumberValue(parsed.doubleValue(), tokens[1]);
 	}
 
-	public static NumberValue parseNumberWithLanguageAnalyzer(LanguageInfo languageInfo)
+	public static NumberValue parseNumberWithLanguageAnalyzer(final LanguageInfo languageInfo)
 	{
 		if (languageInfo.numTokens() == 0)
 			return null;
 		String nerSpan;
 		nerSpan = languageInfo.getNormalizedNerSpan("NUMBER", 0, languageInfo.numTokens());
 		if (nerSpan != null)
-		{
 			try
 			{
 				return new NumberValue(Double.parseDouble(nerSpan));
 			}
-			catch (NumberFormatException e)
+			catch (final NumberFormatException e)
 			{
 			}
-		}
 		nerSpan = languageInfo.getNormalizedNerSpan("ORDINAL", 0, languageInfo.numTokens());
 		if (nerSpan != null)
-		{
 			try
 			{
 				return new NumberValue(Double.parseDouble(nerSpan));
 			}
-			catch (NumberFormatException e)
+			catch (final NumberFormatException e)
 			{
 			}
-		}
 		nerSpan = languageInfo.getNormalizedNerSpan("PERCENT", 0, languageInfo.numTokens());
 		if (nerSpan != null)
-		{
 			try
 			{
 				return new NumberValue(Double.parseDouble(nerSpan.substring(1)));
 			}
-			catch (NumberFormatException e)
+			catch (final NumberFormatException e)
 			{
 			}
-		}
 		nerSpan = languageInfo.getNormalizedNerSpan("MONEY", 0, languageInfo.numTokens());
 		if (nerSpan != null)
-		{
 			try
 			{
 				return new NumberValue(Double.parseDouble(nerSpan.substring(1)));
 			}
-			catch (NumberFormatException e)
+			catch (final NumberFormatException e)
 			{
 			}
-		}
 		return null;
 	}
 
@@ -252,12 +250,12 @@ public final class StringNormalizationUtils
 	/**
 	 * Convert string to DateValue.
 	 */
-	public static DateValue parseDate(String s)
+	public static DateValue parseDate(final String s)
 	{
-		Matcher matcher = suTimeDateFormat.matcher(s.toUpperCase());
+		final Matcher matcher = suTimeDateFormat.matcher(s.toUpperCase());
 		if (matcher.matches())
 		{
-			String yS = matcher.group(1), mS = matcher.group(2), dS = matcher.group(3);
+			final String yS = matcher.group(1), mS = matcher.group(2), dS = matcher.group(3);
 			int y = -1, m = -1, d = -1;
 			if (!(yS == null || yS.isEmpty() || yS.contains("X")))
 				y = Integer.parseInt(yS);
@@ -271,28 +269,28 @@ public final class StringNormalizationUtils
 		}
 		try
 		{
-			DateTime date = americanDateFormat.parseDateTime(s);
+			final DateTime date = americanDateFormat.parseDateTime(s);
 			return new DateValue(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
 		}
-		catch (IllegalArgumentException e)
+		catch (final IllegalArgumentException e)
 		{
 			return null;
 		}
 	}
 
-	public static DateValue parseDateWithLanguageAnalyzer(LanguageInfo languageInfo)
+	public static DateValue parseDateWithLanguageAnalyzer(final LanguageInfo languageInfo)
 	{
 		if (languageInfo.numTokens() == 0)
 			return null;
-		String nerSpan = languageInfo.getNormalizedNerSpan("DATE", 0, languageInfo.numTokens());
+		final String nerSpan = languageInfo.getNormalizedNerSpan("DATE", 0, languageInfo.numTokens());
 		if (opts.verbose >= 2)
 			LogInfo.logs("%s %s %s %s", languageInfo.tokens, languageInfo.nerTags, languageInfo.nerValues, nerSpan);
 		if (nerSpan == null)
 			return null;
-		Matcher matcher = suTimeDateFormat.matcher(nerSpan);
+		final Matcher matcher = suTimeDateFormat.matcher(nerSpan);
 		if (!matcher.matches())
 			return null;
-		String yS = matcher.group(1), mS = matcher.group(2), dS = matcher.group(3);
+		final String yS = matcher.group(1), mS = matcher.group(2), dS = matcher.group(3);
 		int y = -1, m = -1, d = -1;
 		if (!(yS == null || yS.isEmpty() || yS.contains("X")))
 			y = Integer.parseInt(yS);
@@ -312,12 +310,12 @@ public final class StringNormalizationUtils
 	/**
 	 * newline (=> `\n`), backslash (`\` => `\\`), and pipe (`|` => `\p`)
 	 */
-	public static String escapeTSV(String x)
+	public static String escapeTSV(final String x)
 	{
 		return x.replace("\\", "\\\\").replace("\n", "\\n").replace("|", "\\p").replaceAll("\\s", " ").trim();
 	}
 
-	public static String unescapeTSV(String x)
+	public static String unescapeTSV(final String x)
 	{
 		return x.replace("\\n", "\n").replace("\\p", "|").replace("\\\\", "\\");
 	}
@@ -325,7 +323,7 @@ public final class StringNormalizationUtils
 	/**
 	 * Collapse multiple spaces into one.
 	 */
-	public static String whitespaceNormalize(String x)
+	public static String whitespaceNormalize(final String x)
 	{
 		return x.replaceAll("\\s", " ").trim();
 	}
@@ -333,7 +331,7 @@ public final class StringNormalizationUtils
 	/**
 	 * Remove ALL spaces and non-alphanumeric characters, then convert to lower case. Used for fuzzy matching.
 	 */
-	public static String collapseNormalize(String x)
+	public static String collapseNormalize(final String x)
 	{
 		return Normalizer.normalize(x, Normalizer.Form.NFD).replaceAll("[^A-Za-z0-9]", "").toLowerCase();
 	}
@@ -341,28 +339,28 @@ public final class StringNormalizationUtils
 	/**
 	 * String to number
 	 */
-	public static NumberValue toNumberValue(String description)
+	public static NumberValue toNumberValue(final String description)
 	{
 		if (description == null)
 			return null;
 		try
 		{
-			Number result = numberFormat.parse(description);
+			final Number result = numberFormat.parse(description);
 			return new NumberValue(result.doubleValue());
 		}
-		catch (ParseException e)
+		catch (final ParseException e)
 		{
 			return null;
 		}
 	}
 
-	public static NumberValue toNumberValue(Value value)
+	public static NumberValue toNumberValue(final Value value)
 	{
 		if (value instanceof NumberValue)
 			return (NumberValue) value;
 		if (value instanceof DateValue)
 		{
-			DateValue date = (DateValue) value;
+			final DateValue date = (DateValue) value;
 			if (date.month == -1 && date.day == -1)
 				return new NumberValue(date.year);
 		}
@@ -453,17 +451,17 @@ public final class StringNormalizationUtils
 	// Test
 	// ============================================================
 
-	private static void unitTest(String o)
+	private static void unitTest(final String o)
 	{
-		Multimap<Value, Value> metadata = ArrayListMultimap.create();
-		TableColumn column = new TableColumn("Test", "test", 0);
+		final Multimap<Value, Value> metadata = ArrayListMultimap.create();
+		final TableColumn column = new TableColumn("Test", "test", 0);
 		analyzeString(o, metadata, column, new HashMap<>());
-		String aggressive = aggressiveNormalize(o).toLowerCase();
-		String official = officialEvaluatorNormalize(o);
+		final String aggressive = aggressiveNormalize(o).toLowerCase();
+		final String official = officialEvaluatorNormalize(o);
 		LogInfo.logs("%s %s | %s %s %s", o, metadata, official, aggressive, aggressive.equals(official));
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		LanguageAnalyzer.opts.languageAnalyzer = "corenlp.CoreNLPAnalyzer";
 		opts.verbose = 2;

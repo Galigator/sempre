@@ -1,9 +1,21 @@
 package edu.stanford.nlp.sempre.freebase;
 
 import edu.stanford.nlp.io.IOUtils;
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.BinaryFormulaInfo;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.MergeFormula;
 import edu.stanford.nlp.sempre.MergeFormula.Mode;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.StringValue;
+import edu.stanford.nlp.sempre.ValueFormula;
+import edu.stanford.nlp.sempre.VariableFormula;
+import edu.stanford.nlp.sempre.freebase.FbFormulasInfo.BinaryFormulaInfo;
 import edu.stanford.nlp.sempre.freebase.utils.FileUtils;
 import edu.stanford.nlp.sempre.freebase.utils.FormatConverter;
 import edu.stanford.nlp.stats.ClassicCounter;
@@ -15,11 +27,15 @@ import fig.basic.MapUtils;
 import fig.basic.Option;
 import fig.exec.Execution;
 import fig.prob.SampleUtils;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * One-time hack that converts the Cai & Yates dataset to our format.
@@ -29,8 +45,8 @@ import java.util.*;
 public class Free917Converter implements Runnable
 {
 
-	private Counter<Integer> argnumCounter = new ClassicCounter<Integer>();
-	private FbFormulasInfo formulaInfo = FbFormulasInfo.getSingleton();
+	private final Counter<Integer> argnumCounter = new ClassicCounter<>();
+	private final FbFormulasInfo formulaInfo = FbFormulasInfo.getSingleton();
 	private Set<String> cvts;
 	@Option(gloss = "Input path to examples to canonicalize")
 	public String inDir;
@@ -48,39 +64,38 @@ public class Free917Converter implements Runnable
 	{
 		try
 		{
-			String inQuestionsFile = inDir + "question-and-logical-form-917/dataset-all-917.txt";
-			String inNpFile = inDir + "fixed-np-manually.txt";
-			String outQuestionFile = outDir + "dataset-all-917_corrected.txt";
-			String outNpFile = outDir + "fixed-np-manually_corrected.txt";
-			String outputPrefix = outDir + "free917";
-			String free917EntityInfoFile = outDir + "entityInfo.txt";
-			String free917MissingEntitiesFile = outDir + "missingEntities.txt";
+			final String inQuestionsFile = inDir + "question-and-logical-form-917/dataset-all-917.txt";
+			final String inNpFile = inDir + "fixed-np-manually.txt";
+			final String outQuestionFile = outDir + "dataset-all-917_corrected.txt";
+			final String outNpFile = outDir + "fixed-np-manually_corrected.txt";
+			final String outputPrefix = outDir + "free917";
+			final String free917EntityInfoFile = outDir + "entityInfo.txt";
+			final String free917MissingEntitiesFile = outDir + "missingEntities.txt";
 			cvts = FileUtils.loadSet(cvtFile);
 
 			correctErrors(inQuestionsFile, inNpFile, outQuestionFile, outNpFile);
 			convertExampleFile(outQuestionFile, outputPrefix);
 			genreateEntityInfoFile(outNpFile, entityInfoFile, free917EntityInfoFile, free917MissingEntitiesFile);
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static void main(String[] args) throws IOException
+	public static void main(final String[] args) throws IOException
 	{
 		Execution.run(args, new Free917Converter());
 	}
 
-	private void correctErrors(String inQuestionsFile, String inNpFile, String outQuestionFile, String outNpFile) throws IOException
+	private void correctErrors(final String inQuestionsFile, final String inNpFile, final String outQuestionFile, final String outNpFile) throws IOException
 	{
 
 		// manual corrections of question file
 		int i = 0;
-		PrintWriter questionWriter = IOUtils.getPrintWriter(outQuestionFile);
-		for (String line : IOUtils.readLines(inQuestionsFile))
-		{
+		final PrintWriter questionWriter = IOUtils.getPrintWriter(outQuestionFile);
+		for (final String line : IOUtils.readLines(inQuestionsFile))
 			if (line.equals("(lambda $0 /type/int (exists $1 (/award/ranking@rank@year@note@list@item:t $0 /type/datetime/2000:/type/datetime $1 /en/fortune_500:/award/ranked_list /en/monsanto:/award/ranked_item)))"))
 				questionWriter.println("(lambda $0 /type/int (exists $1 (/award/ranking@rank@year@note@list@item:t $0 /type/datetime/2000:/type/datetime $1 $2 /en/fortune_500:/award/ranked_list /en/monsanto:/award/ranked_item)))");
 			else
@@ -401,23 +416,21 @@ public class Free917Converter implements Runnable
 																																																																																																										else
 																																																																																																											if (line.contains("/en/the_nutty_professor"))
 																																																																																																											{
-																																																																																																												String replaceLine = line.replace("/en/the_nutty_professor", "/en/the_nutty_professor_1996");
+																																																																																																												final String replaceLine = line.replace("/en/the_nutty_professor", "/en/the_nutty_professor_1996");
 																																																																																																												questionWriter.println(replaceLine);
 																																																																																																											}
 																																																																																																											else
 																																																																																																												if (line.contains("/base/boxing"))
 																																																																																																												{
-																																																																																																													String replaceLine = line.replace("/base/boxing", "/boxing");
+																																																																																																													final String replaceLine = line.replace("/base/boxing", "/boxing");
 																																																																																																													questionWriter.println(replaceLine);
 																																																																																																												}
 																																																																																																												else
 																																																																																																													questionWriter.println(line);
-		}
 		questionWriter.close();
 
-		PrintWriter npWriter = IOUtils.getPrintWriter(outNpFile);
-		for (String line : IOUtils.readLines(inNpFile))
-		{
+		final PrintWriter npWriter = IOUtils.getPrintWriter(outNpFile);
+		for (final String line : IOUtils.readLines(inNpFile))
 			if (line.equals("firefly :- NP : /base/ranker/rankerurlname/firefly$002F143400:/tv/tv_program"))
 				npWriter.println("firefly :- NP : /m/014v3t:/tv/tv_program");
 			else
@@ -489,7 +502,6 @@ public class Free917Converter implements Runnable
 																									}
 																									else
 																										npWriter.println(line);
-		}
 		npWriter.println("the battle of the champions :- NP : /m/0kvlz:/boxing/boxing_match");
 		npWriter.println("wba world champion :- NP : /m/0chgh2j:/boxing/boxing_title");
 		npWriter.println("muhammad ali vs. joe frazier ii :- NP : /en/ali-frazier_ii:/boxing/boxing_match");
@@ -497,16 +509,16 @@ public class Free917Converter implements Runnable
 	}
 
 	// TODO - handle all entities that do not start with fb:m. or fb:en.
-	private void convertExampleFile(String inFile, String outPrefix) throws IOException
+	private void convertExampleFile(final String inFile, final String outPrefix) throws IOException
 	{
 
-		PrintWriter formulaWriter = IOUtils.getPrintWriter(outPrefix + ".formulas");
-		BufferedReader reader = IOUtils.getBufferedFileReader(inFile);
-		List<String> examples = new ArrayList<String>();
+		final PrintWriter formulaWriter = IOUtils.getPrintWriter(outPrefix + ".formulas");
+		final BufferedReader reader = IOUtils.getBufferedFileReader(inFile);
+		final List<String> examples = new ArrayList<>();
 		String line = reader.readLine();
 		while (line != null)
 		{
-			Example example = new Example.Builder().setUtterance(line).setTargetFormula(processFree917LogicalForm(reader.readLine())).createExample();
+			final Example example = new Example.Builder().setUtterance(line).setTargetFormula(processFree917LogicalForm(reader.readLine())).createExample();
 			line = reader.readLine();
 			line = reader.readLine();
 			examples.add(example.toJson());
@@ -516,10 +528,10 @@ public class Free917Converter implements Runnable
 		reader.close();
 		formulaWriter.close();
 
-		int split = (int) (0.7 * examples.size());
-		int[] perm = SampleUtils.samplePermutation(new Random(1), examples.size());
-		List<String> train = new ArrayList<String>();
-		List<String> test = new ArrayList<String>();
+		final int split = (int) (0.7 * examples.size());
+		final int[] perm = SampleUtils.samplePermutation(new Random(1), examples.size());
+		final List<String> train = new ArrayList<>();
+		final List<String> test = new ArrayList<>();
 		for (int i = 0; i < split; i++)
 			train.add(examples.get(perm[i]));
 		for (int i = split; i < examples.size(); i++)
@@ -529,20 +541,18 @@ public class Free917Converter implements Runnable
 		printToFile(outPrefix + ".examples", examples);
 	}
 
-	private void printToFile(String fileName, List<String> examples) throws IOException
+	private void printToFile(final String fileName, final List<String> examples) throws IOException
 	{
-		PrintWriter exampleWriter = IOUtils.getPrintWriter(fileName);
-		for (String example : examples)
-		{
+		final PrintWriter exampleWriter = IOUtils.getPrintWriter(fileName);
+		for (final String example : examples)
 			exampleWriter.println(example);
-		}
 		exampleWriter.close();
 	}
 
-	private Formula processFree917LogicalForm(String free917LogicalForm)
+	private Formula processFree917LogicalForm(final String free917LogicalForm)
 	{
 
-		LispTree tree = LispTree.proto.parseFromString(free917LogicalForm);
+		final LispTree tree = LispTree.proto.parseFromString(free917LogicalForm);
 		if (tree.child(0).value.equals("lambda"))
 		{
 			// error check
@@ -559,46 +569,45 @@ public class Free917Converter implements Runnable
 			}
 			else
 				if (tree.child(0).value.startsWith("/"))
-				{
 					return handleAsk(tree);
-				}
 				else
 					throw new RuntimeException("Unknown free917 logical form: " + free917LogicalForm);
 	}
 
-	private Formula handleLambda(LispTree tree)
+	private Formula handleLambda(final LispTree tree)
 	{
 		return handleBody(tree.child(3));
 	}
 
-	private Formula handleCount(LispTree tree)
+	private Formula handleCount(final LispTree tree)
 	{
-		Formula formula = handleBody(tree.child(2));
+		final Formula formula = handleBody(tree.child(2));
 		if (formula == null)
 			return null;
 		return new AggregateFormula(AggregateFormula.Mode.count, formula);
 	}
 
-	private Formula handleBody(LispTree tree)
+	private Formula handleBody(final LispTree tree)
 	{
-		Map<String, String> argToPredMap = new HashMap<String, String>();
+		final Map<String, String> argToPredMap = new HashMap<>();
 		handleBodyRecurse(tree, argToPredMap);
 		return generateFormula(argToPredMap);
 	}
 
-	private Formula generateFormula(Map<String, String> argToPredMap)
+	private Formula generateFormula(final Map<String, String> argToPredMap)
 	{
 
 		if (argToPredMap.size() == 1)
 		{
-			String arg = argToPredMap.keySet().iterator().next();
-			String pred = argToPredMap.get(arg);
+			final String arg = argToPredMap.keySet().iterator().next();
+			final String pred = argToPredMap.get(arg);
 
-			BinaryFormulaInfo info = formulaInfo.getBinaryInfo(Formulas.fromLispTree(LispTree.proto.parseFromString(pred)));
+			final BinaryFormulaInfo info = formulaInfo.getBinaryInfo(Formulas.fromLispTree(LispTree.proto.parseFromString(pred)));
 			if (info != null)
 			{
-				String type = formulaInfo.getBinaryInfo(Formulas.fromLispTree(LispTree.proto.parseFromString(pred))).expectedType1;
-				if (cvts.contains(type)) { return fixCvtFormulas(pred, arg); }
+				final String type = formulaInfo.getBinaryInfo(Formulas.fromLispTree(LispTree.proto.parseFromString(pred))).expectedType1;
+				if (cvts.contains(type))
+					return fixCvtFormulas(pred, arg);
 			}
 
 			return new JoinFormula(pred, getArgFormula(arg));
@@ -608,91 +617,66 @@ public class Free917Converter implements Runnable
 			if (argToPredMap.get("target") == null)
 				throw new RuntimeException("target is null: " + argToPredMap);
 
-			Formula argsFormula = conjunctArgs(argToPredMap);
-			Formula targetFormula = Formulas.reverseFormula(new ValueFormula<NameValue>(new NameValue(argToPredMap.get("target"))));
-			Formula res = new JoinFormula(targetFormula, argsFormula);
+			final Formula argsFormula = conjunctArgs(argToPredMap);
+			final Formula targetFormula = Formulas.reverseFormula(new ValueFormula<>(new NameValue(argToPredMap.get("target"))));
+			final Formula res = new JoinFormula(targetFormula, argsFormula);
 			return res;
 		}
 	}
 
-	private Formula fixCvtFormulas(String pred, String arg)
+	private Formula fixCvtFormulas(final String pred, final String arg)
 	{
 
-		Formula join = new JoinFormula(pred, getArgFormula(arg));
+		final Formula join = new JoinFormula(pred, getArgFormula(arg));
 		if (pred.equals("!fb:automotive.trim_level.msrp") || pred.equals("!fb:event.disaster.damage") || pred.equals("!fb:comic_books.comic_book_issue.cover_price"))
-		{
 			return new JoinFormula("!fb:measurement_unit.money_value.amount", join);
-		}
 		else
 			if (pred.equals("!fb:celebrities.celebrity.net_worth") || pred.equals("!fb:projects.project.actual_cost") || pred.equals("!fb:digicams.digital_camera.street_price") || pred.equals("!fb:amusement_parks.ride.cost"))
-			{
 				return new JoinFormula("!fb:measurement_unit.dated_money_value.amount", join);
-			}
 			else
 				if (pred.equals("!fb:computer.software.compatible_oses"))
-				{
 					return new JoinFormula("!fb:computer.software_compatibility.operating_system", join);
-				}
 				else
 					if (pred.equals("!fb:finance.stock_exchange.companies_traded"))
-					{
 						return new JoinFormula("!fb:business.stock_ticker_symbol.ticker_symbol", join);
-					}
 					else
 						if (pred.equals("!fb:medicine.hospital.beds") || pred.equals("!fb:metropolitan_transit.transit_system.daily_riders") || pred.equals("!fb:library.public_library_system.collection_size") || pred.equals("!fb:library.public_library_system.annual_visits") || pred.equals("!fb:protected_sites.protected_site.annual_visitors") || pred.equals("!fb:amusement_parks.park.annual_visits") || pred.equals("!fb:education.educational_institution.total_enrollment") || pred.equals("!fb:religion.religion.number_of_adherents"))
-						{
 							return new JoinFormula("!fb:measurement_unit.dated_integer.number", join);
-						}
 						else
 							if (pred.equals("!fb:business.employer.employees"))
-							{
 								return new JoinFormula("!fb:business.employment_tenure.person", join);
-							}
 							else
 								if (pred.equals("!fb:tv.tv_series_episode.producers"))
-								{
 									return new JoinFormula("!fb:tv.tv_producer_episode_credit.producer", join);
-								}
 								else
 									if (pred.equals("!fb:book.periodical.frequency_or_issues_per_year"))
-									{
 										return new JoinFormula("!fb:book.periodical_frequency.issues_per_year", join);
-									}
 									else
 										if (pred.equals("!fb:book.periodical.first_issue_date"))
-										{
 											return new JoinFormula("!fb:book.periodical_publication_date.date", join);
-										}
 										else
 											if (pred.equals("!fb:games.game.number_of_players") || pred.equals("!fb:aviation.aircraft_model.passengers"))
-											{
 												return new JoinFormula("!fb:measurement_unit.integer_range.high_value", join);
-											}
 											else
 												if (pred.equals("!fb:military.armed_force.personnel"))
-												{
 													return new JoinFormula("!fb:military.military_service.military_person", join);
-												}
 												else
 													if (pred.equals("!fb:business.consumer_company.products"))
-													{
 														return new JoinFormula("!fb:business.company_product_relationship.consumer_product", join);
-													}
 													else
-														if (pred.equals("!fb:location.location.geolocation")) { return new JoinFormula("!fb:location.geocode.longitude", join); }
+														if (pred.equals("!fb:location.location.geolocation"))
+															return new JoinFormula("!fb:location.geocode.longitude", join);
 		return new JoinFormula(pred, getArgFormula(arg));
 
 	}
 
-	private Formula conjunctArgs(Map<String, String> argToPredMap)
+	private Formula conjunctArgs(final Map<String, String> argToPredMap)
 	{
 
-		List<JoinFormula> pivots = new ArrayList<JoinFormula>();
-		for (String arg : argToPredMap.keySet())
-		{
+		final List<JoinFormula> pivots = new ArrayList<>();
+		for (final String arg : argToPredMap.keySet())
 			if (!arg.equals("target"))
 				pivots.add(constructJoin(arg, argToPredMap.get(arg)));
-		}
 		Formula res = pivots.get(0);
 		if (pivots.size() == 1)
 			return res;
@@ -701,43 +685,43 @@ public class Free917Converter implements Runnable
 		return res;
 	}
 
-	private Formula getArgFormula(String arg)
+	private Formula getArgFormula(final String arg)
 	{
 		if (arg.startsWith("fb:"))
-			return new ValueFormula<NameValue>(new NameValue(arg));
+			return new ValueFormula<>(new NameValue(arg));
 		if (arg.startsWith("DATE::"))
 		{
-			String[] tokens = arg.split("::");
-			return new ValueFormula<DateValue>(DateValue.parseDateValue(tokens[1]));
+			final String[] tokens = arg.split("::");
+			return new ValueFormula<>(DateValue.parseDateValue(tokens[1]));
 		}
 		// TODO make sure ints and booleans work
 		if (arg.startsWith("INT::"))
 		{
-			String[] tokens = arg.split("::");
-			return new ValueFormula<NumberValue>(new NumberValue(Double.parseDouble(tokens[1]), NumberValue.unitless));
+			final String[] tokens = arg.split("::");
+			return new ValueFormula<>(new NumberValue(Double.parseDouble(tokens[1]), NumberValue.unitless));
 		}
 		if (arg.startsWith("BOOL::"))
 		{
-			String[] tokens = arg.split("::");
-			return new ValueFormula<NameValue>(new NameValue(tokens[1]));
+			final String[] tokens = arg.split("::");
+			return new ValueFormula<>(new NameValue(tokens[1]));
 		}
 		if (arg.startsWith("TEXT::"))
 		{
-			String[] tokens = arg.split("::");
-			return new ValueFormula<StringValue>(new StringValue(tokens[1]));
+			final String[] tokens = arg.split("::");
+			return new ValueFormula<>(new StringValue(tokens[1]));
 		}
 		throw new RuntimeException("Unknown arg: " + arg);
 	}
 
-	private JoinFormula constructJoin(String arg, String pred)
+	private JoinFormula constructJoin(final String arg, final String pred)
 	{
-		VariableFormula var = new VariableFormula("x");
-		JoinFormula join = new JoinFormula(pred, var);
-		LambdaFormula lambda = new LambdaFormula("x", join);
+		final VariableFormula var = new VariableFormula("x");
+		final JoinFormula join = new JoinFormula(pred, var);
+		final LambdaFormula lambda = new LambdaFormula("x", join);
 		return new JoinFormula(lambda, getArgFormula(arg));
 	}
 
-	private void handleBodyRecurse(LispTree tree, Map<String, String> argToPredMap)
+	private void handleBodyRecurse(final LispTree tree, final Map<String, String> argToPredMap)
 	{
 		if (tree.child(0).value.equals("exists"))
 		{
@@ -752,13 +736,13 @@ public class Free917Converter implements Runnable
 
 			// parse the relation
 
-			String predicate = tree.child(0).value;
-			String[] predTokens = predicate.substring(0, predicate.lastIndexOf(':')).split("@");
+			final String predicate = tree.child(0).value;
+			final String[] predTokens = predicate.substring(0, predicate.lastIndexOf(':')).split("@");
 			if (predTokens.length <= 1)
 				throw new RuntimeException("Bad body: " + tree);
 
-			String fbType = constructFbType(predTokens[0]);
-			List<String> fbRelations = constructFbRelations(predTokens, fbType);
+			final String fbType = constructFbType(predTokens[0]);
+			final List<String> fbRelations = constructFbRelations(predTokens, fbType);
 
 			// parse the arguments
 			if (predTokens.length == 2)
@@ -773,30 +757,26 @@ public class Free917Converter implements Runnable
 			}
 			else
 			{
-				List<String> fbArguments = constructFbArguments(tree);
+				final List<String> fbArguments = constructFbArguments(tree);
 				for (int i = 0; i < fbArguments.size(); ++i)
 				{
-					String fbRelation = fbRelations.get(i);
+					final String fbRelation = fbRelations.get(i);
 					if (fbArguments.get(i).equals("$0"))
 						argToPredMap.put("target", fbRelation);
 					else
 						if (!fbArguments.get(i).startsWith("$"))
-						{
 							argToPredMap.put(fbArguments.get(i), fbRelation);
-						}
 				}
 			}
 			argnumCounter.incrementCount(argToPredMap.size());
 		}
 	}
 
-	private List<String> constructFbArguments(LispTree tree)
+	private List<String> constructFbArguments(final LispTree tree)
 	{
 		boolean lastName = false;
-		List<String> res = new ArrayList<String>();
+		final List<String> res = new ArrayList<>();
 		for (int j = 1; j < tree.children.size(); ++j)
-		{
-
 			if (tree.child(j).value.equals("$0"))
 			{
 				res.add("$0");
@@ -805,7 +785,7 @@ public class Free917Converter implements Runnable
 			else
 				if (tree.child(j).value.startsWith("/"))
 				{
-					String entity = parseEntity(tree.child(j).value);
+					final String entity = parseEntity(tree.child(j).value);
 					res.add(entity);
 					lastName = true;
 				}
@@ -815,17 +795,16 @@ public class Free917Converter implements Runnable
 						res.add(tree.child(j).value);
 					lastName = false;
 				}
-		}
 		return res;
 	}
 
-	private List<String> constructFbRelations(String[] predTokens, String fbType)
+	private List<String> constructFbRelations(final String[] predTokens, final String fbType)
 	{
 
-		List<String> res = new ArrayList<String>();
+		final List<String> res = new ArrayList<>();
 		if (predTokens[0].contains("&"))
 		{
-			String relation = "!" + FormatConverter.fromSlashToDot(predTokens[0].substring(0, predTokens[0].indexOf('&')), true);
+			final String relation = "!" + FormatConverter.fromSlashToDot(predTokens[0].substring(0, predTokens[0].indexOf('&')), true);
 			res.add(relation);
 		}
 		for (int j = 1; j < predTokens.length; ++j)
@@ -833,7 +812,7 @@ public class Free917Converter implements Runnable
 		return res;
 	}
 
-	private String constructFbType(String predHead)
+	private String constructFbType(final String predHead)
 	{
 		if (predHead.contains("&"))
 			return FormatConverter.fromSlashToDot(predHead.substring(predHead.indexOf('&') + 1), true);
@@ -841,72 +820,72 @@ public class Free917Converter implements Runnable
 
 	}
 
-	private String parseEntity(String value)
+	private String parseEntity(final String value)
 	{
 
 		if (value.startsWith("/type/datetime/"))
 		{
-			String[] tokens = value.split(":");
-			String date = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
+			final String[] tokens = value.split(":");
+			final String date = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
 			return "DATE::" + date;
 		}
 		else
 			if (value.startsWith("/type/boolean/"))
 			{
-				String[] tokens = value.split(":");
-				String b = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
+				final String[] tokens = value.split(":");
+				final String b = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
 				return "BOOL::" + b;
 			}
 			else
 				if (value.startsWith("/type/int/"))
 				{
-					String[] tokens = value.split(":");
-					String i = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
+					final String[] tokens = value.split(":");
+					final String i = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
 					return "INT::" + i;
 				}
 				else
 					if (value.startsWith("/type/text/"))
 					{
-						String[] tokens = value.split(":");
-						String i = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
+						final String[] tokens = value.split(":");
+						final String i = tokens[0].substring(tokens[0].lastIndexOf('/') + 1);
 						return "TEXT::" + i;
 					}
 		return FormatConverter.fromSlashToDot(value.substring(0, value.indexOf(':')), true);
 	}
 
 	/** There is one example and this method is tailored for that */
-	private Formula handleAsk(LispTree tree)
+	private Formula handleAsk(final LispTree tree)
 	{
 		String pred = tree.child(0).value;
-		ValueFormula<NameValue> arg1 = Formulas.newNameFormula(parseEntity(tree.child(1).value));
-		ValueFormula<NameValue> arg2 = Formulas.newNameFormula(parseEntity(tree.child(2).value));
+		final ValueFormula<NameValue> arg1 = Formulas.newNameFormula(parseEntity(tree.child(1).value));
+		final ValueFormula<NameValue> arg2 = Formulas.newNameFormula(parseEntity(tree.child(2).value));
 		pred = pred.replace('@', '/');
 		pred = pred.substring(0, pred.lastIndexOf(':'));
 		pred = FormatConverter.fromSlashToDot(pred, true);
-		ValueFormula<NameValue> predFormula = Formulas.newNameFormula(pred);
-		JoinFormula pf = new JoinFormula(predFormula, arg2);
-		MergeFormula mf = new MergeFormula(Mode.and, arg1, pf);
+		final ValueFormula<NameValue> predFormula = Formulas.newNameFormula(pred);
+		final JoinFormula pf = new JoinFormula(predFormula, arg2);
+		final MergeFormula mf = new MergeFormula(Mode.and, arg1, pf);
 		return mf;
 	}
 
-	public void genreateEntityInfoFile(String free917EntityFile, String entityInfoFile, String outFile, String missingEntitiesFile) throws IOException
+	public void genreateEntityInfoFile(final String free917EntityFile, final String entityInfoFile, final String outFile, final String missingEntitiesFile) throws IOException
 	{
 
-		Map<String, String> midToIdMap = FileUtils.loadStringToStringMap(midToIdFile);
+		final Map<String, String> midToIdMap = FileUtils.loadStringToStringMap(midToIdFile);
 
-		Map<String, Set<String>> idToNameMap = new HashMap<String, Set<String>>();
-		for (String line : IOUtils.readLines(free917EntityFile))
+		final Map<String, Set<String>> idToNameMap = new HashMap<>();
+		for (final String line : IOUtils.readLines(free917EntityFile))
 		{
 
-			String[] tokens = line.split(":-");
+			final String[] tokens = line.split(":-");
 			String name = tokens[0].trim().replace('-', ' ');
 			name = name.replace("#", "# ");
 			name = name.replace("!", " !");
 			name = name.replace("'", " '");
 			name = name.replace(",", " ,");
 			name = name.replace(":", " :");
-			String entry = tokens[1].trim();
-			String[] entryTokens = entry.split(":");
+			final String entry = tokens[1].trim();
+			final String[] entryTokens = entry.split(":");
 			String id = entryTokens[1].trim();
 			id = FormatConverter.fromSlashToDot(id, true);
 
@@ -917,20 +896,19 @@ public class Free917Converter implements Runnable
 		}
 		LogInfo.log("Number of entries: " + idToNameMap.size());
 
-		PrintWriter writer = IOUtils.getPrintWriter(outFile);
+		final PrintWriter writer = IOUtils.getPrintWriter(outFile);
 		int i = 0;
-		for (String line : IOUtils.readLines(entityInfoFile))
+		for (final String line : IOUtils.readLines(entityInfoFile))
 		{
-			String[] tokens = line.split("\t");
-			String id = tokens[1];
+			final String[] tokens = line.split("\t");
+			final String id = tokens[1];
 
 			if (idToNameMap.containsKey(id))
 			{
 
 				if (idToNameMap.get(id).size() > 1)
 					System.out.println("Multiple names: " + idToNameMap.get(id));
-				for (String name : idToNameMap.get(id))
-				{
+				for (final String name : idToNameMap.get(id))
 					if (name.equals("beer"))
 					{
 						tokens[3] = "beer";
@@ -951,7 +929,6 @@ public class Free917Converter implements Runnable
 							tokens[3] = name;
 							writer.println(StringUtils.join(tokens, "\t"));
 						}
-				}
 				idToNameMap.remove(id);
 			}
 			if (i % 1000000 == 0)
@@ -959,8 +936,8 @@ public class Free917Converter implements Runnable
 			i++;
 		}
 		writer.close();
-		PrintWriter missingWriter = IOUtils.getPrintWriter(missingEntitiesFile);
-		for (String id : idToNameMap.keySet())
+		final PrintWriter missingWriter = IOUtils.getPrintWriter(missingEntitiesFile);
+		for (final String id : idToNameMap.keySet())
 		{
 			if (id.startsWith("fb:type") || id.startsWith("fb:un."))
 				continue;

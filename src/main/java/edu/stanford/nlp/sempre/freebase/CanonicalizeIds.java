@@ -5,7 +5,6 @@ import fig.basic.LogInfo;
 import fig.basic.MapUtils;
 import fig.basic.Option;
 import fig.exec.Execution;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,15 +30,15 @@ public class CanonicalizeIds implements Runnable
 
 	public void run()
 	{
-		Map<String, String> canonicalIdMap = Utils.readCanonicalIdMap(canonicalIdMapPath, maxInputLines);
+		final Map<String, String> canonicalIdMap = Utils.readCanonicalIdMap(canonicalIdMapPath, maxInputLines);
 
 		// Do conversion
 		LogInfo.begin_track("Convert");
-		PrintWriter out = IOUtils.openOutHard(canonicalizedPath);
+		final PrintWriter out = IOUtils.openOutHard(canonicalizedPath);
 		out.println(Utils.ttlPrefix);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(rawPath);
+			final BufferedReader in = IOUtils.openIn(rawPath);
 			String line;
 			int numInputLines = 0;
 			while (numInputLines < maxInputLines && (line = in.readLine()) != null)
@@ -47,7 +46,7 @@ public class CanonicalizeIds implements Runnable
 				numInputLines++;
 				if (numInputLines % 10000000 == 0)
 					LogInfo.logs("Read %s lines", numInputLines);
-				String[] tokens = Utils.parseTriple(line);
+				final String[] tokens = Utils.parseTriple(line);
 				if (tokens == null)
 					continue;
 				String arg1 = tokens[0];
@@ -75,7 +74,7 @@ public class CanonicalizeIds implements Runnable
 			}
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -83,7 +82,7 @@ public class CanonicalizeIds implements Runnable
 		LogInfo.end_track();
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new CanonicalizeIds());
 	}

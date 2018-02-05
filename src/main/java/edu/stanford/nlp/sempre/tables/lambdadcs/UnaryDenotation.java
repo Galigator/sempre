@@ -1,8 +1,11 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Unary denotation: a list of values.
@@ -30,14 +33,14 @@ public abstract class UnaryDenotation implements Unarylike, Collection<Value>
 	public static final UnaryDenotation ONE = new ExplicitUnaryDenotation(new NumberValue(1));
 
 	@Override
-	public UnaryDenotation get(Value key)
+	public UnaryDenotation get(final Value key)
 	{
 		// Any assignment yields the same answer.
 		return this;
 	}
 
 	@Override
-	public UnaryDenotation inverseGet(Value value)
+	public UnaryDenotation inverseGet(final Value value)
 	{
 		return NULL;
 	}
@@ -60,7 +63,7 @@ public abstract class UnaryDenotation implements Unarylike, Collection<Value>
 	public abstract UnaryDenotation aggregate(AggregateFormula.Mode mode);
 
 	@Override
-	public UnaryDenotation filter(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public UnaryDenotation filter(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		// domainUpperBound information is not used
 		return filter(upperBound);
@@ -74,13 +77,13 @@ public abstract class UnaryDenotation implements Unarylike, Collection<Value>
 
 	// Don't support mutation
 	@Override
-	public boolean add(Value e)
+	public boolean add(final Value e)
 	{
 		throw new UnsupportedOperationException("unsupported");
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends Value> c)
+	public boolean addAll(final Collection<? extends Value> c)
 	{
 		throw new UnsupportedOperationException("unsupported");
 	}
@@ -92,19 +95,19 @@ public abstract class UnaryDenotation implements Unarylike, Collection<Value>
 	}
 
 	@Override
-	public boolean remove(Object o)
+	public boolean remove(final Object o)
 	{
 		throw new UnsupportedOperationException("unsupported");
 	}
 
 	@Override
-	public boolean removeAll(Collection<?> c)
+	public boolean removeAll(final Collection<?> c)
 	{
 		throw new UnsupportedOperationException("unsupported");
 	}
 
 	@Override
-	public boolean retainAll(Collection<?> c)
+	public boolean retainAll(final Collection<?> c)
 	{
 		throw new UnsupportedOperationException("unsupported");
 	}

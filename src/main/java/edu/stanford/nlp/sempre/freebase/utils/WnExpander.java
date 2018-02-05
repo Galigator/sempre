@@ -1,13 +1,17 @@
 package edu.stanford.nlp.sempre.freebase.utils;
 
+import edu.stanford.nlp.sempre.freebase.utils.WordNet.EdgeType;
+import edu.stanford.nlp.sempre.freebase.utils.WordNet.WordID;
+import edu.stanford.nlp.sempre.freebase.utils.WordNet.WordNetID;
 import fig.basic.LogInfo;
 import fig.basic.Option;
-
-import edu.stanford.nlp.sempre.freebase.utils.WordNet.*;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 public class WnExpander
 {
@@ -24,8 +28,8 @@ public class WnExpander
 
 	public static Options opts = new Options();
 
-	private WordNet wn;
-	private Set<EdgeType> edgeTypes = new HashSet<>();
+	private final WordNet wn;
+	private final Set<EdgeType> edgeTypes = new HashSet<>();
 
 	/**
 	 * Initializing wordnet and the relations to expand with
@@ -35,8 +39,7 @@ public class WnExpander
 	public WnExpander() throws IOException
 	{
 		wn = WordNet.loadPrologWordNet(new File(opts.wnFile));
-		for (String wnRelation : opts.wnRelations)
-		{
+		for (final String wnRelation : opts.wnRelations)
 			switch (wnRelation)
 			{
 				case "derives":
@@ -51,115 +54,106 @@ public class WnExpander
 				default:
 					throw new RuntimeException("Invalid relation: " + wnRelation);
 			}
-		}
 	}
 
-	public Set<String> expandPhrase(String phrase)
+	public Set<String> expandPhrase(final String phrase)
 	{
 
 		// find synsetse for phrase
-		Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
+		final Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
 		// expand synsets
-		for (EdgeType edgeType : edgeTypes)
+		for (final EdgeType edgeType : edgeTypes)
 			phraseSynsets.addAll(expandSynsets(phraseSynsets, edgeType));
 		// find phrases for synsets
-		Set<String> expansions = synsetsToPhrases(phraseSynsets);
+		final Set<String> expansions = synsetsToPhrases(phraseSynsets);
 		if (opts.verbose > 0)
-		{
-			for (String expansion : expansions)
+			for (final String expansion : expansions)
 				LogInfo.logs("WordNetExpansionLexicon: expanding %s to %s", phrase, expansion);
-		}
 		return expansions;
 	}
 
-	public Set<String> getSynonyms(String phrase)
+	public Set<String> getSynonyms(final String phrase)
 	{
-		Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
-		Set<String> expansions = synsetsToPhrases(phraseSynsets);
+		final Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
+		final Set<String> expansions = synsetsToPhrases(phraseSynsets);
 		expansions.remove(phrase);
 		return expansions;
 	}
 
-	public Set<String> getDerivations(String phrase)
+	public Set<String> getDerivations(final String phrase)
 	{
-		Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
-		Set<WordNetID> derivations = new HashSet<>();
+		final Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
+		final Set<WordNetID> derivations = new HashSet<>();
 		derivations.addAll(expandSynsets(phraseSynsets, EdgeType.DERIVED_FROM));
 		derivations.addAll(expandSynsets(phraseSynsets, EdgeType.DERIVES));
-		Set<String> expansions = synsetsToPhrases(derivations);
+		final Set<String> expansions = synsetsToPhrases(derivations);
 		expansions.remove(phrase);
 		return expansions;
 	}
 
-	public Set<String> getHypernyms(String phrase)
+	public Set<String> getHypernyms(final String phrase)
 	{
-		Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
-		Set<WordNetID> hypernyms = new HashSet<>();
+		final Set<WordNetID> phraseSynsets = phraseToSynsets(phrase);
+		final Set<WordNetID> hypernyms = new HashSet<>();
 		hypernyms.addAll(expandSynsets(phraseSynsets, EdgeType.HYPONYM));
-		Set<String> expansions = synsetsToPhrases(hypernyms);
+		final Set<String> expansions = synsetsToPhrases(hypernyms);
 		expansions.remove(phrase);
 		return expansions;
 	}
 
-	private Set<String> synsetsToPhrases(Set<WordNetID> phraseSynsets)
+	private Set<String> synsetsToPhrases(final Set<WordNetID> phraseSynsets)
 	{
 
-		Set<String> res = new HashSet<>();
-		for (WordNetID phraseSynset : phraseSynsets)
-		{
+		final Set<String> res = new HashSet<>();
+		for (final WordNetID phraseSynset : phraseSynsets)
 			res.addAll(synsetToPhrases(phraseSynset));
-		}
 		return res;
 	}
 
-	private Collection<String> synsetToPhrases(WordNetID phraseSynset)
+	private Collection<String> synsetToPhrases(final WordNetID phraseSynset)
 	{
-		Set<String> res = new HashSet<>();
-		List<WordNetID> wordTags = phraseSynset.get(EdgeType.SYNSET_HAS_WORDTAG);
-		for (WordNetID wordTag : wordTags)
+		final Set<String> res = new HashSet<>();
+		final List<WordNetID> wordTags = phraseSynset.get(EdgeType.SYNSET_HAS_WORDTAG);
+		for (final WordNetID wordTag : wordTags)
 		{
-			List<WordNetID> words = wordTag.get(EdgeType.WORDTAG_TO_WORD);
-			for (WordNetID word : words)
-			{
+			final List<WordNetID> words = wordTag.get(EdgeType.WORDTAG_TO_WORD);
+			for (final WordNetID word : words)
 				res.add(((WordID) word).word);
-			}
 		}
 		return res;
 	}
 
 	/** Given a phrase find all synsets containing this phrase */
-	private Set<WordNetID> phraseToSynsets(String phrase)
+	private Set<WordNetID> phraseToSynsets(final String phrase)
 	{
 
-		List<WordNetID> wordTags = new LinkedList<>();
-		WordID word = wn.getWordID(phrase);
+		final List<WordNetID> wordTags = new LinkedList<>();
+		final WordID word = wn.getWordID(phrase);
 		if (word != null)
 			wordTags.addAll(word.get(EdgeType.WORD_TO_WORDTAG));
-		Set<WordNetID> synsets = new HashSet<>();
-		for (WordNetID wordTag : wordTags)
-		{
+		final Set<WordNetID> synsets = new HashSet<>();
+		for (final WordNetID wordTag : wordTags)
 			synsets.addAll(wordTag.get(EdgeType.WORDTAG_IN_SYNSET));
-		}
 		return synsets;
 	}
 
-	private List<WordNetID> expandSynset(WordNetID synset, EdgeType edgeType)
+	private List<WordNetID> expandSynset(final WordNetID synset, final EdgeType edgeType)
 	{
 		return synset.get(edgeType);
 	}
 
-	private Set<WordNetID> expandSynsets(Collection<WordNetID> synsets, EdgeType edgeType)
+	private Set<WordNetID> expandSynsets(final Collection<WordNetID> synsets, final EdgeType edgeType)
 	{
-		Set<WordNetID> res = new HashSet<>();
-		for (WordNetID synset : synsets)
+		final Set<WordNetID> res = new HashSet<>();
+		for (final WordNetID synset : synsets)
 			res.addAll(expandSynset(synset, edgeType));
 		return res;
 	}
 
-	public static void main(String[] args) throws IOException
+	public static void main(final String[] args) throws IOException
 	{
 
-		WnExpander wnLexicon = new WnExpander();
+		final WnExpander wnLexicon = new WnExpander();
 		wnLexicon.expandPhrase("assassinate");
 		System.out.println();
 	}

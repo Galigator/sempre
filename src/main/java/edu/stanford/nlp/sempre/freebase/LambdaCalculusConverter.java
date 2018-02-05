@@ -1,13 +1,32 @@
 package edu.stanford.nlp.sempre.freebase;
 
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.Colorizer;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Executor;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.MarkFormula;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NotFormula;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.ReverseFormula;
+import edu.stanford.nlp.sempre.SuperlativeFormula;
+import edu.stanford.nlp.sempre.ValueFormula;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
 import fig.exec.Execution;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Converts Luke Zettlemoyer's lambda calculus data format into our example files.
@@ -45,26 +64,26 @@ public class LambdaCalculusConverter implements Runnable
 	public static Options opts = new Options();
 
 	// Mapping between predicates
-	Map<String, Formula> predicatesMap = new HashMap<String, Formula>();
+	Map<String, Formula> predicatesMap = new HashMap<>();
 	// Mapping from variables in the input (e.g. "$1") to our variables (e.g. "x")
-	Map<String, Formula> varMap = new HashMap<String, Formula>();
+	Map<String, Formula> varMap = new HashMap<>();
 	// Mapping from types (e.g. "i" in "population:i") to semparse primitive types
-	Map<String, String> primitiveMap = new HashMap<String, String>();
+	Map<String, String> primitiveMap = new HashMap<>();
 	// Hardcoded replacements for mis-specified formulas in the input
-	Map<String, String> replaceMap = new HashMap<String, String>();
+	Map<String, String> replaceMap = new HashMap<>();
 	// Hardcoded conversions for where the converter fails
-	Map<String, String> manualConversionsMap = new HashMap<String, String>();
+	Map<String, String> manualConversionsMap = new HashMap<>();
 
 	// Colorize output
 	Colorizer color = new Colorizer();
 
 	// Examples to be converted
-	List<Example> examples = new ArrayList<Example>();
+	List<Example> examples = new ArrayList<>();
 	// Indices of examples that were executed without error
-	List<Integer> validExampleIds = new ArrayList<Integer>();
-	List<Integer> failedExampleIds = new ArrayList<Integer>();
+	List<Integer> validExampleIds = new ArrayList<>();
+	List<Integer> failedExampleIds = new ArrayList<>();
 	// Use this to later sort the valid examples
-	List<Integer> validExampleLengths = new ArrayList<Integer>();
+	List<Integer> validExampleLengths = new ArrayList<>();
 
 	public void run()
 	{
@@ -93,48 +112,48 @@ public class LambdaCalculusConverter implements Runnable
 
 	void readSpec()
 	{
-		for (String line : IOUtils.readLinesHard(opts.specPath))
+		for (final String line : IOUtils.readLinesHard(opts.specPath))
 		{
 			if (line.startsWith("#"))
 				continue;
 			if (line.equals(""))
 				continue;
-			String[] tokens = line.split(" ", 2);
+			final String[] tokens = line.split(" ", 2);
 			predicatesMap.put(tokens[0], Formula.fromString(tokens[1]));
 		}
 	}
 
 	void readPrimitives()
 	{
-		for (String line : IOUtils.readLinesHard(opts.primPath))
+		for (final String line : IOUtils.readLinesHard(opts.primPath))
 		{
 			if (line.startsWith("#"))
 				continue;
 			if (line.equals(""))
 				continue;
-			String[] tokens = line.split(" ", 2);
+			final String[] tokens = line.split(" ", 2);
 			primitiveMap.put(tokens[0], tokens[1]);
 		}
 	}
 
 	void readVars()
 	{
-		for (String line : IOUtils.readLinesHard(opts.varPath))
+		for (final String line : IOUtils.readLinesHard(opts.varPath))
 		{
 			if (line.startsWith("#"))
 				continue;
 			if (line.equals(""))
 				continue;
-			String[] tokens = line.split(" ", 2);
+			final String[] tokens = line.split(" ", 2);
 			varMap.put(tokens[0], Formula.fromString(tokens[1]));
 		}
 	}
 
-	void readStringMap(String path, Map<String, String> map)
+	void readStringMap(final String path, final Map<String, String> map)
 	{
 		boolean readOriginal = false;
 		String original = "";
-		for (String line : IOUtils.readLinesHard(path))
+		for (final String line : IOUtils.readLinesHard(path))
 		{
 			if (line.startsWith("#"))
 				continue;
@@ -166,24 +185,21 @@ public class LambdaCalculusConverter implements Runnable
 			func = removeGeoType(func);
 		if (func.startsWith("$"))
 			return Formula.fromString(String.format("(var %s)", toVariable(func).toString()));
-		if (!predicatesMap.containsKey(func)) { throw new RuntimeException("Unknown predicate: " + func); }
-		Formula form = predicatesMap.get(func);
+		if (!predicatesMap.containsKey(func))
+			throw new RuntimeException("Unknown predicate: " + func);
+		final Formula form = predicatesMap.get(func);
 		if (reverse)
-		{
 			return new ReverseFormula(form);
-		}
 		else
-		{
 			return form;
-		}
 	}
 
-	Formula toLambdaVar(String var)
+	Formula toLambdaVar(final String var)
 	{
 		return toVariable(var);
 	}
 
-	boolean isVar(String var)
+	boolean isVar(final String var)
 	{
 		return var != null && var.startsWith("$");
 	}
@@ -191,40 +207,41 @@ public class LambdaCalculusConverter implements Runnable
 	Formula toVariable(String var)
 	{
 		var = removeGeoType(var);
-		if (!varMap.containsKey(var)) { throw new RuntimeException("Unknown variable: " + var); }
+		if (!varMap.containsKey(var))
+			throw new RuntimeException("Unknown variable: " + var);
 		return varMap.get(var);
 	}
 
 	// FIXME Not general to converters
-	String removeGeoType(String pred)
+	String removeGeoType(final String pred)
 	{
 		return pred.split(":", 2)[0];
 	}
 
-	String getGeoType(String pred)
+	String getGeoType(final String pred)
 	{
-		String[] parts = pred.split(":", 2);
+		final String[] parts = pred.split(":", 2);
 		if (parts.length > 0)
 			return parts[1];
 		return "";
 	}
 
-	Formula toJoin(String func, Formula arg)
+	Formula toJoin(final String func, final Formula arg)
 	{
 		return new JoinFormula(toPredicate(func), arg);
 	}
 
-	Formula toLambda(String var, Formula body)
+	Formula toLambda(final String var, final Formula body)
 	{
 		return new LambdaFormula(toLambdaVar(var).toString(), body);
 	}
 
-	Formula toMark(String var, Formula body)
+	Formula toMark(final String var, final Formula body)
 	{
 		return new MarkFormula(toPredicate(var).toString(), body);
 	}
 
-	Formula toAndFormula(List<LispTree> clauses, boolean[] hit, String headVar, List<String> existsVars)
+	Formula toAndFormula(final List<LispTree> clauses, final boolean[] hit, final String headVar, final List<String> existsVars)
 	{
 		// (and (river:t $1) (loc:t $1 $0))
 		Formula formula = null;
@@ -237,19 +254,17 @@ public class LambdaCalculusConverter implements Runnable
 			}
 			// if (!hasHeadVar(clauses.get(i), headVar)) continue;
 			hit[i] = true;
-			LispTree tree = clauses.get(i);
-			Formula newFormula = toFormula(tree, headVar, existsVars);
+			final LispTree tree = clauses.get(i);
+			final Formula newFormula = toFormula(tree, headVar, existsVars);
 			if (formula == null)
 				formula = newFormula;
 			else
-			{
 				formula = new MergeFormula(MergeFormula.Mode.and, formula, newFormula);
-			}
 		}
 		return formula;
 	}
 
-	Formula toOrFormula(List<LispTree> clauses, boolean[] hit, String headVar, List<String> existsVars)
+	Formula toOrFormula(final List<LispTree> clauses, final boolean[] hit, final String headVar, final List<String> existsVars)
 	{
 		// (or (town:t $1) (city:t $1))
 		LogInfo.log("# or clauses: " + clauses.size());
@@ -263,19 +278,17 @@ public class LambdaCalculusConverter implements Runnable
 			}
 			// if (!hasHeadVar(clauses.get(i), headVar)) continue;
 			hit[i] = true;
-			LispTree tree = clauses.get(i);
-			Formula newFormula = toFormula(tree, headVar, existsVars);
+			final LispTree tree = clauses.get(i);
+			final Formula newFormula = toFormula(tree, headVar, existsVars);
 			if (formula == null)
 				formula = newFormula;
 			else
-			{
 				formula = new MergeFormula(MergeFormula.Mode.or, formula, newFormula);
-			}
 		}
 		return formula;
 	}
 
-	boolean validVar(String var, String headVar, List<String> existsVars)
+	boolean validVar(final String var, final String headVar, final List<String> existsVars)
 	{
 		if (var == null)
 			return false;
@@ -290,13 +303,13 @@ public class LambdaCalculusConverter implements Runnable
 		return valid;
 	}
 
-	Formula toPrimitive(String s)
+	Formula toPrimitive(final String s)
 	{
-		String[] parts = s.split(":", 2);
+		final String[] parts = s.split(":", 2);
 		if (parts.length < 2)
 			return null;
-		String type = parts[1];
-		String primitive = primitiveMap.get(type);
+		final String type = parts[1];
+		final String primitive = primitiveMap.get(type);
 		if (primitive == null)
 			return null;
 		// if (primitive.equals("string"))
@@ -308,15 +321,15 @@ public class LambdaCalculusConverter implements Runnable
 		return Formula.fromString(String.format("(%s %s)", primitive, parts[0]));
 	}
 
-	Formula handleExists(LispTree tree, String headVar, List<String> existsVars)
+	Formula handleExists(final LispTree tree, final String headVar, final List<String> existsVars)
 	{
 		// (exists $1 (and (river:t $1) (loc:t $1 $0)))
-		String eVar = tree.child(1).value;
+		final String eVar = tree.child(1).value;
 		existsVars.add(eVar);
 		// FIXME Currently assuming format where exists contains and statement with
 		// n clauses where first n - 1 clauses describe exists var and last clause
 		// relates exists var to the head var
-		List<LispTree> andTreeList = tree.child(2).children;
+		final List<LispTree> andTreeList = tree.child(2).children;
 		// FIXME Don't assume and tree
 		LispTree newAndTree = LispTree.proto.newList();
 
@@ -324,7 +337,7 @@ public class LambdaCalculusConverter implements Runnable
 		int numPredTrees = 0;
 		for (int k = 0; k < andTreeList.size(); k++)
 		{
-			String childStr = andTreeList.get(k).toString();
+			final String childStr = andTreeList.get(k).toString();
 			if (childStr.contains(headVar))
 			{
 				predTreeInd = k;
@@ -332,28 +345,29 @@ public class LambdaCalculusConverter implements Runnable
 			}
 		}
 
-		String func = tree.child(2).child(0).value;
-		if (numPredTrees == 0 || func.equals("exists")) { return toLambda(eVar, toFormula(tree.child(2), eVar, existsVars)); }
+		final String func = tree.child(2).child(0).value;
+		if (numPredTrees == 0 || func.equals("exists"))
+			return toLambda(eVar, toFormula(tree.child(2), eVar, existsVars));
 
-		newAndTree.children = new ArrayList<LispTree>(andTreeList.subList(0, andTreeList.size()));
-		LispTree predTree = newAndTree.children.remove(predTreeInd);
+		newAndTree.children = new ArrayList<>(andTreeList.subList(0, andTreeList.size()));
+		final LispTree predTree = newAndTree.children.remove(predTreeInd);
 		if (newAndTree.children.size() == 2)
 			newAndTree = newAndTree.child(1);
 
-		LispTree newPredTree = LispTree.proto.parseFromString(predTree.toString().replace(eVar, newAndTree.toString()));
+		final LispTree newPredTree = LispTree.proto.parseFromString(predTree.toString().replace(eVar, newAndTree.toString()));
 
-		Formula form = toFormula(newPredTree, eVar, existsVars);
+		final Formula form = toFormula(newPredTree, eVar, existsVars);
 		existsVars.remove(eVar);
 		return form;
 	}
 
 	// hit: ignore these clauses in (and ...) constructions
-	public Formula toFormula(LispTree tree, String headVar, List<String> existsVars)
+	public Formula toFormula(final LispTree tree, String headVar, final List<String> existsVars)
 	{
 
 		if (tree.isLeaf())
 		{
-			Formula s = toPrimitive(tree.toString());
+			final Formula s = toPrimitive(tree.toString());
 			if (s != null)
 				return s;
 			return toPredicate(tree.toString());
@@ -362,22 +376,17 @@ public class LambdaCalculusConverter implements Runnable
 		String func = tree.child(0).value;
 
 		if (func.equals("lambda"))
-		{
 			// (lambda $0 e (and (river:t $0) (loc:t $0 arkansas:s)))
 			return toFormula(tree.child(3), tree.child(1).value, existsVars);
-		}
 		else
 			if (func.equals("count"))
 			{
 				// (count $0 (and (river:t $0) (loc:t $0 washington:s)))
-				String countVar = tree.child(1).value;
+				final String countVar = tree.child(1).value;
 				if (headVar == null)
 					headVar = countVar;
 				if (!countVar.equals(headVar) && !existsVars.contains(countVar))
-				{
-
 					return toLambda(countVar, new AggregateFormula(AggregateFormula.Mode.count, toFormula(tree.child(2), countVar, existsVars)));
-				}
 				else
 					return new AggregateFormula(AggregateFormula.Mode.count, toFormula(tree.child(2), countVar, existsVars));
 			}
@@ -385,7 +394,7 @@ public class LambdaCalculusConverter implements Runnable
 				if (func.equals("sum"))
 				{
 					// (sum $0 (and (state:t $0) (next_to:t $0 texas:s)) (population:i $0))
-					String numFunc = tree.child(3).child(0).value;
+					final String numFunc = tree.child(3).child(0).value;
 					return new AggregateFormula(AggregateFormula.Mode.sum, toJoin(numFunc, toFormula(tree.child(2), tree.child(1).value, existsVars)));
 				}
 				else
@@ -396,12 +405,12 @@ public class LambdaCalculusConverter implements Runnable
 						SuperlativeFormula.Mode mode = SuperlativeFormula.Mode.argmax;
 						if (func.equals("argmin"))
 							mode = SuperlativeFormula.Mode.argmin;
-						String superVar = tree.child(1).value;
-						Formula headFormula = toFormula(tree.child(2), superVar, existsVars);
+						final String superVar = tree.child(1).value;
+						final Formula headFormula = toFormula(tree.child(2), superVar, existsVars);
 						Formula degreeFormula = toFormula(tree.child(3), superVar, existsVars);
-						NumberValue one = new NumberValue(1.0);
-						Formula rankFormula = new ValueFormula(one);
-						Formula countFormula = new ValueFormula(one);
+						final NumberValue one = new NumberValue(1.0);
+						final Formula rankFormula = new ValueFormula(one);
+						final Formula countFormula = new ValueFormula(one);
 						// FIXME Hack to handle "most"/"least" expressions
 						if (tree.child(3).child(0).value.equals("count"))
 							degreeFormula = new ReverseFormula(degreeFormula);
@@ -417,21 +426,14 @@ public class LambdaCalculusConverter implements Runnable
 						}
 						else
 							if (func.equals("not"))
-							{
 								return new NotFormula(toFormula(tree.child(1), headVar, existsVars));
-							}
 							else
 								if (func.equals("and"))
-								{
 									return toAndFormula(tree.children.subList(1, tree.children.size()), new boolean[tree.children.size() - 1], headVar, existsVars);
-								}
 								else
 									if (func.equals("or"))
-									{
 										return toOrFormula(tree.children.subList(1, tree.children.size()), new boolean[tree.children.size() - 1], headVar, existsVars);
-									}
 									else
-									{ // Predicate
 										// Find head var
 										if (tree.children.size() == 2)
 										{ // Unary
@@ -452,14 +454,14 @@ public class LambdaCalculusConverter implements Runnable
 												if (func.equals("capital:t"))
 													func = "is_capital:t";
 
-												Formula form1 = toFormula(tree.child(1), headVar, existsVars);
-												Formula form2 = toFormula(tree.child(2), headVar, existsVars);
-												String first = tree.child(1).value;
-												String second = tree.child(2).value;
+												final Formula form1 = toFormula(tree.child(1), headVar, existsVars);
+												final Formula form2 = toFormula(tree.child(2), headVar, existsVars);
+												final String first = tree.child(1).value;
+												final String second = tree.child(2).value;
 
 												// FIXME So ugly
-												boolean secondIsHead = isVar(second) && !existsVars.contains(second);
-												boolean firstIsHead = isVar(first) && (!existsVars.contains(first) || !secondIsHead);
+												final boolean secondIsHead = isVar(second) && !existsVars.contains(second);
+												final boolean firstIsHead = isVar(first) && (!existsVars.contains(first) || !secondIsHead);
 												if (firstIsHead)
 													return toJoin(func, form2);
 												else // secondIsHead
@@ -468,24 +470,19 @@ public class LambdaCalculusConverter implements Runnable
 												// return toJoin(func, form1);
 											}
 											else
-											{
 												throw new RuntimeException("Bad arity: " + tree);
-											}
-									}
 	}
 
-	void countTokens(LispTree tree, Map<String, Integer> counts)
+	void countTokens(final LispTree tree, final Map<String, Integer> counts)
 	{
 		if (tree.isLeaf())
 			MapUtils.incr(counts, tree.value, 1);
 		else
-		{
-			for (LispTree child : tree.children)
+			for (final LispTree child : tree.children)
 				countTokens(child, counts);
-		}
 	}
 
-	String preprocessPredicates(String lispLine, String utterance)
+	String preprocessPredicates(String lispLine, final String utterance)
 	{
 		// Replacements
 		boolean replaced = false;
@@ -517,12 +514,12 @@ public class LambdaCalculusConverter implements Runnable
 	void convertExamples()
 	{
 		String line;
-		int runInd = opts.runInd;
+		final int runInd = opts.runInd;
 
 		try
 		{
 			Example.Builder ex = null;
-			BufferedReader in = IOUtils.openIn(opts.inPath);
+			final BufferedReader in = IOUtils.openIn(opts.inPath);
 			boolean gotUtterance = false;
 			int newId = 0;
 			String utterance = "";
@@ -553,10 +550,10 @@ public class LambdaCalculusConverter implements Runnable
 						continue;
 					}
 
-					LispTree tree = LispTree.proto.parseFromString(preprocessPredicates(line, utterance));
+					final LispTree tree = LispTree.proto.parseFromString(preprocessPredicates(line, utterance));
 					LogInfo.logs(color.colorize("IN [%d]: %s", "blue"), newId, utterance);
 					LogInfo.logs(color.colorize("IN [%d]: %s", "purple"), newId, tree);
-					ArrayList<String> existsVars = new ArrayList<String>();
+					final ArrayList<String> existsVars = new ArrayList<>();
 
 					if (manualConversionsMap.containsKey(line))
 					{
@@ -575,7 +572,7 @@ public class LambdaCalculusConverter implements Runnable
 			}
 			in.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -583,34 +580,32 @@ public class LambdaCalculusConverter implements Runnable
 
 	void executeExamples()
 	{
-		int runInd = opts.runInd;
+		final int runInd = opts.runInd;
 		// FIXME Should be passed in
 		SparqlExecutor.opts.endpointUrl = "http://localhost:3094/sparql";
 		SparqlExecutor.opts.cachePath = "SparqlExecutor.cache";
 		SparqlExecutor.opts.lambdaAllowDiagonals = false; //jonathan
-		SparqlExecutor executor = new SparqlExecutor();
+		final SparqlExecutor executor = new SparqlExecutor();
 
 		int exInd = 1;
 		if (runInd > 0)
 			exInd = runInd;
-		for (Example ex : examples)
+		for (final Example ex : examples)
 		{
 			// Useful for just testing specific portion of examples
 			if (runInd > 0 && exInd != runInd)
-			{
 				break;
-			}
 
 			LogInfo.logs(color.colorize("[%d] %s", "blue"), exInd, ex.utterance);
 			LogInfo.logs(color.colorize("[%d] %s", "yellow"), exInd, ex.targetFormula.toString());
 			try
 			{
-				Executor.Response response = executor.execute(ex.targetFormula, null);
+				final Executor.Response response = executor.execute(ex.targetFormula, null);
 				LogInfo.logs("\t\t [%d] %s", exInd, response.value.toString());
 				validExampleIds.add(exInd);
 				validExampleLengths.add(ex.utterance.length());
 			}
-			catch (RuntimeException e)
+			catch (final RuntimeException e)
 			{
 				LogInfo.error(e);
 				failedExampleIds.add(exInd);
@@ -629,13 +624,13 @@ public class LambdaCalculusConverter implements Runnable
 		//      }
 		//    });
 
-		PrintWriter out = IOUtils.openOutHard(opts.outPath);
+		final PrintWriter out = IOUtils.openOutHard(opts.outPath);
 		out.println("["); // Print out as a list
-		String indent = "  ";
+		final String indent = "  ";
 		for (int k = 0; k < validExampleIds.size(); k++)
 		{
-			int j = validExampleIds.get(k) - 1;
-			Example ex = examples.get(j);
+			final int j = validExampleIds.get(k) - 1;
+			final Example ex = examples.get(j);
 			if (k < validExampleIds.size() - 1)
 				out.println(indent + ex.toJson() + ",");
 			else
@@ -650,14 +645,14 @@ public class LambdaCalculusConverter implements Runnable
 		LogInfo.logs("%d input examples", examples.size());
 		LogInfo.logs("%d successful executions", validExampleIds.size());
 		LogInfo.logs("Failed executions (%d):", failedExampleIds.size());
-		for (int k : failedExampleIds)
+		for (final int k : failedExampleIds)
 		{
-			Example ex = examples.get(k - 1);
+			final Example ex = examples.get(k - 1);
 			LogInfo.log(ex.toJson());
 		}
 	}
 
-	public static void main(String[] args) throws InterruptedException
+	public static void main(final String[] args) throws InterruptedException
 	{
 		Execution.run(args, new LambdaCalculusConverter(), "lcc", LambdaCalculusConverter.opts);
 	}

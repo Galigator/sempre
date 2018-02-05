@@ -14,10 +14,10 @@ public class DateFn extends SemanticFn
 			@Override
 			public Derivation createDerivation()
 			{
-				String value = ex.languageInfo.getNormalizedNerSpan("DATE", c.getStart(), c.getEnd());
+				final String value = ex.languageInfo.getNormalizedNerSpan("DATE", c.getStart(), c.getEnd());
 				if (value == null)
 					return null;
-				DateValue dateValue = DateValue.parseDateValue(value);
+				final DateValue dateValue = DateValue.parseDateValue(value);
 				if (dateValue == null)
 					return null;
 				return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(dateValue)).type(SemType.dateType).createDerivation();

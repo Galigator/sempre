@@ -3,7 +3,6 @@ package edu.stanford.nlp.sempre;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.Option;
-
 import java.util.List;
 
 /**
@@ -28,15 +27,15 @@ public class SelectFn extends SemanticFn
 	{
 	}
 
-	public SelectFn(int position)
+	public SelectFn(final int position)
 	{
 		init(LispTree.proto.newList("SelectFn", position + ""));
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
-		this.position = Integer.valueOf(tree.child(1).value);
+		position = Integer.valueOf(tree.child(1).value);
 	}
 
 	public DerivationStream call(final Example ex, final Callable c)
@@ -46,27 +45,21 @@ public class SelectFn extends SemanticFn
 			@Override
 			public Derivation createDerivation()
 			{
-				FeatureVector features = new FeatureVector();
+				final FeatureVector features = new FeatureVector();
 				// TODO(pliang): move into FeatureExtractor
 				if (FeatureExtractor.containsDomain("skipPos"))
-				{
 					for (int i = 0; i < c.getChildren().size(); ++i)
-					{
 						if (i != position)
 						{
-							Derivation child = c.child(i);
+							final Derivation child = c.child(i);
 							for (int index = child.start; index < child.end; ++index)
 							{
-								List<String> posTags = ex.languageInfo.posTags;
+								final List<String> posTags = ex.languageInfo.posTags;
 								features.add("skipPos", posTags.get(index));
 								if (opts.verbose > 0)
-								{
 									LogInfo.logs("SelectFn: adding pos-skipping feature, pos: %s, word: %s", posTags.get(index), ex.languageInfo.tokens.get(index));
-								}
 							}
 						}
-					}
-				}
 				return new Derivation.Builder().withCallable(c).withFormulaFrom(c.child(position)).localFeatureVector(features).createDerivation();
 			}
 		};

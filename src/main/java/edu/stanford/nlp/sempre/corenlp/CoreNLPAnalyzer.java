@@ -1,25 +1,35 @@
 package edu.stanford.nlp.sempre.corenlp;
 
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.LanguageInfo.DependencyEdge;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.IndexedWord;
-import edu.stanford.nlp.ling.CoreAnnotations.*;
+import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.NormalizedNamedEntityTagAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.LanguageInfo;
+import edu.stanford.nlp.sempre.LanguageInfo.DependencyEdge;
 import edu.stanford.nlp.util.CoreMap;
-
-import com.google.common.collect.Lists;
-import com.google.common.base.Joiner;
-
-import fig.basic.*;
-
-import java.io.*;
-import java.util.*;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * CoreNLPAnalyzer uses Stanford CoreNLP pipeline to analyze an input string utterance and return a LanguageInfo object
@@ -44,7 +54,7 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 	// "have"
 	// Need to update TextToTextMatcher
 	private static final String[] AUX_VERB_ARR = new String[] { "is", "are", "was", "were", "am", "be", "been", "will", "shall", "have", "has", "had", "would", "could", "should", "do", "does", "did", "can", "may", "might", "must", "seem" };
-	private static final Set<String> AUX_VERBS = new HashSet<String>(Arrays.asList(AUX_VERB_ARR));
+	private static final Set<String> AUX_VERBS = new HashSet<>(Arrays.asList(AUX_VERB_ARR));
 	private static final String AUX_VERB_TAG = "VBD-AUX";
 
 	public static StanfordCoreNLP pipeline = null;
@@ -53,7 +63,7 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 	{
 		if (pipeline != null)
 			return;
-		Properties props = new Properties();
+		final Properties props = new Properties();
 		props.put("annotators", Joiner.on(',').join(opts.annotators));
 		if (opts.caseSensitive)
 		{
@@ -71,20 +81,18 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 	// Stanford tokenizer doesn't break hyphens.
 	// Replace hypens with spaces for utterances like
 	// "Spanish-speaking countries" but not for "2012-03-28".
-	public static String breakHyphens(String utterance)
+	public static String breakHyphens(final String utterance)
 	{
-		StringBuilder buf = new StringBuilder(utterance);
+		final StringBuilder buf = new StringBuilder(utterance);
 		for (int i = 0; i < buf.length(); i++)
-		{
-			if (buf.charAt(i) == '-' && (i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1))))
+			if (buf.charAt(i) == '-' && i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1)))
 				buf.setCharAt(i, ' ');
-		}
 		return buf.toString();
 	}
 
 	public LanguageInfo analyze(String utterance)
 	{
-		LanguageInfo languageInfo = new LanguageInfo();
+		final LanguageInfo languageInfo = new LanguageInfo();
 
 		// Clear these so that analyze can hypothetically be called
 		// multiple times.
@@ -100,20 +108,16 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 
 		// Run Stanford CoreNLP
 		initModels();
-		Annotation annotation = pipeline.process(utterance);
+		final Annotation annotation = pipeline.process(utterance);
 
-		for (CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class))
+		for (final CoreLabel token : annotation.get(CoreAnnotations.TokensAnnotation.class))
 		{
-			String word = token.get(TextAnnotation.class);
-			String wordLower = word.toLowerCase();
+			final String word = token.get(TextAnnotation.class);
+			final String wordLower = word.toLowerCase();
 			if (LanguageAnalyzer.opts.lowerCaseTokens)
-			{
 				languageInfo.tokens.add(wordLower);
-			}
 			else
-			{
 				languageInfo.tokens.add(word);
-			}
 			languageInfo.posTags.add(AUX_VERBS.contains(wordLower) ? AUX_VERB_TAG : token.get(PartOfSpeechAnnotation.class));
 			languageInfo.nerTags.add(token.get(NamedEntityTagAnnotation.class));
 			languageInfo.lemmaTokens.add(token.get(LemmaAnnotation.class));
@@ -121,45 +125,42 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 		}
 
 		// Fills in a stanford dependency graph for constructing a feature
-		for (CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class))
+		for (final CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class))
 		{
-			SemanticGraph ccDeps = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
+			final SemanticGraph ccDeps = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
 			if (ccDeps == null)
 				continue;
-			int sentenceBegin = sentence.get(CoreAnnotations.TokenBeginAnnotation.class);
+			final int sentenceBegin = sentence.get(CoreAnnotations.TokenBeginAnnotation.class);
 
 			// Iterate over all tokens and their dependencies
 			for (int sourceTokenIndex = sentenceBegin; sourceTokenIndex < sentence.get(CoreAnnotations.TokenEndAnnotation.class); sourceTokenIndex++)
 			{
-				final ArrayList<DependencyEdge> outgoing = new ArrayList<DependencyEdge>();
+				final ArrayList<DependencyEdge> outgoing = new ArrayList<>();
 				languageInfo.dependencyChildren.add(outgoing);
-				IndexedWord node = ccDeps.getNodeByIndexSafe(sourceTokenIndex - sentenceBegin + 1); // + 1 for ROOT
+				final IndexedWord node = ccDeps.getNodeByIndexSafe(sourceTokenIndex - sentenceBegin + 1); // + 1 for ROOT
 				if (node != null)
-				{
-					for (SemanticGraphEdge edge : ccDeps.outgoingEdgeList(node))
+					for (final SemanticGraphEdge edge : ccDeps.outgoingEdgeList(node))
 					{
 						final String relation = edge.getRelation().toString();
 						final int targetTokenIndex = sentenceBegin + edge.getTarget().index() - 1;
 						outgoing.add(new DependencyEdge(relation, targetTokenIndex));
 					}
-				}
 			}
 		}
 		return languageInfo;
 	}
 
 	// Test on example sentence.
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
-		CoreNLPAnalyzer analyzer = new CoreNLPAnalyzer();
+		final CoreNLPAnalyzer analyzer = new CoreNLPAnalyzer();
 		while (true)
-		{
 			try
 			{
-				BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+				final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 				System.out.println("Enter some text:");
-				String text = reader.readLine();
-				LanguageInfo langInfo = analyzer.analyze(text);
+				final String text = reader.readLine();
+				final LanguageInfo langInfo = analyzer.analyze(text);
 				LogInfo.begin_track("Analyzing \"%s\"", text);
 				LogInfo.logs("tokens: %s", langInfo.tokens);
 				LogInfo.logs("lemmaTokens: %s", langInfo.lemmaTokens);
@@ -169,10 +170,9 @@ public class CoreNLPAnalyzer extends LanguageAnalyzer
 				LogInfo.logs("dependencyChildren: %s", langInfo.dependencyChildren);
 				LogInfo.end_track();
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				e.printStackTrace();
 			}
-		}
 	}
 }

@@ -1,8 +1,17 @@
 package edu.stanford.nlp.sempre.tables.grow;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.SemanticFn;
+import edu.stanford.nlp.sempre.SingleDerivationStream;
+import edu.stanford.nlp.sempre.TypeInference;
 import edu.stanford.nlp.sempre.tables.ScopedFormula;
-import fig.basic.*;
+import fig.basic.LispTree;
+import fig.basic.Option;
 
 /**
  * Mapping(s, r) ==> f(s, r)
@@ -21,7 +30,7 @@ public class EndGrowFn extends SemanticFn
 
 	Formula formula;
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		formula = Formulas.fromLispTree(tree.child(1));
@@ -35,7 +44,7 @@ public class EndGrowFn extends SemanticFn
 	}
 
 	@Override
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{
@@ -46,7 +55,7 @@ public class EndGrowFn extends SemanticFn
 					throw new RuntimeException("Wrong number of argument: expected 1; got " + c.getChildren().size());
 				if (!(c.child(0).formula instanceof ScopedFormula))
 					throw new RuntimeException("Wrong argument type: expected ScopedFormula; got " + c.child(0).formula);
-				ScopedFormula scoped = (ScopedFormula) c.child(0).formula;
+				final ScopedFormula scoped = (ScopedFormula) c.child(0).formula;
 				Formula result = formula;
 				result = Formulas.lambdaApply((LambdaFormula) result, scoped.head);
 				result = Formulas.lambdaApply((LambdaFormula) result, scoped.relation);

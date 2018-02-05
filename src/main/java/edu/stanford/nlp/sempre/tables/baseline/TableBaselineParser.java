@@ -1,10 +1,22 @@
 package edu.stanford.nlp.sempre.tables.baseline;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.FuzzyMatchFn;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
+import edu.stanford.nlp.sempre.tables.TableTypeSystem;
+import fig.basic.LogInfo;
+import java.util.Collections;
+import java.util.HashMap;
 
 /**
  * Baseline parser for table. Choose the answer from a table cell.
@@ -14,13 +26,13 @@ import fig.basic.*;
 public class TableBaselineParser extends Parser
 {
 
-	public TableBaselineParser(Spec spec)
+	public TableBaselineParser(final Spec spec)
 	{
 		super(spec);
 	}
 
 	@Override
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		return new TableBaselineParserState(this, params, ex, computeExpectedCounts);
 	}
@@ -33,7 +45,7 @@ public class TableBaselineParser extends Parser
 class TableBaselineParserState extends ParserState
 {
 
-	public TableBaselineParserState(Parser parser, Params params, Example ex, boolean computeExpectedCounts)
+	public TableBaselineParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 	}
@@ -43,11 +55,9 @@ class TableBaselineParserState extends ParserState
 	{
 		LogInfo.begin_track("TableBaselineParser.infer()");
 		// Add all entities and possible normalizations to the list of candidates
-		TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
-		for (Formula f : graph.getAllFormulas(FuzzyMatchFn.FuzzyMatchFnMode.ENTITY))
-		{
+		final TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
+		for (final Formula f : graph.getAllFormulas(FuzzyMatchFn.FuzzyMatchFnMode.ENTITY))
 			buildAllDerivations(f);
-		}
 		// Execute + Compute expected counts
 		ensureExecuted();
 		if (computeExpectedCounts)
@@ -58,7 +68,7 @@ class TableBaselineParserState extends ParserState
 		LogInfo.end_track();
 	}
 
-	private void buildAllDerivations(Formula f)
+	private void buildAllDerivations(final Formula f)
 	{
 		generateDerivation(f);
 		// Try number and date normalizations as well
@@ -66,9 +76,9 @@ class TableBaselineParserState extends ParserState
 		generateDerivation(new JoinFormula(Formula.fromString("!" + TableTypeSystem.CELL_DATE_VALUE.id), f));
 	}
 
-	private void generateDerivation(Formula f)
+	private void generateDerivation(final Formula f)
 	{
-		Derivation deriv = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).formula(f).children(Collections.emptyList()).type(TypeInference.inferType(f)).createDerivation();
+		final Derivation deriv = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).formula(f).children(Collections.emptyList()).type(TypeInference.inferType(f)).createDerivation();
 		deriv.ensureExecuted(parser.executor, ex.context);
 		if (deriv.value instanceof ErrorValue)
 			return;

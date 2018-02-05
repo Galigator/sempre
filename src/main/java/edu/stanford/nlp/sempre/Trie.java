@@ -1,10 +1,8 @@
 package edu.stanford.nlp.sempre;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,17 +18,17 @@ public class Trie
 	// Set of LHS categories of all rules in this subtree
 	public Set<String> cats = new LinkedHashSet<>();
 
-	public Trie next(String item)
+	public Trie next(final String item)
 	{
 		return children.get(item);
 	}
 
-	public void add(Rule rule)
+	public void add(final Rule rule)
 	{
 		add(rule, 0);
 	}
 
-	private void add(Rule rule, int i)
+	private void add(final Rule rule, final int i)
 	{
 		cats.add(rule.lhs);
 
@@ -41,7 +39,7 @@ public class Trie
 			return;
 		}
 
-		String item = rule.rhs.get(i);
+		final String item = rule.rhs.get(i);
 		Trie child = children.get(item);
 		if (child == null)
 			children.put(item, child = new Trie());

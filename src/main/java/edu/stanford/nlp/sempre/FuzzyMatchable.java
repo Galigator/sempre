@@ -1,8 +1,8 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
 import edu.stanford.nlp.sempre.FuzzyMatchFn.FuzzyMatchFnMode;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Interface for knowledge sources that, given a phrase, can retrieve all its predicates that (fuzzily) match the phrase.

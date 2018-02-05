@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
+import fig.basic.Option;
+import fig.basic.Utils;
 
 /**
  * Preprocess the targetValue of an example.
@@ -22,16 +23,14 @@ public abstract class TargetValuePreprocessor
 	public static TargetValuePreprocessor getSingleton()
 	{
 		if (singleton == null)
-		{
 			if (opts.targetValuePreprocessor == null || opts.targetValuePreprocessor.isEmpty())
 				singleton = new IdentityTargetValuePreprocessor();
 			else
 				singleton = (TargetValuePreprocessor) Utils.newInstanceHard(SempreUtils.resolveClassName(opts.targetValuePreprocessor));
-		}
 		return singleton;
 	}
 
-	public static void setSingleton(TargetValuePreprocessor processor)
+	public static void setSingleton(final TargetValuePreprocessor processor)
 	{
 		singleton = processor;
 	}
@@ -42,7 +41,7 @@ public abstract class TargetValuePreprocessor
 
 class IdentityTargetValuePreprocessor extends TargetValuePreprocessor
 {
-	public Value preprocess(Value value, Example ex)
+	public Value preprocess(final Value value, final Example ex)
 	{
 		return value;
 	}

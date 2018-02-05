@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
-
 import java.util.Comparator;
 
 /**
@@ -41,7 +40,7 @@ public abstract class Value
 	}
 
 	@JsonCreator
-	public static Value fromString(String str)
+	public static Value fromString(final String str)
 	{
 		return Values.fromLispTree(LispTree.proto.parseFromString(str));
 	}
@@ -55,7 +54,7 @@ public abstract class Value
 	public static class ValueComparator implements Comparator<Value>
 	{
 		@Override
-		public int compare(Value o1, Value o2)
+		public int compare(final Value o1, final Value o2)
 		{
 			return o1.toString().compareTo(o2.toString());
 		}

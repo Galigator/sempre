@@ -1,9 +1,8 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.util.Arrays;
-
 import edu.stanford.nlp.sempre.LanguageAnalyzer;
 import edu.stanford.nlp.sempre.LanguageInfo;
+import java.util.Arrays;
 
 /**
  * LanguageAnalyzer for DAL, basically a lexer
@@ -15,14 +14,12 @@ public class DALAnalyzer extends LanguageAnalyzer
 	// Stanford tokenizer doesn't break hyphens.
 	// Replace hypens with spaces for utterances like
 	// "Spanish-speaking countries" but not for "2012-03-28".
-	public static String breakHyphens(String utterance)
+	public static String breakHyphens(final String utterance)
 	{
-		StringBuilder buf = new StringBuilder(utterance);
+		final StringBuilder buf = new StringBuilder(utterance);
 		for (int i = 0; i < buf.length(); i++)
-		{
-			if (buf.charAt(i) == '-' && (i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1))))
+			if (buf.charAt(i) == '-' && i + 1 < buf.length() && Character.isLetter(buf.charAt(i + 1)))
 				buf.setCharAt(i, ' ');
-		}
 		return buf.toString();
 	}
 
@@ -31,7 +28,7 @@ public class DALAnalyzer extends LanguageAnalyzer
 	@Override
 	public LanguageInfo analyze(String utterance)
 	{
-		LanguageInfo languageInfo = new LanguageInfo();
+		final LanguageInfo languageInfo = new LanguageInfo();
 
 		// Clear these so that analyze can hypothetically be called
 		// multiple times.
@@ -45,25 +42,25 @@ public class DALAnalyzer extends LanguageAnalyzer
 		utterance = breakHyphens(utterance);
 
 		// Default analysis - create tokens crudely
-		StringBuilder buf = new StringBuilder();
+		final StringBuilder buf = new StringBuilder();
 		for (int i = 0; i < utterance.length(); i++)
 		{
-			char c = utterance.charAt(i);
+			final char c = utterance.charAt(i);
 			// Put whitespace around certain characters.
-			boolean boundaryBefore = !(i - 1 >= 0) || utterance.charAt(i - 1) == ' ';
-			boolean boundaryAfter = !(i + 1 < utterance.length()) || utterance.charAt(i + 1) == ' ';
+			final boolean boundaryBefore = !(i - 1 >= 0) || utterance.charAt(i - 1) == ' ';
+			final boolean boundaryAfter = !(i + 1 < utterance.length()) || utterance.charAt(i + 1) == ' ';
 			boolean separate = false;
 			if (c == '.') // Break off period if already space around it (to preserve
 							// numbers like 3.5)
 				separate = boundaryBefore || boundaryAfter;
 			else
 				if (c == '=') // separate all >, =, < except >=, <=
-					separate = !(i - 1 >= 0) || ((utterance.charAt(i - 1) != '>' && utterance.charAt(i - 1) != '<'));
+					separate = !(i - 1 >= 0) || utterance.charAt(i - 1) != '>' && utterance.charAt(i - 1) != '<';
 				else
 					if (c == '>' || c == '<')
-						separate = !(i + 1 < utterance.length()) || ((utterance.charAt(i + 1) != '=' && utterance.charAt(i + 1) != '='));
+						separate = !(i + 1 < utterance.length()) || utterance.charAt(i + 1) != '=' && utterance.charAt(i + 1) != '=';
 					else
-						separate = (",?'\"[];{}+-".indexOf(c) != -1);
+						separate = ",?'\"[];{}+-".indexOf(c) != -1;
 
 			if (separate)
 				buf.append(' ');
@@ -93,8 +90,8 @@ public class DALAnalyzer extends LanguageAnalyzer
 		utterance = buf.toString().trim();
 		if (!utterance.equals(""))
 		{
-			String[] tokens = utterance.split("\\s+");
-			for (String token : tokens)
+			final String[] tokens = utterance.split("\\s+");
+			for (final String token : tokens)
 			{
 				String lemma = token;
 				if (token.endsWith("s") && token.length() > 1)
@@ -104,7 +101,7 @@ public class DALAnalyzer extends LanguageAnalyzer
 				languageInfo.lemmaTokens.add(LanguageAnalyzer.opts.lowerCaseTokens ? lemma.toLowerCase() : lemma);
 
 				// Is it a written out number?
-				int x = Arrays.asList(numbers).indexOf(token);
+				final int x = Arrays.asList(numbers).indexOf(token);
 				if (x != -1)
 				{
 					languageInfo.posTags.add("CD");
@@ -120,7 +117,7 @@ public class DALAnalyzer extends LanguageAnalyzer
 					languageInfo.nerTags.add("NUMBER");
 					languageInfo.nerValues.add(token);
 				}
-				catch (NumberFormatException e)
+				catch (final NumberFormatException e)
 				{
 					// Guess that capitalized nouns are proper
 					if (Character.isUpperCase(token.charAt(0)))

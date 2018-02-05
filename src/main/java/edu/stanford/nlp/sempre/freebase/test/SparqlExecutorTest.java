@@ -1,13 +1,13 @@
 package edu.stanford.nlp.sempre.freebase.test;
 
-import java.util.List;
 import edu.stanford.nlp.sempre.Executor;
 import edu.stanford.nlp.sempre.Formulas;
-import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.freebase.SparqlExecutor;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
+import java.util.List;
 import org.testng.annotations.Test;
 
 /**
@@ -24,61 +24,49 @@ public class SparqlExecutorTest
 
 	public static ValuesChecker size(final int expectedNumResults)
 	{
-		return new ValuesChecker()
+		return values ->
 		{
-			public void checkValues(List<Value> values)
-			{
-				if (values.size() != expectedNumResults)
-					throw new RuntimeException("Expected " + expectedNumResults + " results, but got " + values.size() + ": " + values);
-			}
+			if (values.size() != expectedNumResults)
+				throw new RuntimeException("Expected " + expectedNumResults + " results, but got " + values.size() + ": " + values);
 		};
 	}
 
 	public static ValuesChecker sizeAtLeast(final int expectedNumResults)
 	{
-		return new ValuesChecker()
+		return values ->
 		{
-			public void checkValues(List<Value> values)
-			{
-				if (values.size() < expectedNumResults)
-					throw new RuntimeException("Expected at least " + expectedNumResults + " results, but got " + values.size() + ": " + values);
-			}
+			if (values.size() < expectedNumResults)
+				throw new RuntimeException("Expected at least " + expectedNumResults + " results, but got " + values.size() + ": " + values);
 		};
 	}
 
-	public static ValuesChecker matches(String expected)
+	public static ValuesChecker matches(final String expected)
 	{
 		final Value expectedValue = Value.fromString(expected);
-		return new ValuesChecker()
+		return values ->
 		{
-			public void checkValues(List<Value> values)
-			{
-				if (values.size() != 1 || !values.get(0).equals(expectedValue))
-					throw new RuntimeException("Expected " + expectedValue + ", but got " + values);
-			}
+			if (values.size() != 1 || !values.get(0).equals(expectedValue))
+				throw new RuntimeException("Expected " + expectedValue + ", but got " + values);
 		};
 	}
 
 	public static ValuesChecker regexMatches(final String expectedPattern)
 	{
-		return new ValuesChecker()
+		return values ->
 		{
-			public void checkValues(List<Value> values)
-			{
-				if (values.size() != 1 || !values.get(0).toString().matches(expectedPattern))
-					throw new RuntimeException("Expected " + expectedPattern + ", but got " + values);
-			}
+			if (values.size() != 1 || !values.get(0).toString().matches(expectedPattern))
+				throw new RuntimeException("Expected " + expectedPattern + ", but got " + values);
 		};
 	}
 
-	protected static void runFormula(SparqlExecutor executor, String formula)
+	protected static void runFormula(final SparqlExecutor executor, final String formula)
 	{
 		runFormula(executor, formula, sizeAtLeast(0));
 	}
 
-	protected static void runFormula(SparqlExecutor executor, String formula, ValuesChecker checker)
+	protected static void runFormula(final SparqlExecutor executor, final String formula, final ValuesChecker checker)
 	{
-		Executor.Response response = executor.execute(Formulas.fromLispTree(LispTree.proto.parseFromString(formula)), null);
+		final Executor.Response response = executor.execute(Formulas.fromLispTree(LispTree.proto.parseFromString(formula)), null);
 		LogInfo.logs("RESULT: %s", response.value);
 		checker.checkValues(((ListValue) response.value).values);
 	}
@@ -180,7 +168,7 @@ public class SparqlExecutorTest
 		runFormula(executor, "(sum (!fb:location.location.area (fb:type.object.type fb:location.us_state)))", regexMatches("\\(number .* fb:en.square_kilometer\\)")); // total area of all US states
 		runFormula(executor, "((reverse (lambda x (count (!fb:people.person.children (var x))))) (>= 50))", size(2)); // people with at least 50 children
 
-		String border = "(lambda x (mark y (fb:location.location.adjoin_s (fb:location.adjoining_relationship.adjoins (and (var x) (!= (var y)))))))";
+		final String border = "(lambda x (mark y (fb:location.location.adjoin_s (fb:location.adjoining_relationship.adjoins (and (var x) (!= (var y)))))))";
 		runFormula(executor, "(and (fb:type.object.type fb:location.us_state) ((reverse (lambda x (count (and (fb:type.object.type fb:location.us_state) (" + border + " (var x)))))) (> 6)))", size(4)); // states bordering more than 6 states
 
 		// TODO(pliang): known bug (bordering less than 2 states doesn't include Alaska and Hawaii - need to make things optional)

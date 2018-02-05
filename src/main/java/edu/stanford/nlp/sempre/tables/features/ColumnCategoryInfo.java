@@ -1,11 +1,17 @@
 package edu.stanford.nlp.sempre.tables.features;
 
-import java.io.*;
-import java.util.*;
-
 import edu.stanford.nlp.sempre.Example;
 import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.Pair;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ColumnCategoryInfo
 {
@@ -46,30 +52,30 @@ public class ColumnCategoryInfo
 		allCategoryInfo = new HashMap<>();
 		try
 		{
-			BufferedReader reader = IOUtils.openIn(opts.tableCategoryInfo);
+			final BufferedReader reader = IOUtils.openIn(opts.tableCategoryInfo);
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				String[] tokens = line.split("\t");
-				String tableId = tokens[0];
+				final String[] tokens = line.split("\t");
+				final String tableId = tokens[0];
 				List<List<Pair<String, Double>>> categoryInfoForTable = allCategoryInfo.get(tableId);
 				if (categoryInfoForTable == null)
 					allCategoryInfo.put(tableId, categoryInfoForTable = new ArrayList<>());
-				int columnIndex = Integer.parseInt(tokens[1]);
+				final int columnIndex = Integer.parseInt(tokens[1]);
 				// Assume that the columns are ordered
 				assert categoryInfoForTable.size() == columnIndex;
 				// Read the category-weight pairs
-				List<Pair<String, Double>> categories = new ArrayList<>();
+				final List<Pair<String, Double>> categories = new ArrayList<>();
 				for (int i = 2; i < tokens.length; i++)
 				{
-					String[] pair = tokens[i].split(":");
+					final String[] pair = tokens[i].split(":");
 					categories.add(new Pair<>(pair[0], Double.parseDouble(pair[1])));
 				}
 				categoryInfoForTable.add(categories);
 			}
 			reader.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -80,16 +86,16 @@ public class ColumnCategoryInfo
 	// Getters
 	// ============================================================
 
-	public List<Pair<String, Double>> get(String tableId, int columnIndex)
+	public List<Pair<String, Double>> get(final String tableId, final int columnIndex)
 	{
 		return allCategoryInfo.get(tableId).get(columnIndex);
 	}
 
-	public List<Pair<String, Double>> get(Example ex, String columnId)
+	public List<Pair<String, Double>> get(final Example ex, final String columnId)
 	{
-		TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
-		String tableId = graph.filename;
-		int columnIndex = graph.getColumnIndex(columnId);
+		final TableKnowledgeGraph graph = (TableKnowledgeGraph) ex.context.graph;
+		final String tableId = graph.filename;
+		final int columnIndex = graph.getColumnIndex(columnId);
 		if (columnIndex == -1)
 			return null;
 		return allCategoryInfo.get(tableId).get(columnIndex);

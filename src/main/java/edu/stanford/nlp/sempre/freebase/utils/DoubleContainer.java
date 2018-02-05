@@ -11,9 +11,9 @@ public class DoubleContainer implements Comparable<DoubleContainer>
 	private double value;
 
 	@JsonCreator
-	public DoubleContainer(@JsonProperty("count") double count)
+	public DoubleContainer(@JsonProperty("count") final double count)
 	{
-		this.value = count;
+		value = count;
 	}
 
 	public void inc()
@@ -26,17 +26,17 @@ public class DoubleContainer implements Comparable<DoubleContainer>
 		value--;
 	}
 
-	public void inc(double n)
+	public void inc(final double n)
 	{
 		value += n;
 	}
 
-	public void dec(double n)
+	public void dec(final double n)
 	{
 		value -= n;
 	}
 
-	public void set(double n)
+	public void set(final double n)
 	{
 		value = n;
 	}
@@ -52,7 +52,7 @@ public class DoubleContainer implements Comparable<DoubleContainer>
 	}
 
 	@Override
-	public int compareTo(DoubleContainer o)
+	public int compareTo(final DoubleContainer o)
 	{
 		if (value < o.value)
 			return -1;

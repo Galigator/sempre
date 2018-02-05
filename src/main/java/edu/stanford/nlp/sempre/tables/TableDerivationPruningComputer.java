@@ -1,15 +1,38 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
 import edu.stanford.nlp.sempre.AggregateFormula.Mode;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.DefaultDerivationPruningComputer;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationPruner;
+import edu.stanford.nlp.sempre.DerivationPruningComputer;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.MarkFormula;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.PairListValue;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.SuperlativeFormula;
+import edu.stanford.nlp.sempre.TypeInference;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
+import edu.stanford.nlp.sempre.VariableFormula;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TableDerivationPruningComputer extends DerivationPruningComputer
 {
 
-	public TableDerivationPruningComputer(DerivationPruner pruner)
+	public TableDerivationPruningComputer(final DerivationPruner pruner)
 	{
 		super(pruner);
 	}
@@ -41,7 +64,7 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 	private final Formula IDENTITY = Formula.fromString("(reverse (lambda x (var x)))");
 
 	@Override
-	public String isPruned(Derivation deriv)
+	public String isPruned(final Derivation deriv)
 	{
 		// lambdaDCSError: Prune unrecoverable LambdaDCSException
 		if (containsStrategy(lambdaDCSError))
@@ -54,11 +77,12 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 		if (containsStrategy(emptyDenotation))
 		{
 			deriv.ensureExecuted(parser.executor, ex.context);
-			if (deriv.value instanceof PairListValue && ((PairListValue) deriv.value).pairs.isEmpty()) { return emptyDenotation; }
+			if (deriv.value instanceof PairListValue && ((PairListValue) deriv.value).pairs.isEmpty())
+				return emptyDenotation;
 			if (deriv.value instanceof ScopedValue)
 			{
-				Value head = ((ScopedValue) deriv.value).head, relation = ((ScopedValue) deriv.value).relation;
-				if ((head instanceof ListValue && ((ListValue) head).values.isEmpty()) || (relation instanceof PairListValue && ((PairListValue) relation).pairs.isEmpty()))
+				final Value head = ((ScopedValue) deriv.value).head, relation = ((ScopedValue) deriv.value).relation;
+				if (head instanceof ListValue && ((ListValue) head).values.isEmpty() || relation instanceof PairListValue && ((PairListValue) relation).pairs.isEmpty())
 					return emptyDenotation;
 			}
 		}
@@ -68,33 +92,28 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 			deriv.ensureExecuted(parser.executor, ex.context);
 			if (deriv.value instanceof ScopedValue)
 			{
-				Value head = ((ScopedValue) deriv.value).head;
-				if ((head instanceof ListValue) && ((ListValue) head).values.size() == 1)
+				final Value head = ((ScopedValue) deriv.value).head;
+				if (head instanceof ListValue && ((ListValue) head).values.size() == 1)
 					return badSummarizerHead;
 			}
 		}
 		// sameMark: Prune if mark does not filter out anything
 		if (containsStrategy(sameMark))
-		{
 			if (deriv.formula instanceof MergeFormula)
 			{
-				MergeFormula merge = (MergeFormula) deriv.formula;
+				final MergeFormula merge = (MergeFormula) deriv.formula;
 				if (merge.mode == MergeFormula.Mode.and)
 				{
 					Value head = null;
 					if (merge.child1 instanceof MarkFormula)
-					{
 						head = parser.executor.execute(merge.child2, ex.context).value;
-					}
 					else
 						if (merge.child2 instanceof MarkFormula)
-						{
 							head = parser.executor.execute(merge.child1, ex.context).value;
-						}
-					if (head != null && head.equals(deriv.value)) { return sameMark; }
+					if (head != null && head.equals(deriv.value))
+						return sameMark;
 				}
 			}
-		}
 		// Prune JoinFormulas
 		if (containsStrategy(forwardBackward) || containsStrategy(doubleNext) || containsStrategy(doubleCompares) || containsStrategy(emptyJoin))
 		{
@@ -118,14 +137,14 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 					// emptyJoin: prune if the composition two consecutive joins always produce an empty set
 					if (containsStrategy(emptyJoin))
 					{
-						Formula test = new JoinFormula(rid1, new JoinFormula(rid2, STAR));
+						final Formula test = new JoinFormula(rid1, new JoinFormula(rid2, STAR));
 						try
 						{
-							Value value = parser.executor.execute(test, ex.context).value;
+							final Value value = parser.executor.execute(test, ex.context).value;
 							if (value instanceof ListValue && ((ListValue) value).values.isEmpty())
 								return emptyJoin;
 						}
-						catch (RuntimeException e)
+						catch (final RuntimeException e)
 						{
 							// Do nothing. Don't prune the formula.
 						}
@@ -137,56 +156,58 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 		// Prune merge formulas
 		if (containsStrategy(subsetMerge) && deriv.formula instanceof MergeFormula)
 		{
-			MergeFormula merge = (MergeFormula) deriv.formula;
-			Formula child1 = merge.child1, child2 = merge.child2;
+			final MergeFormula merge = (MergeFormula) deriv.formula;
+			final Formula child1 = merge.child1, child2 = merge.child2;
 			// subsetMerge: Prune merge formulas where one child is a subset of the other
 			if (containsStrategy(subsetMerge))
 			{
-				Value d1 = parser.executor.execute(child1, ex.context).value;
-				Value d2 = parser.executor.execute(child2, ex.context).value;
+				final Value d1 = parser.executor.execute(child1, ex.context).value;
+				final Value d2 = parser.executor.execute(child2, ex.context).value;
 				if (d1 instanceof ListValue && d2 instanceof ListValue)
 				{
-					Set<Value> v1 = new HashSet<>(((ListValue) d1).values);
-					Set<Value> v2 = new HashSet<>(((ListValue) d2).values);
-					if ((v1.size() >= v2.size() && v1.containsAll(v2)) || (v2.size() > v1.size() && v2.containsAll(v1)))
+					final Set<Value> v1 = new HashSet<>(((ListValue) d1).values);
+					final Set<Value> v2 = new HashSet<>(((ListValue) d2).values);
+					if (v1.size() >= v2.size() && v1.containsAll(v2) || v2.size() > v1.size() && v2.containsAll(v1))
 						return subsetMerge;
 				}
 			}
 			// typeRowMerge: Prune merge formulas where one child is (@type @row) [generally redundant]
-			if (containsStrategy(typeRowMerge) && ((TYPE_ROW.equals(merge.child1) && !(merge.child2 instanceof MarkFormula)) || (TYPE_ROW.equals(merge.child2) && !(merge.child1 instanceof MarkFormula))))
+			if (containsStrategy(typeRowMerge) && (TYPE_ROW.equals(merge.child1) && !(merge.child2 instanceof MarkFormula) || TYPE_ROW.equals(merge.child2) && !(merge.child1 instanceof MarkFormula)))
 				return typeRowMerge;
 		}
 		// Prune aggregate formulas
 		else
 			if (deriv.formula instanceof AggregateFormula)
 			{
-				AggregateFormula aggregate = (AggregateFormula) deriv.formula;
-				Formula child = aggregate.child;
+				final AggregateFormula aggregate = (AggregateFormula) deriv.formula;
+				final Formula child = aggregate.child;
 				// aggregateInfinite: Prune aggregates when the child is an infinite set
 				if (containsStrategy(aggregateInfinite) && child instanceof JoinFormula)
 				{
-					String rid = Formulas.getBinaryId(((JoinFormula) child).relation);
+					final String rid = Formulas.getBinaryId(((JoinFormula) child).relation);
 					if (CanonicalNames.COMPARATORS.contains(rid) || "!=".equals(rid))
 						return aggregateInfinite;
 				}
 				// aggregateUncomparable: Prune aggregates when the child's type is not number or date
 				if (containsStrategy(aggregateUncomparable) && aggregate.mode != AggregateFormula.Mode.count)
 				{
-					SemType type = TypeInference.inferType(child, true);
-					if (!type.meet(SemType.numberOrDateType).isValid() || (!type.meet(SemType.numberType).isValid() && (aggregate.mode == Mode.sum || aggregate.mode == Mode.avg)))
+					final SemType type = TypeInference.inferType(child, true);
+					if (!type.meet(SemType.numberOrDateType).isValid() || !type.meet(SemType.numberType).isValid() && (aggregate.mode == Mode.sum || aggregate.mode == Mode.avg))
 						return aggregateUncomparable;
 				}
 				// aggregateVariable: Prune aggregates when the child is variable
-				if (containsStrategy(aggregateVariable) && child instanceof VariableFormula) { return aggregateVariable; }
+				if (containsStrategy(aggregateVariable) && child instanceof VariableFormula)
+					return aggregateVariable;
 			}
 			// Prune superlative formulas
 			else
 				if (deriv.formula instanceof SuperlativeFormula)
 				{
-					SuperlativeFormula superlative = (SuperlativeFormula) deriv.formula;
-					Formula relation = superlative.relation;
+					final SuperlativeFormula superlative = (SuperlativeFormula) deriv.formula;
+					final Formula relation = superlative.relation;
 					// superlativeIdentity: Prune superlatives when the relation is exactly (lambda x (var x))
-					if (containsStrategy(superlativeIdentity) && IDENTITY.equals(relation)) { return superlativeIdentity; }
+					if (containsStrategy(superlativeIdentity) && IDENTITY.equals(relation))
+						return superlativeIdentity;
 				}
 		// For ScopedFormula: recurse into the relation part
 		if (deriv.formula instanceof ScopedFormula)
@@ -195,12 +216,11 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 			if (relation instanceof LambdaFormula)
 			{
 				relation = ((LambdaFormula) relation).body;
-				Derivation relationDeriv = new Derivation.Builder().formula(relation).createDerivation();
+				final Derivation relationDeriv = new Derivation.Builder().formula(relation).createDerivation();
 				String matchedStrategy;
-				for (DerivationPruningComputer computer : pruner.getPruningComputers())
-				{
-					if ((matchedStrategy = computer.isPruned(relationDeriv)) != null) { return matchedStrategy; }
-				}
+				for (final DerivationPruningComputer computer : pruner.getPruningComputers())
+					if ((matchedStrategy = computer.isPruned(relationDeriv)) != null)
+						return matchedStrategy;
 			}
 		}
 		return null;

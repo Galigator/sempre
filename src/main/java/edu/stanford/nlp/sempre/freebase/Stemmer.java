@@ -7,9 +7,9 @@ import org.tartarus.snowball.ext.PorterStemmer;
  */
 public class Stemmer
 {
-	public String stem(String input)
+	public String stem(final String input)
 	{
-		PorterStemmer state = new PorterStemmer();
+		final PorterStemmer state = new PorterStemmer();
 		state.setCurrent(input);
 		state.stem();
 		return state.getCurrent();

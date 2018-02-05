@@ -4,7 +4,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import fig.basic.LispTree;
 import fig.basic.Pair;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,7 @@ public class Rule
 	public static Rule nullRule = new Rule(null, null, null);
 
 	// Categories begin with $.
-	public static boolean isCat(String item)
+	public static boolean isCat(final String item)
 	{
 		return item.charAt(0) == '$';
 	}
@@ -46,7 +45,7 @@ public class Rule
 
 	private String semRepn = null;
 
-	public Rule(String lhs, List<String> rhs, SemanticFn sem)
+	public Rule(final String lhs, final List<String> rhs, final SemanticFn sem)
 	{
 		this.lhs = lhs;
 		this.rhs = rhs;
@@ -58,7 +57,7 @@ public class Rule
 	{
 		if (stringRepn == null)
 		{
-			String semStr = sem == null ? "NullSemanticFn" : sem.toString();
+			final String semStr = sem == null ? "NullSemanticFn" : sem.toString();
 			//int maxLength = 100;
 			//if (semStr.length() > maxLength)
 			//  semStr = String.format("%s...(%d total)", semStr.substring(0,maxLength), semStr.length());
@@ -70,16 +69,16 @@ public class Rule
 	private String stringRepn; // Cache toString()
 
 	// Get/set info
-	public void addInfo(String key, double value)
+	public void addInfo(final String key, final double value)
 	{
 		if (info == null)
 			info = Lists.newArrayList();
 		info.add(Pair.newPair(key, value));
 	}
 
-	public Rule setInfo(Rule rule)
+	public Rule setInfo(final Rule rule)
 	{
-		this.info = rule.info;
+		info = rule.info;
 		return this;
 	}
 
@@ -104,10 +103,8 @@ public class Rule
 	public boolean isRhsTerminals()
 	{
 		for (int i = 0; i < rhs.size(); ++i)
-		{
 			if (isCat(rhs.get(i)))
 				return false;
-		}
 		return true;
 	}
 
@@ -116,48 +113,40 @@ public class Rule
 	{
 		int ret = 0;
 		for (int i = 0; i < rhs.size(); ++i)
-		{
 			if (isCat(rhs.get(i)))
 				ret++;
-		}
 		return ret;
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("rule");
 		tree.addChild(lhs);
 		tree.addChild(LispTree.proto.newList(rhs));
 		tree.addChild(sem.toLispTree());
 		if (info != null)
-		{
-			for (Pair<String, Double> p : info)
+			for (final Pair<String, Double> p : info)
 				tree.addChild(LispTree.proto.newList(p.getFirst(), "" + p.getSecond()));
-		}
 		if (source != null)
 			tree.addChild(source.toJson());
 		return tree;
 	}
 
 	/* Extract tag info */
-	public double getInfoTag(String infoTag)
+	public double getInfoTag(final String infoTag)
 	{
 		if (info != null)
-		{
-			for (Pair<String, Double> p : info)
-			{
+			for (final Pair<String, Double> p : info)
 				if (p.getFirst().equals(infoTag))
 					return p.getSecond();
-			}
-		}
 		return -1.0;
 	}
 
 	public boolean isFloating()
 	{
-		double f = getInfoTag("floating");
-		double a = getInfoTag("anchored");
+		final double f = getInfoTag("floating");
+		final double a = getInfoTag("anchored");
 		if (f == 1.0)
 			return true;
 		else
@@ -169,8 +158,8 @@ public class Rule
 
 	public boolean isAnchored()
 	{
-		double f = getInfoTag("floating");
-		double a = getInfoTag("anchored");
+		final double f = getInfoTag("floating");
+		final double a = getInfoTag("anchored");
 		if (a == 1.0)
 			return true;
 		else
@@ -182,40 +171,36 @@ public class Rule
 
 	public boolean isInduced()
 	{
-		double a = getInfoTag("induced");
+		final double a = getInfoTag("induced");
 		if (a == 1.0)
 			return true;
 		return false;
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (!(o instanceof Rule))
 			return false;
-		return ((Rule) o).toString().equals(this.toString());
+		return ((Rule) o).toString().equals(toString());
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return this.toString().hashCode();
+		return toString().hashCode();
 	}
 
 	public String toJson()
 	{
-		Map<String, Object> jsonMap = new LinkedHashMap<>();
+		final Map<String, Object> jsonMap = new LinkedHashMap<>();
 		jsonMap.put("lhs", lhs);
 		jsonMap.put("rhs", rhs);
 		if (source != null)
-		{
 			jsonMap.put("source", source);
-		}
 		if (info != null)
-		{
-			for (Pair<String, Double> p : info)
+			for (final Pair<String, Double> p : info)
 				jsonMap.put(p.getFirst(), p.getSecond());
-		}
 		jsonMap.put("sem", sem.toString());
 		return Json.writeValueAsStringHard(jsonMap);
 	}

@@ -15,11 +15,11 @@ public final class Values
 
 	// Try to parse the LispTree into a value.
 	// If it fails, just return null.
-	public static Value fromLispTreeOrNull(LispTree tree)
+	public static Value fromLispTreeOrNull(final LispTree tree)
 	{
 		if (tree.isLeaf())
 			return null;
-		String type = tree.child(0).value;
+		final String type = tree.child(0).value;
 		if ("name".equals(type))
 			return new NameValue(tree);
 		if ("boolean".equals(type))
@@ -48,15 +48,15 @@ public final class Values
 	}
 
 	// Try to parse.  If it fails, throw an exception.
-	public static Value fromLispTree(LispTree tree)
+	public static Value fromLispTree(final LispTree tree)
 	{
-		Value value = fromLispTreeOrNull(tree);
+		final Value value = fromLispTreeOrNull(tree);
 		if (value == null)
 			throw new RuntimeException("Invalid value: " + tree);
 		return value;
 	}
 
-	public static Value fromString(String s)
+	public static Value fromString(final String s)
 	{
 		return fromLispTree(LispTree.proto.parseFromString(s));
 	}

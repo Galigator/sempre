@@ -406,7 +406,7 @@ public class Derivation implements SemanticFn.Callable, HasScore
 	// Return whether |deriv| is built over the root Derivation.
 	public boolean isRoot(final int numTokens)
 	{
-		return cat.equals(Rule.rootCat) && ((start == 0 && end == numTokens) || (start == -1));
+		return cat.equals(Rule.rootCat) && (start == 0 && end == numTokens || start == -1);
 	}
 
 	// Return whether |deriv| has root category (for floating parser)
@@ -619,7 +619,7 @@ public class Derivation implements SemanticFn.Callable, HasScore
 	public void addLocalChoice(final String choice)
 	{
 		if (localChoices == null)
-			localChoices = new ArrayList<String>();
+			localChoices = new ArrayList<>();
 		localChoices.add(choice);
 	}
 
@@ -732,7 +732,7 @@ public class Derivation implements SemanticFn.Callable, HasScore
 	{
 		// Create the tempState if it doesn't exist.
 		if (tempState == null)
-			tempState = new HashMap<String, Object>();
+			tempState = new HashMap<>();
 		return tempState;
 	}
 
@@ -785,7 +785,7 @@ public class Derivation implements SemanticFn.Callable, HasScore
 		final int[] numAnchors = getNumAnchors();
 		final boolean[] anchoredTokens = new boolean[numAnchors.length];
 		for (int i = 0; i < numAnchors.length; i++)
-			anchoredTokens[i] = (numAnchors[i] > 0);
+			anchoredTokens[i] = numAnchors[i] > 0;
 		return anchoredTokens;
 	}
 

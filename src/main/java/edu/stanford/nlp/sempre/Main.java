@@ -1,9 +1,8 @@
 package edu.stanford.nlp.sempre;
 
-import java.lang.reflect.Constructor;
-
 import fig.basic.Option;
 import fig.exec.Execution;
+import java.lang.reflect.Constructor;
 
 /**
  * Entry point for the semantic parser.
@@ -21,18 +20,18 @@ public class Main implements Runnable
 
 	public void run()
 	{
-		Builder builder = new Builder();
+		final Builder builder = new Builder();
 		builder.build();
 
-		Dataset dataset = new Dataset();
+		final Dataset dataset = new Dataset();
 		dataset.read();
 
-		Learner learner = new Learner(builder.parser, builder.params, dataset);
+		final Learner learner = new Learner(builder.parser, builder.params, dataset);
 		learner.learn();
 
 		if (server || interactive)
 		{
-			Master master = createMaster(masterType, builder);
+			final Master master = createMaster(masterType, builder);
 			if (server)
 				master.runServer();
 			if (interactive)
@@ -40,22 +39,22 @@ public class Main implements Runnable
 		}
 	}
 
-	public Master createMaster(String masterType, Builder builder)
+	public Master createMaster(final String masterType, final Builder builder)
 	{
 		try
 		{
-			Class<?> masterClass = Class.forName(masterType);
-			Constructor<?> constructor = masterClass.getConstructor(Builder.class);
+			final Class<?> masterClass = Class.forName(masterType);
+			final Constructor<?> constructor = masterClass.getConstructor(Builder.class);
 			return (Master) constructor.newInstance(builder);
 		}
-		catch (Throwable t)
+		catch (final Throwable t)
 		{
 			t.printStackTrace();
 		}
 		return null;
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "Main", new Main(), Master.getOptionsParser());
 	}

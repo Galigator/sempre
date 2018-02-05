@@ -1,6 +1,14 @@
 package edu.stanford.nlp.sempre.test;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FormulaMatchExecutor;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.Learner;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.Value;
 
 /**
  * Useful utilities and dummy system components for writing tests.
@@ -15,7 +23,7 @@ public final class TestUtils
 
 	public static Grammar makeAbcGrammar()
 	{
-		Grammar g = new Grammar();
+		final Grammar g = new Grammar();
 		g.addStatement("(rule $X (a) (ConstantFn (string a)))");
 		g.addStatement("(rule $X (b) (ConstantFn (string b)))");
 		g.addStatement("(rule $X (c) (ConstantFn (string c)))");
@@ -26,7 +34,7 @@ public final class TestUtils
 
 	public static Grammar makeArithmeticGrammar()
 	{
-		Grammar g = new Grammar();
+		final Grammar g = new Grammar();
 		g.addStatement("(rule $Expr ($TOKEN) (NumberFn))");
 		g.addStatement("(rule $Expr ($Expr $Partial) (JoinFn backward))");
 		g.addStatement("(rule $Partial ($Operator $Expr) (JoinFn forward))");
@@ -40,7 +48,7 @@ public final class TestUtils
 
 	public static Grammar makeArithmeticFloatingGrammar()
 	{
-		Grammar g = new Grammar();
+		final Grammar g = new Grammar();
 		g.addStatement("(rule $Expr ($TOKEN) (NumberFn) (anchored 1))");
 		g.addStatement("(rule $Expr ($Expr $Partial) (JoinFn backward))");
 		g.addStatement("(rule $Partial ($Operator $Expr) (JoinFn forward))");
@@ -52,7 +60,7 @@ public final class TestUtils
 
 	public static Grammar makeNumberConcatGrammar()
 	{
-		Grammar g = new Grammar();
+		final Grammar g = new Grammar();
 		g.addStatement("(rule $Number ($TOKEN) (NumberFn))");
 		g.addStatement("(rule $Number ($Number $Number) (ConcatFn ,))");
 		g.addStatement("(rule $ROOT ($Number) (IdentityFn))");
@@ -61,7 +69,7 @@ public final class TestUtils
 
 	public static Builder makeSimpleBuilder()
 	{
-		Builder builder = new Builder();
+		final Builder builder = new Builder();
 		builder.grammar = makeNumberConcatGrammar();
 		builder.executor = new FormulaMatchExecutor();
 		builder.buildUnspecified();
@@ -73,12 +81,12 @@ public final class TestUtils
 		return new Dataset();
 	}
 
-	public static Learner makeSimpleLearner(Parser parser, Params params, Dataset dataset)
+	public static Learner makeSimpleLearner(final Parser parser, final Params params, final Dataset dataset)
 	{
 		return new Learner(parser, params, dataset);
 	}
 
-	public static Learner makeSimpleLearner(Builder builder, Dataset dataset)
+	public static Learner makeSimpleLearner(final Builder builder, final Dataset dataset)
 	{
 		return makeSimpleLearner(builder.parser, builder.params, dataset);
 	}
@@ -88,16 +96,16 @@ public final class TestUtils
 		return makeSimpleLearner(makeSimpleBuilder(), makeSimpleDataset());
 	}
 
-	public static Example makeSimpleExample(String utterance)
+	public static Example makeSimpleExample(final String utterance)
 	{
 		return makeSimpleExample(utterance, null);
 	}
 
-	public static Example makeSimpleExample(String utterance, Value targetValue)
+	public static Example makeSimpleExample(final String utterance, final Value targetValue)
 	{
-		Builder builder = new Builder();
+		final Builder builder = new Builder();
 		builder.build();
-		Example ex = new Example.Builder().setId("_id").setUtterance(utterance).setTargetValue(targetValue).createExample();
+		final Example ex = new Example.Builder().setId("_id").setUtterance(utterance).setTargetValue(targetValue).createExample();
 		ex.preprocess();
 		return ex;
 	}

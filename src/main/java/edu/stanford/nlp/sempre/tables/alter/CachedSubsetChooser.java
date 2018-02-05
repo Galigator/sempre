@@ -1,10 +1,14 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
+import fig.basic.IOUtils;
+import fig.basic.Option;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
-
-import fig.basic.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CachedSubsetChooser implements SubsetChooser
 {
@@ -20,37 +24,37 @@ public class CachedSubsetChooser implements SubsetChooser
 
 	public CachedSubsetChooser()
 	{
-		for (String filename : opts.retainedTablesFilenames)
+		for (final String filename : opts.retainedTablesFilenames)
 			load(filename);
 	}
 
-	private void load(String retainedTablesFilename)
+	private void load(final String retainedTablesFilename)
 	{
 		try
 		{
-			BufferedReader reader = IOUtils.openInHard(retainedTablesFilename);
+			final BufferedReader reader = IOUtils.openInHard(retainedTablesFilename);
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				Subset subset = Subset.fromString(line);
+				final Subset subset = Subset.fromString(line);
 				if (subset.score > Double.NEGATIVE_INFINITY)
 					cache.put(subset.id, subset);
 			}
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Subset chooseSubset(String id, DenotationData denotationData)
+	public Subset chooseSubset(final String id, final DenotationData denotationData)
 	{
 		return cache.get(id);
 	}
 
 	@Override
-	public Subset chooseSubset(String id, DenotationData denotationData, Collection<Integer> forbiddenTables)
+	public Subset chooseSubset(final String id, final DenotationData denotationData, final Collection<Integer> forbiddenTables)
 	{
 		throw new RuntimeException("CachedSubsetChooser.chooseSubset cannot take forbiddenTables");
 	}

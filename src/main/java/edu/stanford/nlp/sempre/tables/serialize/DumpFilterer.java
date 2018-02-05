@@ -1,13 +1,22 @@
 package edu.stanford.nlp.sempre.tables.serialize;
 
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.Value;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.Pair;
+import fig.exec.Execution;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
-import fig.exec.Execution;
+import java.util.Iterator;
 
 public class DumpFilterer implements Runnable
 {
@@ -21,7 +30,7 @@ public class DumpFilterer implements Runnable
 
 	public static Options opts = new Options();
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "DumpFiltererMain", new DumpFilterer(), Master.getOptionsParser());
 	}
@@ -33,22 +42,22 @@ public class DumpFilterer implements Runnable
 	{
 		builder = new Builder();
 		builder.build();
-		String outDir = Execution.getFile("filtered");
+		final String outDir = Execution.getFile("filtered");
 		new File(outDir).mkdirs();
-		for (Pair<String, String> pathPair : Dataset.opts.inPaths)
+		for (final Pair<String, String> pathPair : Dataset.opts.inPaths)
 		{
-			String group = pathPair.getFirst();
-			String path = pathPair.getSecond();
+			final String group = pathPair.getFirst();
+			final String path = pathPair.getSecond();
 			// Read LispTrees
 			LogInfo.begin_track("Reading %s", path);
-			int maxExamples = Dataset.getMaxExamplesForGroup(group);
-			Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
+			final int maxExamples = Dataset.getMaxExamplesForGroup(group);
+			final Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
 			// Go through the examples
 			int n = 0;
 			while (n < maxExamples)
 			{
 				// Format: (example (id ...) (utterance ...) (targetFormula ...) (targetValue ...))
-				LispTree tree = trees.next();
+				final LispTree tree = trees.next();
 				if (tree == null)
 					break;
 				if (tree.children.size() < 2 || !"example".equals(tree.child(0).value))
@@ -57,7 +66,7 @@ public class DumpFilterer implements Runnable
 						continue;
 					throw new RuntimeException("Invalid example: " + tree);
 				}
-				Example ex = Example.fromLispTree(tree, path + ":" + n);
+				final Example ex = Example.fromLispTree(tree, path + ":" + n);
 				ex.preprocess();
 				LogInfo.logs("Example %s (%d): %s => %s", ex.id, n, ex.getTokens(), ex.targetValue);
 				n++;
@@ -67,25 +76,25 @@ public class DumpFilterer implements Runnable
 		}
 	}
 
-	private void processExample(Example ex)
+	private void processExample(final Example ex)
 	{
-		File inPath = new File(opts.filtererInputDumpDirectory, ex.id + ".gz");
-		File outPath = new File(Execution.getFile("filtered"), ex.id + ".gz");
+		final File inPath = new File(opts.filtererInputDumpDirectory, ex.id + ".gz");
+		final File outPath = new File(Execution.getFile("filtered"), ex.id + ".gz");
 		try
 		{
-			BufferedReader reader = IOUtils.openInHard(inPath);
-			PrintWriter writer = IOUtils.openOutHard(outPath);
+			final BufferedReader reader = IOUtils.openInHard(inPath);
+			final PrintWriter writer = IOUtils.openOutHard(outPath);
 			int inLines = 0, outLines = 0;
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
 				inLines++;
-				LispTree tree = LispTree.proto.parseFromString(line);
+				final LispTree tree = LispTree.proto.parseFromString(line);
 				if (!"formula".equals(tree.child(1).child(0).value))
 					throw new RuntimeException("Invalid tree: " + tree);
-				Formula formula = Formulas.fromLispTree(tree.child(1).child(1));
-				Value value = builder.executor.execute(formula, ex.context).value;
-				double compatibility = builder.valueEvaluator.getCompatibility(ex.targetValue, value);
+				final Formula formula = Formulas.fromLispTree(tree.child(1).child(1));
+				final Value value = builder.executor.execute(formula, ex.context).value;
+				final double compatibility = builder.valueEvaluator.getCompatibility(ex.targetValue, value);
 				if (compatibility == 1.0)
 				{
 					writer.println(tree);
@@ -93,15 +102,13 @@ public class DumpFilterer implements Runnable
 				}
 				else
 					if (opts.verbose >= 2)
-					{
 						LogInfo.logs("Filtered out %s <= %s", value, formula);
-					}
 			}
 			LogInfo.logs("Filtered %d => %d", inLines, outLines);
 			reader.close();
 			writer.close();
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			LogInfo.warnings("Got an error: %s", e);
 		}

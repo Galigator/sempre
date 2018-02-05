@@ -1,14 +1,29 @@
 package edu.stanford.nlp.sempre.tables.test;
 
-import java.io.*;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.ContextValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueEvaluator;
 import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
 import edu.stanford.nlp.sempre.tables.TableValueEvaluator;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSExecutor;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
 import fig.exec.Execution;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Execute the specified logical forms on the specified WikiTableQuestions context.
@@ -27,7 +42,7 @@ public class BatchTableExecutor implements Runnable
 
 	public static Options opts = new Options();
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "BatchTableExecutorMain", new BatchTableExecutor(), Master.getOptionsParser());
 	}
@@ -53,24 +68,24 @@ public class BatchTableExecutor implements Runnable
 			LogInfo.logs("*******************************************************************************");
 			System.exit(1);
 		}
-		LambdaDCSExecutor executor = new LambdaDCSExecutor();
-		ValueEvaluator evaluator = new TableValueEvaluator();
+		final LambdaDCSExecutor executor = new LambdaDCSExecutor();
+		final ValueEvaluator evaluator = new TableValueEvaluator();
 		try
 		{
-			BufferedReader reader = IOUtils.openIn(opts.batchInput);
-			PrintWriter output = IOUtils.openOut(Execution.getFile("denotations.tsv"));
+			final BufferedReader reader = IOUtils.openIn(opts.batchInput);
+			final PrintWriter output = IOUtils.openOut(Execution.getFile("denotations.tsv"));
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				String[] tokens = line.split("\t");
+				final String[] tokens = line.split("\t");
 				String answer;
 				try
 				{
-					Formula formula = Formula.fromString(tokens[1]);
+					final Formula formula = Formula.fromString(tokens[1]);
 					if (tokens[0].startsWith("csv"))
 					{
-						TableKnowledgeGraph graph = TableKnowledgeGraph.fromFilename(tokens[0]);
-						ContextValue context = new ContextValue(graph);
+						final TableKnowledgeGraph graph = TableKnowledgeGraph.fromFilename(tokens[0]);
+						final ContextValue context = new ContextValue(graph);
 						Value denotation = executor.execute(formula, context).value;
 						if (denotation instanceof ListValue)
 							denotation = addOriginalStrings((ListValue) denotation, graph);
@@ -78,16 +93,16 @@ public class BatchTableExecutor implements Runnable
 					}
 					else
 					{
-						Example ex = exIdToExample(tokens[0]);
+						final Example ex = exIdToExample(tokens[0]);
 						Value denotation = executor.execute(formula, ex.context).value;
 						if (denotation instanceof ListValue)
 							denotation = addOriginalStrings((ListValue) denotation, (TableKnowledgeGraph) ex.context.graph);
 						answer = denotation.toString();
-						boolean correct = evaluator.getCompatibility(ex.targetValue, denotation) == 1.;
+						final boolean correct = evaluator.getCompatibility(ex.targetValue, denotation) == 1.;
 						answer = denotation.toString() + "\t" + correct;
 					}
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					answer = "ERROR: " + e;
 				}
@@ -97,7 +112,7 @@ public class BatchTableExecutor implements Runnable
 			reader.close();
 			output.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -105,32 +120,32 @@ public class BatchTableExecutor implements Runnable
 
 	private Map<String, Object> exIdToExampleMap;
 
-	private Example exIdToExample(String exId)
+	private Example exIdToExample(final String exId)
 	{
 		if (exIdToExampleMap == null)
 		{
 			exIdToExampleMap = new HashMap<>();
 			try
 			{
-				for (String filename : opts.batchDatasets)
+				for (final String filename : opts.batchDatasets)
 				{
-					BufferedReader reader = IOUtils.openIn(filename);
+					final BufferedReader reader = IOUtils.openIn(filename);
 					String line;
 					while ((line = reader.readLine()) != null)
 					{
-						LispTree tree = LispTree.proto.parseFromString(line);
+						final LispTree tree = LispTree.proto.parseFromString(line);
 						if (!"id".equals(tree.child(1).child(0).value))
 							throw new RuntimeException("Malformed example: " + line);
 						exIdToExampleMap.put(tree.child(1).child(1).value, tree);
 					}
 				}
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				throw new RuntimeException(e);
 			}
 		}
-		Object obj = exIdToExampleMap.get(exId);
+		final Object obj = exIdToExampleMap.get(exId);
 		if (obj == null)
 			return null;
 		Example ex;
@@ -141,20 +156,18 @@ public class BatchTableExecutor implements Runnable
 			exIdToExampleMap.put(exId, ex);
 		}
 		else
-		{
 			ex = (Example) obj;
-		}
 		return ex;
 	}
 
-	ListValue addOriginalStrings(ListValue answers, TableKnowledgeGraph graph)
+	ListValue addOriginalStrings(final ListValue answers, final TableKnowledgeGraph graph)
 	{
-		List<Value> values = new ArrayList<>();
+		final List<Value> values = new ArrayList<>();
 		for (Value value : answers.values)
 		{
 			if (value instanceof NameValue)
 			{
-				NameValue name = (NameValue) value;
+				final NameValue name = (NameValue) value;
 				if (name.description == null)
 					value = new NameValue(name.id, graph.getOriginalString(((NameValue) value).id));
 			}

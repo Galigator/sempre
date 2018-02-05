@@ -3,10 +3,8 @@ package edu.stanford.nlp.sempre;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import fig.basic.MapUtils;
 import fig.basic.Option;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -40,11 +38,11 @@ public class JavaExecutor extends Executor
 	private static JavaExecutor defaultExecutor = new JavaExecutor();
 
 	// To simplify logical forms, define some shortcuts.
-	private Map<String, String> shortcuts = Maps.newHashMap();
+	private final Map<String, String> shortcuts = Maps.newHashMap();
 
 	public JavaExecutor()
 	{
-		String className = BasicFunctions.class.getName();
+		final String className = BasicFunctions.class.getName();
 
 		shortcuts.put("+", className + ".plus");
 		shortcuts.put("-", className + ".minus");
@@ -68,175 +66,175 @@ public class JavaExecutor extends Executor
 
 	public static class BasicFunctions
 	{
-		public static double plus(double x, double y)
+		public static double plus(final double x, final double y)
 		{
 			return x + y;
 		}
 
-		public static int plus(int x, int y)
+		public static int plus(final int x, final int y)
 		{
 			return x + y;
 		}
 
-		public static int minus(int x, int y)
+		public static int minus(final int x, final int y)
 		{
 			return x - y;
 		}
 
-		public static double minus(double x, double y)
+		public static double minus(final double x, final double y)
 		{
 			return x - y;
 		}
 
-		public static int times(int x, int y)
+		public static int times(final int x, final int y)
 		{
 			return x * y;
 		}
 
-		public static double times(double x, double y)
+		public static double times(final double x, final double y)
 		{
 			return x * y;
 		}
 
-		public static int divide(int x, int y)
+		public static int divide(final int x, final int y)
 		{
 			return x / y;
 		}
 
-		public static double divide(double x, double y)
+		public static double divide(final double x, final double y)
 		{
 			return x / y;
 		}
 
-		public static int mod(int x, int y)
+		public static int mod(final int x, final int y)
 		{
 			return x % y;
 		}
 
-		public static boolean not(boolean x)
+		public static boolean not(final boolean x)
 		{
 			return !x;
 		}
 
-		public static boolean lessThan(double x, double y)
+		public static boolean lessThan(final double x, final double y)
 		{
 			return x < y;
 		}
 
-		public static boolean lessThanEq(double x, double y)
+		public static boolean lessThanEq(final double x, final double y)
 		{
 			return x <= y;
 		}
 
-		public static boolean equals(double x, double y)
+		public static boolean equals(final double x, final double y)
 		{
 			return x == y;
 		}
 
-		public static boolean greaterThan(double x, double y)
+		public static boolean greaterThan(final double x, final double y)
 		{
 			return x > y;
 		}
 
-		public static boolean greaterThanEq(double x, double y)
+		public static boolean greaterThanEq(final double x, final double y)
 		{
 			return x >= y;
 		}
 
-		public static Object ifThenElse(boolean b, Object x, Object y)
+		public static Object ifThenElse(final boolean b, final Object x, final Object y)
 		{
 			return b ? x : y;
 		}
 
 		// For very simple string concatenation
-		public static String plus(String a, String b)
+		public static String plus(final String a, final String b)
 		{
 			return a + b;
 		}
 
-		public static String plus(String a, String b, String c)
+		public static String plus(final String a, final String b, final String c)
 		{
 			return a + b + c;
 		}
 
-		public static String plus(String a, String b, String c, String d)
+		public static String plus(final String a, final String b, final String c, final String d)
 		{
 			return a + b + c + d;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e)
+		public static String plus(final String a, final String b, final String c, final String d, final String e)
 		{
 			return a + b + c + d + e;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f)
 		{
 			return a + b + c + d + e + f;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g)
 		{
 			return a + b + c + d + e + f + g;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h)
 		{
 			return a + b + c + d + e + f + g + h;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i)
 		{
 			return a + b + c + d + e + f + g + h + i;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j)
 		{
 			return a + b + c + d + e + f + g + h + i + j;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j, String k)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j, final String k)
 		{
 			return a + b + c + d + e + f + g + h + i + j + k;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j, String k, String l)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j, final String k, final String l)
 		{
 			return a + b + c + d + e + f + g + h + i + j + k + l;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j, String k, String l, String m)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j, final String k, final String l, final String m)
 		{
 			return a + b + c + d + e + f + g + h + i + j + k + l + m;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j, String k, String l, String m, String n)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j, final String k, final String l, final String m, final String n)
 		{
 			return a + b + c + d + e + f + g + h + i + j + k + l + m + n;
 		}
 
-		public static String plus(String a, String b, String c, String d, String e, String f, String g, String h, String i, String j, String k, String l, String m, String n, String o)
+		public static String plus(final String a, final String b, final String c, final String d, final String e, final String f, final String g, final String h, final String i, final String j, final String k, final String l, final String m, final String n, final String o)
 		{
 			return a + b + c + d + e + f + g + h + i + j + k + l + m + n + o;
 		}
 
-		private static String toString(Object x)
+		private static String toString(final Object x)
 		{
 			if (x instanceof String)
 				return (String) x;
 			else
 				if (x instanceof Value)
-					return (x instanceof NameValue) ? ((NameValue) x).id : ((StringValue) x).value;
+					return x instanceof NameValue ? ((NameValue) x).id : ((StringValue) x).value;
 				else
 					return null;
 		}
 
 		// Apply func to each element of |list| and return the resulting list.
-		public static List<Object> map(List<Object> list, LambdaFormula func)
+		public static List<Object> map(final List<Object> list, final LambdaFormula func)
 		{
-			List<Object> newList = new ArrayList<Object>();
-			for (Object elem : list)
+			final List<Object> newList = new ArrayList<>();
+			for (final Object elem : list)
 			{
-				Object newElem = apply(func, elem);
+				final Object newElem = apply(func, elem);
 				newList.add(newElem);
 			}
 			return newList;
@@ -244,7 +242,7 @@ public class JavaExecutor extends Executor
 
 		// list = [3, 5, 2], func = (lambda x (lambda y (call + (var x) (var y))))
 		// Returns (3 + 5) + 2 = 10
-		public static Object reduce(List<Object> list, LambdaFormula func)
+		public static Object reduce(final List<Object> list, final LambdaFormula func)
 		{
 			if (list.size() == 0)
 				return null;
@@ -255,43 +253,43 @@ public class JavaExecutor extends Executor
 		}
 
 		// Return elements x of |list| such that func(x) is true.
-		public static List<Object> select(List<Object> list, LambdaFormula func)
+		public static List<Object> select(final List<Object> list, final LambdaFormula func)
 		{
-			List<Object> newList = new ArrayList<Object>();
-			for (Object elem : list)
+			final List<Object> newList = new ArrayList<>();
+			for (final Object elem : list)
 			{
-				Object test = apply(func, elem);
+				final Object test = apply(func, elem);
 				if ((Boolean) test)
 					newList.add(elem);
 			}
 			return newList;
 		}
 
-		private static Object apply(LambdaFormula func, Object x)
+		private static Object apply(final LambdaFormula func, final Object x)
 		{
 			// Apply the function func to x.  In order to do that, need to convert x into a value.
-			Formula formula = Formulas.lambdaApply(func, new ValueFormula<Value>(toValue(x)));
+			final Formula formula = Formulas.lambdaApply(func, new ValueFormula<>(toValue(x)));
 			return defaultExecutor.processFormula(formula, null);
 		}
 
-		private static Object apply(LambdaFormula func, Object x, Object y)
+		private static Object apply(final LambdaFormula func, final Object x, final Object y)
 		{
 			// Apply the function func to x and y.  In order to do that, need to convert x into a value.
-			Formula formula = Formulas.lambdaApply(func, new ValueFormula<Value>(toValue(x)));
-			formula = Formulas.lambdaApply((LambdaFormula) formula, new ValueFormula<Value>(toValue(y)));
+			Formula formula = Formulas.lambdaApply(func, new ValueFormula<>(toValue(x)));
+			formula = Formulas.lambdaApply((LambdaFormula) formula, new ValueFormula<>(toValue(y)));
 			return defaultExecutor.processFormula(formula, null);
 		}
 
-		public static List<Integer> range(int start, int end)
+		public static List<Integer> range(final int start, final int end)
 		{
-			List<Integer> result = new ArrayList<Integer>();
+			final List<Integer> result = new ArrayList<>();
 			for (int i = start; i < end; i++)
 				result.add(i);
 			return result;
 		}
 	}
 
-	public Response execute(Formula formula, ContextValue context)
+	public Response execute(Formula formula, final ContextValue context)
 	{
 		// We can do beta reduction here since macro substitution preserves the
 		// denotation (unlike for lambda DCS).
@@ -300,7 +298,7 @@ public class JavaExecutor extends Executor
 		{
 			return new Response(toValue(processFormula(formula, context)));
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			// Comment this out if we expect lots of innocuous type checking failures
 			if (opts.printStackTrace)
@@ -309,7 +307,7 @@ public class JavaExecutor extends Executor
 		}
 	}
 
-	private Object processFormula(Formula formula, ContextValue context)
+	private Object processFormula(final Formula formula, final ContextValue context)
 	{
 		if (formula instanceof ValueFormula) // Unpack value and convert to object (e.g., for ints)
 			return toObject(((ValueFormula) formula).value);
@@ -317,13 +315,11 @@ public class JavaExecutor extends Executor
 		if (formula instanceof CallFormula)
 		{ // Invoke the function.
 			// Recurse
-			CallFormula call = (CallFormula) formula;
-			Object func = processFormula(call.func, context);
-			List<Object> args = Lists.newArrayList();
-			for (Formula arg : call.args)
-			{
+			final CallFormula call = (CallFormula) formula;
+			final Object func = processFormula(call.func, context);
+			final List<Object> args = Lists.newArrayList();
+			for (final Formula arg : call.args)
 				args.add(processFormula(arg, context));
-			}
 
 			if (!(func instanceof NameValue))
 				throw new RuntimeException("Invalid func: " + call.func + " => " + func);
@@ -338,9 +334,7 @@ public class JavaExecutor extends Executor
 
 			// classPathPrefix, like edu.stanford.nlp.sempre.interactive
 			if (!Strings.isNullOrEmpty(opts.classPathPrefix) && !id.startsWith(".") && !id.startsWith(opts.classPathPrefix))
-			{
 				id = opts.classPathPrefix + "." + id;
-			}
 
 			if (id.startsWith(".")) // Instance method
 				return invoke(id.substring(1), args.get(0), args.subList(1, args.size()).toArray(new Object[0]));
@@ -354,7 +348,7 @@ public class JavaExecutor extends Executor
 	}
 
 	// Convert the Object back to a Value
-	private static Value toValue(Object obj)
+	private static Value toValue(final Object obj)
 	{
 		if (obj instanceof Value)
 			return (Value) obj;
@@ -368,8 +362,8 @@ public class JavaExecutor extends Executor
 			return new StringValue((String) obj);
 		if (obj instanceof List)
 		{
-			List<Value> list = Lists.newArrayList();
-			for (Object elem : (List) obj)
+			final List<Value> list = Lists.newArrayList();
+			for (final Object elem : (List) obj)
 				list.add(toValue(elem));
 			return new ListValue(list);
 		}
@@ -378,61 +372,56 @@ public class JavaExecutor extends Executor
 
 	// Convert a Value (which are specified in the formulas) to an Object (which
 	// many Java functions take).
-	private static Object toObject(Value value)
+	private static Object toObject(final Value value)
 	{
 		if (value instanceof NumberValue && opts.convertNumberValues)
 		{
 			// Unfortunately, NumberValues don't make a distinction between ints and
 			// doubles, so this is a hack.
-			double x = ((NumberValue) value).value;
+			final double x = ((NumberValue) value).value;
 			if (x == (int) x)
 				return new Integer((int) x);
 			return new Double(x);
 		}
 		else
 			if (value instanceof BooleanValue)
-			{
 				return ((BooleanValue) value).value;
-			}
 			else
 				if (value instanceof StringValue)
-				{
 					return ((StringValue) value).value;
-				}
 				else
 					if (value instanceof ListValue)
 					{
-						List<Object> list = Lists.newArrayList();
-						for (Value elem : ((ListValue) value).values)
+						final List<Object> list = Lists.newArrayList();
+						for (final Value elem : ((ListValue) value).values)
 							list.add(toObject(elem));
 						return list;
 					}
 					else
-					{
 						return value; // Preserve the Value (which can be an object)
-					}
 	}
 
 	// Example: id = "Math.cos"
-	private Object invoke(String id, Object thisObj, Object[] args)
+	private Object invoke(final String id, final Object thisObj, final Object[] args)
 	{
 		Method[] methods;
 		Class<?> cls;
 		String methodName;
-		boolean isStatic = thisObj == null;
+		final boolean isStatic = thisObj == null;
 
 		if (isStatic)
 		{ // Static methods
-			int i = id.lastIndexOf('.');
-			if (i == -1) { throw new RuntimeException("Expected <class>.<method>, but got: " + id); }
-			String className = id.substring(0, i);
+			final int i = id.lastIndexOf('.');
+			if (i == -1)
+				throw new RuntimeException("Expected <class>.<method>, but got: " + id);
+			final String className = id.substring(0, i);
 			methodName = id.substring(i + 1);
 
 			try
 			{
 				cls = Class.forName(className);
 			}
-			catch (ClassNotFoundException e)
+			catch (final ClassNotFoundException e)
 			{
 				throw new RuntimeException(e);
 			}
@@ -446,10 +435,10 @@ public class JavaExecutor extends Executor
 		}
 
 		// Find a suitable method
-		List<Method> nameMatches = Lists.newArrayList();
+		final List<Method> nameMatches = Lists.newArrayList();
 		Method bestMethod = null;
 		int bestCost = INVALID_TYPE_COST;
-		for (Method m : methods)
+		for (final Method m : methods)
 		{
 			if (!m.getName().equals(methodName))
 				continue;
@@ -457,7 +446,7 @@ public class JavaExecutor extends Executor
 			nameMatches.add(m);
 			if (isStatic != Modifier.isStatic(m.getModifiers()))
 				continue;
-			int cost = typeCastCost(m.getParameterTypes(), args);
+			final int cost = typeCastCost(m.getParameterTypes(), args);
 			if (cost < bestCost)
 			{
 				bestCost = cost;
@@ -466,27 +455,25 @@ public class JavaExecutor extends Executor
 		}
 
 		if (bestMethod != null)
-		{
 			try
 			{
 				return bestMethod.invoke(thisObj, args);
 			}
-			catch (InvocationTargetException e)
+			catch (final InvocationTargetException e)
 			{
 				throw new RuntimeException(e.getCause());
 			}
-			catch (IllegalAccessException e)
+			catch (final IllegalAccessException e)
 			{
 				throw new RuntimeException(e);
 			}
-		}
-		List<String> types = Lists.newArrayList();
-		for (Object arg : args)
+		final List<String> types = Lists.newArrayList();
+		for (final Object arg : args)
 			types.add(arg.getClass().toString());
 		throw new RuntimeException("Method " + methodName + " not found in class " + cls + " with arguments " + Arrays.asList(args) + " having types " + types + "; candidates: " + nameMatches);
 	}
 
-	private int typeCastCost(Class[] types, Object[] args)
+	private int typeCastCost(final Class[] types, final Object[] args)
 	{
 		if (types.length != args.length)
 			return INVALID_TYPE_COST;
@@ -495,10 +482,8 @@ public class JavaExecutor extends Executor
 		{
 			cost += typeCastCost(types[i], args[i]);
 			if (cost >= INVALID_TYPE_COST)
-			{
 				// LogInfo.dbgs("NOT COMPATIBLE: want %s, got %s with type %s", types[i], args[i], args[i].getClass());
 				break;
-			}
 		}
 		return cost;
 	}
@@ -508,7 +493,7 @@ public class JavaExecutor extends Executor
 	// 1: don't match, but don't lose anything
 	// 2: don't match, and can lose something
 	// INVALID_TYPE_COST: impossible
-	private int typeCastCost(Class<?> type, Object arg)
+	private int typeCastCost(final Class<?> type, final Object arg)
 	{
 		if (arg == null)
 			return !type.isPrimitive() ? 0 : INVALID_TYPE_COST;

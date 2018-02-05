@@ -11,7 +11,7 @@ public class VariableFormula extends PrimitiveFormula
 {
 	public final String name; // Name of variable.
 
-	public VariableFormula(String name)
+	public VariableFormula(final String name)
 	{
 		this.name = name;
 	}
@@ -23,12 +23,12 @@ public class VariableFormula extends PrimitiveFormula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof VariableFormula))
 			return false;
-		VariableFormula that = (VariableFormula) thatObj;
-		return this.name.equals(that.name);
+		final VariableFormula that = (VariableFormula) thatObj;
+		return name.equals(that.name);
 	}
 
 	public int computeHashCode()

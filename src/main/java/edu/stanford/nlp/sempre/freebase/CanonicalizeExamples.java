@@ -1,10 +1,13 @@
 package edu.stanford.nlp.sempre.freebase;
 
-import com.google.common.base.Function;
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
 import fig.exec.Execution;
-
 import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
@@ -38,20 +41,17 @@ public class CanonicalizeExamples implements Runnable
 		return name;
 	}
 
-	public Formula convert(Formula formula)
+	public Formula convert(final Formula formula)
 	{
-		return formula.map(new Function<Formula, Formula>()
+		return formula.map(formula1 ->
 		{
-			public Formula apply(Formula formula)
+			String name = Formulas.getNameId(formula1);
+			if (name != null)
 			{
-				String name = Formulas.getNameId(formula);
-				if (name != null)
-				{
-					name = convert(name);
-					return Formulas.newNameFormula(name);
-				}
-				return null;
+				name = convert(name);
+				return Formulas.newNameFormula(name);
 			}
+			return null;
 		});
 	}
 
@@ -59,29 +59,27 @@ public class CanonicalizeExamples implements Runnable
 	{
 		canonicalIdMap = edu.stanford.nlp.sempre.freebase.Utils.readCanonicalIdMap(canonicalIdMapPath);
 
-		for (String inPath : examplePaths)
+		for (final String inPath : examplePaths)
 		{
-			String outPath = inPath + ".canonicalized";
+			final String outPath = inPath + ".canonicalized";
 			LogInfo.logs("Converting %s => %s", inPath, outPath);
-			Iterator<LispTree> it = LispTree.proto.parseFromFile(inPath);
-			PrintWriter out = IOUtils.openOutHard(outPath);
+			final Iterator<LispTree> it = LispTree.proto.parseFromFile(inPath);
+			final PrintWriter out = IOUtils.openOutHard(outPath);
 			while (it.hasNext())
 			{
-				LispTree tree = it.next();
+				final LispTree tree = it.next();
 				if (!"example".equals(tree.child(0).value))
 					throw new RuntimeException("Bad: " + tree);
 				for (int i = 1; i < tree.children.size(); i++)
 				{
-					LispTree subtree = tree.child(i);
+					final LispTree subtree = tree.child(i);
 					if ("targetFormula".equals(subtree.child(0).value))
-					{
 						for (int j = 1; j < subtree.children.size(); j++)
 						{
 							Formula formula = Formulas.fromLispTree(subtree.child(j));
 							formula = convert(formula);
 							subtree.children.set(j, formula.toLispTree()); // Use converted formula
 						}
-					}
 				}
 				out.println(tree.toStringWrap(100));
 			}
@@ -89,7 +87,7 @@ public class CanonicalizeExamples implements Runnable
 		}
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new CanonicalizeExamples());
 	}

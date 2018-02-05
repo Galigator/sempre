@@ -12,7 +12,7 @@ public class ShortContainer implements Serializable
 
 	private short count;
 
-	public ShortContainer(short count)
+	public ShortContainer(final short count)
 	{
 		this.count = count;
 	}
@@ -27,12 +27,12 @@ public class ShortContainer implements Serializable
 		count--;
 	}
 
-	public void inc(short n)
+	public void inc(final short n)
 	{
 		count += n;
 	}
 
-	public void dec(short n)
+	public void dec(final short n)
 	{
 		count -= n;
 	}

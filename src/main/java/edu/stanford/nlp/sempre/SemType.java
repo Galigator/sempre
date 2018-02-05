@@ -2,10 +2,11 @@ package edu.stanford.nlp.sempre;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import fig.basic.LispTree;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A simple type system for Formulas. SemType represents a union over base types, where each base type is either - entity type, or - entity type -> base type
@@ -51,12 +52,12 @@ public abstract class SemType
 	}
 
 	@JsonCreator
-	public static SemType fromString(String s)
+	public static SemType fromString(final String s)
 	{
 		return fromLispTree(LispTree.proto.parseFromString(s));
 	}
 
-	public static SemType fromLispTree(LispTree tree)
+	public static SemType fromLispTree(final LispTree tree)
 	{
 		if (tree.isLeaf())
 		{
@@ -66,7 +67,7 @@ public abstract class SemType
 		}
 		if ("union".equals(tree.child(0).value))
 		{
-			List<SemType> result = new ArrayList<>();
+			final List<SemType> result = new ArrayList<>();
 			for (int i = 1; i < tree.children.size(); i++)
 				result.add(fromLispTree(tree.child(i)));
 			return new UnionSemType(result);
@@ -83,25 +84,25 @@ public abstract class SemType
 
 	// Create a new instance of SemType from type names (Strings)
 
-	public static SemType newAtomicSemType(String type)
+	public static SemType newAtomicSemType(final String type)
 	{
 		return new AtomicSemType(type);
 	}
 
-	public static SemType newFuncSemType(String argType, String retType)
+	public static SemType newFuncSemType(final String argType, final String retType)
 	{
 		return new FuncSemType(argType, retType);
 	}
 
-	public static SemType newUnionSemType(Collection<String> types)
+	public static SemType newUnionSemType(final Collection<String> types)
 	{
-		List<SemType> t = new ArrayList<>();
-		for (String x : types)
+		final List<SemType> t = new ArrayList<>();
+		for (final String x : types)
 			t.add(new AtomicSemType(x));
 		return new UnionSemType(t).simplify();
 	}
 
-	public static SemType newUnionSemType(String... types)
+	public static SemType newUnionSemType(final String... types)
 	{
 		return newUnionSemType(Arrays.asList(types));
 	}

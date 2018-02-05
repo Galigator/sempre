@@ -1,7 +1,6 @@
 package edu.stanford.nlp.sempre;
 
 import fig.basic.LispTree;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +14,7 @@ public class FilterNerSpanFn extends SemanticFn
 	// Accepted NER tags (PERSON, LOCATION, ORGANIZATION, etc)
 	List<String> acceptableNerTags = new ArrayList<>();
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		for (int j = 1; j < tree.children.size(); j++)
@@ -32,16 +31,14 @@ public class FilterNerSpanFn extends SemanticFn
 				if (!isValid(ex, c))
 					return null;
 				else
-				{
 					return new Derivation.Builder().withCallable(c).withFormulaFrom(c.child(0)).createDerivation();
-				}
 			}
 		};
 	}
 
-	private boolean isValid(Example ex, Callable c)
+	private boolean isValid(final Example ex, final Callable c)
 	{
-		String nerTag = ex.languageInfo.nerTags.get(c.getStart());
+		final String nerTag = ex.languageInfo.nerTags.get(c.getStart());
 
 		// Check that it's an acceptable tag
 		if (!acceptableNerTags.contains(nerTag))
@@ -58,7 +55,7 @@ public class FilterNerSpanFn extends SemanticFn
 
 		if (c.getEnd() < ex.languageInfo.nerTags.size() && nerTag.equals(ex.languageInfo.nerTags.get(c.getEnd())))
 			return false;
-		assert (c.getChildren().size() == 1) : c.getChildren();
+		assert c.getChildren().size() == 1 : c.getChildren();
 		return true;
 	}
 }

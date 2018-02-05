@@ -1,7 +1,7 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.LispTree;
 import fig.basic.Fmt;
+import fig.basic.LispTree;
 
 /**
  * Represents a numerical value (optionally comes with a unit). In the future, might want to split this into an Integer version?
@@ -16,26 +16,26 @@ public class NumberValue extends Value
 	public final double value;
 	public final String unit; // What measurement (e.g., "fb:en.meter" or unitless)
 
-	public NumberValue(double value)
+	public NumberValue(final double value)
 	{
 		this(value, unitless);
 	}
 
-	public NumberValue(double value, String unit)
+	public NumberValue(final double value, final String unit)
 	{
 		this.value = value;
 		this.unit = unit;
 	}
 
-	public NumberValue(LispTree tree)
+	public NumberValue(final LispTree tree)
 	{
-		this.value = Double.parseDouble(tree.child(1).value);
-		this.unit = 2 < tree.children.size() ? tree.child(2).value : unitless;
+		value = Double.parseDouble(tree.child(1).value);
+		unit = 2 < tree.children.size() ? tree.child(2).value : unitless;
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("number");
 		tree.addChild(Fmt.D(value));
 		if (!unit.equals(unitless))
@@ -62,16 +62,16 @@ public class NumberValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		NumberValue that = (NumberValue) o;
-		if (this.value != that.value)
+		final NumberValue that = (NumberValue) o;
+		if (value != that.value)
 			return false; // Warning: doing exact equality checking
-		if (!this.unit.equals(that.unit))
+		if (!unit.equals(that.unit))
 			return false;
 		return true;
 	}

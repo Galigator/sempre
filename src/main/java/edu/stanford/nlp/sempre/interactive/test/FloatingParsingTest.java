@@ -1,16 +1,26 @@
 package edu.stanford.nlp.sempre.interactive.test;
 
-import static org.testng.AssertJUnit.assertEquals;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-import fig.basic.*;
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.ContextValue;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.ExactValueEvaluator;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FeatureExtractor;
+import edu.stanford.nlp.sempre.FloatingParser;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.Json;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
 import edu.stanford.nlp.sempre.Parser.Spec;
-import edu.stanford.nlp.sempre.interactive.InteractiveBeamParser;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.ValueEvaluator;
 import edu.stanford.nlp.sempre.interactive.DALExecutor;
-
+import edu.stanford.nlp.sempre.interactive.InteractiveBeamParser;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import java.util.List;
+import java.util.function.Predicate;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
@@ -23,30 +33,30 @@ import org.testng.collections.Lists;
 @Test(groups = { "InteractiveLearning" })
 public class FloatingParsingTest
 {
-	Predicate<Example> contains(String formula)
+	Predicate<Example> contains(final String formula)
 	{
-		Formula answer = Formulas.fromLispTree(LispTree.proto.parseFromString(formula));
+		final Formula answer = Formulas.fromLispTree(LispTree.proto.parseFromString(formula));
 		return e -> e.predDerivations.stream().anyMatch(d -> d.formula.equals(answer));
 	}
 
-	Predicate<Example> moreThan(int count)
+	Predicate<Example> moreThan(final int count)
 	{
 		return e -> e.predDerivations.size() > count;
 	}
 
-	Predicate<Example> hasAll(String... substrings)
+	Predicate<Example> hasAll(final String... substrings)
 	{
 		return new Predicate<Example>()
 		{
 			List<String> required = Lists.newArrayList(substrings);
 
 			@Override
-			public boolean test(Example e)
+			public boolean test(final Example e)
 			{
 				int match = 0;
-				for (Derivation deriv : e.predDerivations)
+				for (final Derivation deriv : e.predDerivations)
 				{
-					String formula = deriv.formula.toString();
+					final String formula = deriv.formula.toString();
 					if (required.stream().anyMatch(s -> formula.indexOf(s) != -1))
 					{
 						match++;
@@ -70,54 +80,50 @@ public class FloatingParsingTest
 		Grammar.opts.useApplyFn = "interactive.ApplyFn";
 		Grammar.opts.binarizeRules = false;
 
-		DALExecutor executor = new DALExecutor();
+		final DALExecutor executor = new DALExecutor();
 		DALExecutor.opts.worldType = "BlocksWorld";
-		FeatureExtractor extractor = new FeatureExtractor(executor);
+		final FeatureExtractor extractor = new FeatureExtractor(executor);
 		FeatureExtractor.opts.featureDomains.add("rule");
-		ValueEvaluator valueEvaluator = new ExactValueEvaluator();
-		Grammar grammar = new Grammar();
+		final ValueEvaluator valueEvaluator = new ExactValueEvaluator();
+		final Grammar grammar = new Grammar();
 		grammar.read();
 		grammar.write();
 		return new Parser.Spec(grammar, extractor, executor, valueEvaluator);
 	}
 
-	protected static void parse(String beamUtt, String floatUtt, ContextValue context, Predicate<Example> checker)
+	protected static void parse(final String beamUtt, final String floatUtt, final ContextValue context, final Predicate<Example> checker)
 	{
 		LogInfo.begin_track("Cannonical: %s\t Float: %s", beamUtt, floatUtt);
 
-		Example.Builder b = new Example.Builder();
+		final Example.Builder b = new Example.Builder();
 		b.setId("session:test");
 		b.setUtterance(floatUtt);
 		b.setContext(context);
-		Example ex = b.createExample();
+		final Example ex = b.createExample();
 		ex.preprocess();
 
-		Spec defSpec = defaultSpec();
-		Parser parser = new InteractiveBeamParser(defSpec);
-		ParserState state = parser.parse(new Params(), ex, false);
+		final Spec defSpec = defaultSpec();
+		final Parser parser = new InteractiveBeamParser(defSpec);
+		final ParserState state = parser.parse(new Params(), ex, false);
 		LogInfo.end_track();
 
 		// Add the floating parser and check?
 		if (checker != null)
-		{
 			if (!checker.test(ex))
-			{
 				Assert.fail(floatUtt);
-			}
-		}
 	}
 
-	private static ContextValue getContext(String blocks)
+	private static ContextValue getContext(final String blocks)
 	{
 		// a hack to pass in the world state without much change to the code
-		String strigify2 = Json.writeValueAsStringHard(blocks); // some parsing issue inside lisptree parser
+		final String strigify2 = Json.writeValueAsStringHard(blocks); // some parsing issue inside lisptree parser
 		return ContextValue.fromString(String.format("(context (graph NaiveKnowledgeGraph ((string \"%s\") (name b) (name c))))", strigify2));
 	}
 
 	public void basicTest()
 	{
-		String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
-		ContextValue context = getContext(defaultBlocks);
+		final String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
+		final ContextValue context = getContext(defaultBlocks);
 		LogInfo.begin_track("testJoin");
 
 		parse("select all", "select all", context, contains("(: select *)"));
@@ -136,8 +142,8 @@ public class FloatingParsingTest
 
 	public void advanced()
 	{
-		String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
-		ContextValue context = getContext(defaultBlocks);
+		final String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
+		final ContextValue context = getContext(defaultBlocks);
 		LogInfo.begin_track("testJoin");
 
 		parse("repeat 4 [add yellow]", "add 4 yellow blocks", context, hasAll("(:loop", "(number 4)", "(color yellow)"));
@@ -161,8 +167,8 @@ public class FloatingParsingTest
 	// things we won't handle
 	public void outOfScope()
 	{
-		String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
-		ContextValue context = getContext(defaultBlocks);
+		final String defaultBlocks = "[[1,1,1,\"Green\",[]],[1,2,1,\"Blue\",[]],[2,2,1,\"Red\",[]],[3,2,2,\"Yellow\",[]]]";
+		final ContextValue context = getContext(defaultBlocks);
 		LogInfo.begin_track("testJoin");
 
 		parse("", "repeat 3 [ repeat 3 [delete very top of all] ]", context, moreThan(0));

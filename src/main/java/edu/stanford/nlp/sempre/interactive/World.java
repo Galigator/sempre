@@ -1,10 +1,9 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import edu.stanford.nlp.sempre.ContextValue;
 import edu.stanford.nlp.sempre.interactive.voxelurn.VoxelWorld;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * The world consists of Items, and tracks allItems: the whole world selected: the set of items in focus, usually, but not necessarily a subset of allItems
@@ -19,7 +18,7 @@ public abstract class World
 	public Set<Item> selected;
 	public Set<Item> previous;
 
-	public static World fromContext(String worldname, ContextValue context)
+	public static World fromContext(final String worldname, final ContextValue context)
 	{
 		if (worldname.equals("VoxelWorld"))
 			return VoxelWorld.fromContext(context);
@@ -42,13 +41,13 @@ public abstract class World
 
 	public World()
 	{
-		this.allItems = new HashSet<>();
-		this.selected = new HashSet<>();
-		this.previous = new HashSet<>();
+		allItems = new HashSet<>();
+		selected = new HashSet<>();
+		previous = new HashSet<>();
 	}
 
 	// general actions, flatness means these actions can be performed on allitems
-	public void remove(Set<Item> selected)
+	public void remove(final Set<Item> selected)
 	{
 		allItems = new HashSet<>(allItems);
 		allItems.removeAll(selected);
@@ -56,9 +55,9 @@ public abstract class World
 	}
 
 	// it is bad to ever mutate select, which will break scoping
-	public void select(Set<Item> set)
+	public void select(final Set<Item> set)
 	{
-		this.selected = set;
+		selected = set;
 	}
 
 	public void noop()
@@ -67,12 +66,12 @@ public abstract class World
 
 	public Set<Item> selected()
 	{
-		return this.selected;
+		return selected;
 	}
 
 	public Set<Item> previous()
 	{
-		return this.previous;
+		return previous;
 	}
 
 	public Set<Item> all()

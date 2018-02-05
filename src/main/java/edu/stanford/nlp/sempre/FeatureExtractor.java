@@ -2,9 +2,17 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-import fig.basic.*;
-
-import java.util.*;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.StopWatchSet;
+import fig.basic.Utils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A FeatureExtractor specifies a mapping from derivations to feature vectors. [Using features] - Specify the feature domains in the featureDomains option. - If
@@ -34,21 +42,19 @@ public class FeatureExtractor
 		public boolean lexicalBigramParaphrase = true;
 	}
 
-	private Executor executor;
-	private List<FeatureComputer> featureComputers = new ArrayList<>();
+	private final Executor executor;
+	private final List<FeatureComputer> featureComputers = new ArrayList<>();
 
-	public FeatureExtractor(Executor executor)
+	public FeatureExtractor(final Executor executor)
 	{
 		this.executor = executor;
-		for (String featureComputer : opts.featureComputers)
-		{
+		for (final String featureComputer : opts.featureComputers)
 			featureComputers.add((FeatureComputer) Utils.newInstanceHard(SempreUtils.resolveClassName(featureComputer)));
-		}
 	}
 
 	public static Options opts = new Options();
 
-	public static boolean containsDomain(String domain)
+	public static boolean containsDomain(final String domain)
 	{
 		if (opts.disableDenotationFeatures && domain.equals("denotation"))
 			return false;
@@ -57,7 +63,7 @@ public class FeatureExtractor
 
 	// This function is called on every sub-Derivation, so we should extract only
 	// features which depend in some way on |deriv|, not just on its children.
-	public void extractLocal(Example ex, Derivation deriv)
+	public void extractLocal(final Example ex, final Derivation deriv)
 	{
 		StopWatchSet.begin("FeatureExtractor.extractLocal");
 		extractRuleFeatures(ex, deriv);
@@ -67,13 +73,13 @@ public class FeatureExtractor
 		extractWhTypeFeatures(ex, deriv);
 		conjoinLemmaAndBinary(ex, deriv);
 		extractBigramFeatures(ex, deriv);
-		for (FeatureComputer featureComputer : featureComputers)
+		for (final FeatureComputer featureComputer : featureComputers)
 			featureComputer.extractLocal(ex, deriv);
 		StopWatchSet.end();
 	}
 
 	// Add an indicator for each applied rule.
-	void extractRuleFeatures(Example ex, Derivation deriv)
+	void extractRuleFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("rule"))
 			return;
@@ -86,7 +92,7 @@ public class FeatureExtractor
 
 	// Extract features on the linguistic information of the spanned (anchored) tokens.
 	// (Not applicable for floating rules)
-	void extractSpanFeatures(Example ex, Derivation deriv)
+	void extractSpanFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("span") || deriv.start == -1)
 			return;
@@ -96,7 +102,7 @@ public class FeatureExtractor
 
 	// Extract features on the denotation of the logical form produced.
 	// (For example, number of items in the list)
-	void extractDenotationFeatures(Example ex, Derivation deriv)
+	void extractDenotationFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("denotation"))
 			return;
@@ -120,23 +126,23 @@ public class FeatureExtractor
 
 		if (deriv.value instanceof ListValue)
 		{
-			ListValue list = (ListValue) deriv.value;
+			final ListValue list = (ListValue) deriv.value;
 
 			if (list.values.size() == 1 && list.values.get(0) instanceof NumberValue)
 			{
-				int count = getNumber(list.values.get(0));
+				final int count = getNumber(list.values.get(0));
 				deriv.addFeature("denotation", "count-size" + (count <= 1 ? "=" + count : ">1"));
 			}
 			else
 			{
-				int size = list.values.size();
+				final int size = list.values.size();
 				deriv.addFeature("denotation", "size" + (size < 3 ? "=" + size : ">=" + 3));
 			}
 
 		}
 	}
 
-	int getNumber(Value value)
+	int getNumber(final Value value)
 	{
 		if (value instanceof NumberValue)
 			return (int) ((NumberValue) value).value;
@@ -147,57 +153,41 @@ public class FeatureExtractor
 
 	// Add an indicator for each alignment between a syntactic dependency (produced by the
 	// Stanford dependency parser) and the application of a semantic function.
-	void extractDependencyFeatures(Example ex, Derivation deriv)
+	void extractDependencyFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("dependencyParse") && !containsDomain("fullDependencyParse"))
 			return;
 		if (deriv.rule != Rule.nullRule)
-		{
-			for (Derivation child : deriv.children)
-			{
+			for (final Derivation child : deriv.children)
 				for (int i = child.start; i < child.end; i++)
-				{
-					for (LanguageInfo.DependencyEdge dependency : ex.languageInfo.dependencyChildren.get(i))
-					{
+					for (final LanguageInfo.DependencyEdge dependency : ex.languageInfo.dependencyChildren.get(i))
 						if (!child.containsIndex(dependency.modifier))
 						{
-							String direction = dependency.modifier > i ? "forward" : "backward";
-							String containment = deriv.containsIndex(dependency.modifier) ? "internal" : "external";
+							final String direction = dependency.modifier > i ? "forward" : "backward";
+							final String containment = deriv.containsIndex(dependency.modifier) ? "internal" : "external";
 							if (containsDomain("fullDependencyParse"))
 								addAllDependencyFeatures(dependency, direction, containment, deriv);
 							else
 								deriv.addFeature("dependencyParse", "(" + dependency.label + " " + direction + " " + containment + ") --- " + deriv.getRule().toString());
 						}
-					}
-				}
-			}
-		}
 	}
 
-	private void addAllDependencyFeatures(LanguageInfo.DependencyEdge dependency, String direction, String containment, Derivation deriv)
+	private void addAllDependencyFeatures(final LanguageInfo.DependencyEdge dependency, final String direction, final String containment, final Derivation deriv)
 	{
-		String[] types = { dependency.label, "*" };
-		String[] directions = { " " + direction, "" };
-		String[] containments = { " " + containment, "" };
-		String[] rules = { deriv.getRule().toString(), "" };
-		for (String typePresent : types)
-		{
-			for (String directionPresent : directions)
-			{
-				for (String containmentPresent : containments)
-				{
-					for (String rulePresent : rules)
-					{
+		final String[] types = { dependency.label, "*" };
+		final String[] directions = { " " + direction, "" };
+		final String[] containments = { " " + containment, "" };
+		final String[] rules = { deriv.getRule().toString(), "" };
+		for (final String typePresent : types)
+			for (final String directionPresent : directions)
+				for (final String containmentPresent : containments)
+					for (final String rulePresent : rules)
 						deriv.addFeature("fullDependencyParse", "(" + typePresent + directionPresent + containmentPresent + ") --- " + rulePresent);
-					}
-				}
-			}
-		}
 	}
 
 	// Conjunction of wh-question word and type
 	// (For example, "who" should go with PERSON and not DATE)
-	void extractWhTypeFeatures(Example ex, Derivation deriv)
+	void extractWhTypeFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("whType"))
 			return;
@@ -205,18 +195,16 @@ public class FeatureExtractor
 			return;
 
 		if (ex.posTag(0).startsWith("W"))
-		{
 			deriv.addFeature("whType", "token0=" + ex.token(0) + "," + "type=" + coarseType(deriv.type.toString()));
-		}
 	}
 
 	public static final String PERSON = "fb:people.person";
 	public static final String LOC = "fb:location.location";
 	public static final String ORG = "fb:organization.organization";
 
-	public static String coarseType(String type)
+	public static String coarseType(final String type)
 	{
-		Set<String> superTypes = SemTypeHierarchy.singleton.getSupertypes(type);
+		final Set<String> superTypes = SemTypeHierarchy.singleton.getSupertypes(type);
 		if (superTypes != null)
 		{
 			if (superTypes.contains(PERSON))
@@ -235,82 +223,66 @@ public class FeatureExtractor
 
 	//used in Berant et al., 2013 and in the RL parser
 	//conjoins all binaries in the logical form with all non-entity lemmas
-	void conjoinLemmaAndBinary(Example ex, Derivation deriv)
+	void conjoinLemmaAndBinary(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("lemmaAndBinaries"))
 			return;
 		if (!deriv.isRoot(ex.numTokens()))
 			return;
 
-		List<String> nonEntityLemmas = new LinkedList<>();
+		final List<String> nonEntityLemmas = new LinkedList<>();
 		extractNonEntityLemmas(ex, deriv, nonEntityLemmas);
-		List<String> binaries = extractBinaries(deriv.formula);
+		final List<String> binaries = extractBinaries(deriv.formula);
 		if (!binaries.isEmpty())
 		{
-			String binariesStr = Joiner.on('_').join(binaries);
-			for (String nonEntityLemma : nonEntityLemmas)
-			{
+			final String binariesStr = Joiner.on('_').join(binaries);
+			for (final String nonEntityLemma : nonEntityLemmas)
 				deriv.addFeature("lemmaAndBinaries", "nonEntitylemmas=" + nonEntityLemma + ",binaries=" + binariesStr);
-			}
 		}
 	}
 
 	// Extract the utterance that the derivation generates (not necessarily the
 	// one in the input utterance).
-	private void extractUtterance(Derivation deriv, List<String> utterance)
+	private void extractUtterance(final Derivation deriv, final List<String> utterance)
 	{
 		if (deriv.rule == Rule.nullRule)
 			return;
 		int c = 0; // Index into children
-		for (String item : deriv.rule.rhs)
-		{
+		for (final String item : deriv.rule.rhs)
 			if (Rule.isCat(item))
 				extractUtterance(deriv.children.get(c++), utterance);
 			else
 				utterance.add(item);
-		}
 	}
 
 	//Used in Berant et., EMNLP 2013, and in the agenda RL parser
 	//Extracts all content-word lemmas in the derivation tree not dominated by the category $Entity
-	private void extractNonEntityLemmas(Example ex, Derivation deriv, List<String> nonEntityLemmas)
+	private void extractNonEntityLemmas(final Example ex, final Derivation deriv, final List<String> nonEntityLemmas)
 	{
 		if (deriv.children.size() == 0)
-		{ // base case this means it is a word that should be appended
 			for (int i = deriv.start; i < deriv.end; i++)
 			{
-				String pos = ex.languageInfo.posTags.get(i);
+				final String pos = ex.languageInfo.posTags.get(i);
 				if ((pos.startsWith("N") || pos.startsWith("V") || pos.startsWith("W") || pos.startsWith("A") || pos.equals("IN")) && !ex.languageInfo.lemmaTokens.get(i).equals("be"))
 					nonEntityLemmas.add(ex.languageInfo.lemmaTokens.get(i));
 			}
-		}
 		else
-		{ // recursion
-			for (Derivation child : deriv.children)
-			{
+			for (final Derivation child : deriv.children)
 				if (child.rule.lhs == null || !child.rule.lhs.equals("$Entity"))
-				{
 					extractNonEntityLemmas(ex, child, nonEntityLemmas);
-				}
 				else
 					if (child.rule.lhs.equals("$Entity"))
-					{
 						nonEntityLemmas.add("E");
-					}
-			}
-		}
 	}
 
 	//Used in Berant et al., 2013 and in agenda-based RL parser
-	private List<String> extractBinaries(Formula formula)
+	private List<String> extractBinaries(final Formula formula)
 	{
-		List<String> res = new LinkedList<>();
-		Set<String> atomicElements = Formulas.extractAtomicFreebaseElements(formula);
-		for (String atomicElement : atomicElements)
-		{
+		final List<String> res = new LinkedList<>();
+		final Set<String> atomicElements = Formulas.extractAtomicFreebaseElements(formula);
+		for (final String atomicElement : atomicElements)
 			if (atomicElement.split("\\.").length == 3 && !atomicElement.equals("fb:type.object.type"))
 				res.add(atomicElement);
-		}
 		return res;
 	}
 
@@ -318,47 +290,35 @@ public class FeatureExtractor
 	 * Add an indicator for each pair of bigrams that can be aligned from the original utterance and two (not necessarily contiguous) lemmas in the generated
 	 * utterance
 	 */
-	private void extractBigramFeatures(Example ex, Derivation deriv)
+	private void extractBigramFeatures(final Example ex, final Derivation deriv)
 	{
 		if (!containsDomain("bigram"))
 			return;
 		if (!deriv.cat.equals(Rule.rootCat))
 			return;
-		LanguageInfo derivInfo = LanguageAnalyzer.getSingleton().analyze(deriv.canonicalUtterance);
-		List<String> derivLemmas = derivInfo.lemmaTokens;
-		List<String> exLemmas = ex.languageInfo.lemmaTokens;
-		Map<Integer, Integer> bigramCounts = new HashMap<Integer, Integer>();
+		final LanguageInfo derivInfo = LanguageAnalyzer.getSingleton().analyze(deriv.canonicalUtterance);
+		final List<String> derivLemmas = derivInfo.lemmaTokens;
+		final List<String> exLemmas = ex.languageInfo.lemmaTokens;
+		final Map<Integer, Integer> bigramCounts = new HashMap<>();
 		for (int i = 0; i < exLemmas.size() - 1; i++)
-		{
 			for (int j = 0; j < derivLemmas.size() - 1; j++)
-			{
 				if (derivLemmas.get(j).equals(exLemmas.get(i)))
-				{
 					// Consider bigrams separated by up to maxBigramDistance in generated utterance
 					for (int k = 1; j + k < derivLemmas.size() && k <= opts.maxBigramDistance; k++)
-					{
 						if (derivLemmas.get(j + k).equals(exLemmas.get(i + 1)))
-						{
 							if (opts.lexicalBigramParaphrase)
 								deriv.addFeature("bigram", exLemmas.get(i) + "," + exLemmas.get(i + 1) + " - " + k);
 							else
 								MapUtils.incr(bigramCounts, k, 1);
-						}
-					}
-				}
-			}
-		}
 		if (!opts.lexicalBigramParaphrase)
-		{
-			for (Integer dist : bigramCounts.keySet())
+			for (final Integer dist : bigramCounts.keySet())
 				deriv.addFeature("bigram", "distance " + dist + " - " + bigramCounts.get(dist));
-		}
 	}
 
 	// Joins arrayList of strings into string
-	String join(List<String> l, String delimiter)
+	String join(final List<String> l, final String delimiter)
 	{
-		StringBuilder sb = new StringBuilder(l.get(0));
+		final StringBuilder sb = new StringBuilder(l.get(0));
 		for (int i = 1; i < l.size(); i++)
 		{
 			sb.append(delimiter);

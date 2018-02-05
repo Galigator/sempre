@@ -1,7 +1,7 @@
 package edu.stanford.nlp.sempre.cprune;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public class CPruneDerivInfo
 {

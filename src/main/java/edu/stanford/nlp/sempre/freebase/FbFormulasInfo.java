@@ -1,16 +1,30 @@
 package edu.stanford.nlp.sempre.freebase;
 
 import com.google.common.base.Joiner;
+import edu.stanford.nlp.sempre.FeatureVector;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.VariableFormula;
 import edu.stanford.nlp.stats.ClassicCounter;
 import edu.stanford.nlp.stats.Counter;
-import edu.stanford.nlp.sempre.*;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.MapUtils;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class for keeping info and manipulating FB formulas. For example, given a Freebase formula computes the reverse of the formula (flipping arguments) and the
@@ -26,20 +40,18 @@ public final class FbFormulasInfo
 	public static FbFormulasInfo getSingleton()
 	{
 		if (fbFormulaInfo == null)
-		{
 			fbFormulaInfo = new FbFormulasInfo();
-		}
 		return fbFormulaInfo;
 	}
 
 	private FreebaseInfo freebaseInfo = null;
 	public Map<Formula, BinaryFormulaInfo> binaryFormulaInfoMap = new HashMap<>();
 	public Map<Formula, UnaryFormulaInfo> unaryFormulaInfoMap = new HashMap<>();
-	private Map<String, Set<BinaryFormulaInfo>> typeToNumericalPredicates = new HashMap<>();
-	private Map<String, List<Formula>> atomicExtype2ToBinaryMap = new HashMap<>(); // contains map to all atomic properties
-	private Map<String, List<Formula>> extype2ToNonCvtBinaryMap = new HashMap<>(); // contains map to all binaries for which extype 1 is not a CVT
-	private Map<Formula, Set<BinaryFormulaInfo>> cvtExpansionsMap = new HashMap<>();
-	private Map<String, Set<Formula>> cvtTypeToBinaries = new HashMap<>();
+	private final Map<String, Set<BinaryFormulaInfo>> typeToNumericalPredicates = new HashMap<>();
+	private final Map<String, List<Formula>> atomicExtype2ToBinaryMap = new HashMap<>(); // contains map to all atomic properties
+	private final Map<String, List<Formula>> extype2ToNonCvtBinaryMap = new HashMap<>(); // contains map to all binaries for which extype 1 is not a CVT
+	private final Map<Formula, Set<BinaryFormulaInfo>> cvtExpansionsMap = new HashMap<>();
+	private final Map<String, Set<Formula>> cvtTypeToBinaries = new HashMap<>();
 
 	private Comparator<Formula> formulaComparator;
 
@@ -62,46 +74,38 @@ public final class FbFormulasInfo
 	 */
 	private void computeNumericalPredicatesMap()
 	{
-		for (BinaryFormulaInfo info : binaryFormulaInfoMap.values())
-		{
+		for (final BinaryFormulaInfo info : binaryFormulaInfoMap.values())
 			if (info.expectedType1.equals("fb:type.int") || info.expectedType1.equals("fb:type.float"))
-			{
 				MapUtils.addToSet(typeToNumericalPredicates, info.expectedType2, info);
-			}
-		}
 	}
 
-	public Set<BinaryFormulaInfo> getNumericalPredicates(String expectedType)
+	public Set<BinaryFormulaInfo> getNumericalPredicates(final String expectedType)
 	{
 		return MapUtils.get(typeToNumericalPredicates, expectedType, new HashSet<BinaryFormulaInfo>());
 	}
 
 	private void computeReverseFormulaInfo()
 	{
-		List<BinaryFormulaInfo> entriesToAdd = new LinkedList<>();
-		for (Formula formula : binaryFormulaInfoMap.keySet())
+		final List<BinaryFormulaInfo> entriesToAdd = new LinkedList<>();
+		for (final Formula formula : binaryFormulaInfoMap.keySet())
 		{
-			BinaryFormulaInfo info = binaryFormulaInfoMap.get(formula);
-			Formula reverseFormula = Formulas.reverseFormula(formula);
+			final BinaryFormulaInfo info = binaryFormulaInfoMap.get(formula);
+			final Formula reverseFormula = Formulas.reverseFormula(formula);
 
 			if (!binaryFormulaInfoMap.containsKey(reverseFormula))
-			{
 				entriesToAdd.add(new BinaryFormulaInfo(reverseFormula, info.expectedType2, info.expectedType1, info.unitId, info.unitDesc, info.descriptions, info.popularity));
-			}
 		}
 		LogInfo.log("Adding reverse formulas: " + entriesToAdd.size());
-		for (BinaryFormulaInfo e : entriesToAdd)
-		{
+		for (final BinaryFormulaInfo e : entriesToAdd)
 			binaryFormulaInfoMap.put(e.formula, e);
-		}
 	}
 
-	public BinaryFormulaInfo getBinaryInfo(Formula formula)
+	public BinaryFormulaInfo getBinaryInfo(final Formula formula)
 	{
 		return binaryFormulaInfoMap.get(formula);
 	}
 
-	public UnaryFormulaInfo getUnaryInfo(Formula formula)
+	public UnaryFormulaInfo getUnaryInfo(final Formula formula)
 	{
 		return unaryFormulaInfoMap.get(formula);
 	}
@@ -119,37 +123,35 @@ public final class FbFormulasInfo
 		LogInfo.log("Compuing reverse for schema formulas");
 		computeReverseFormulaInfo();
 		LogInfo.log("Current number of binary formulas: " + binaryFormulaInfoMap.size());
-		for (BinaryFormulaInfo info : binaryFormulaInfoMap.values())
+		for (final BinaryFormulaInfo info : binaryFormulaInfoMap.values())
 		{
 
 			MapUtils.addToList(atomicExtype2ToBinaryMap, info.expectedType2, info.formula);
 			if (!isCvt(info.expectedType1))
-			{
 				addMappingFromType2ToFormula(info.expectedType2, info.formula);
-			}
 		}
 
 		LogInfo.log("Generate formulas through CVTs");
 		generateCvtFormulas(); // generate formulas for CVTs
 		LogInfo.log("Current number of binary formulas: " + binaryFormulaInfoMap.size());
 		// we first sort by popularity
-		Comparator<Formula> comparator = getPopularityComparator();
+		final Comparator<Formula> comparator = getPopularityComparator();
 		sortType2ToBinaryMaps(comparator);
 		LogInfo.end_track();
 	}
 
-	public void sortType2ToBinaryMaps(Comparator<Formula> comparator)
+	public void sortType2ToBinaryMaps(final Comparator<Formula> comparator)
 	{
-		this.formulaComparator = comparator;
-		for (List<Formula> binaries : atomicExtype2ToBinaryMap.values())
+		formulaComparator = comparator;
+		for (final List<Formula> binaries : atomicExtype2ToBinaryMap.values())
 			Collections.sort(binaries, comparator);
 
-		for (List<Formula> binaries : extype2ToNonCvtBinaryMap.values())
+		for (final List<Formula> binaries : extype2ToNonCvtBinaryMap.values())
 			Collections.sort(binaries, comparator);
 
 	}
 
-	public int compare(Formula f1, Formula f2)
+	public int compare(final Formula f1, final Formula f2)
 	{
 		return formulaComparator.compare(f1, f2);
 	}
@@ -157,7 +159,7 @@ public final class FbFormulasInfo
 	/**
 	 * Adding mapping from type 2 to formula - makes sure to insert just one of the 2 equivalent formulas if they exist
 	 */
-	private void addMappingFromType2ToFormula(String type2, Formula formula)
+	private void addMappingFromType2ToFormula(final String type2, final Formula formula)
 	{
 		MapUtils.addToList(extype2ToNonCvtBinaryMap, type2, formula);
 	}
@@ -165,32 +167,30 @@ public final class FbFormulasInfo
 	private void generateCvtFormulas() throws FileNotFoundException
 	{
 
-		List<BinaryFormulaInfo> toAdd = new ArrayList<>();
-		for (BinaryFormulaInfo innerInfo : binaryFormulaInfoMap.values())
-		{
-
+		final List<BinaryFormulaInfo> toAdd = new ArrayList<>();
+		for (final BinaryFormulaInfo innerInfo : binaryFormulaInfoMap.values())
 			if (isCvt(innerInfo.expectedType1))
 			{ // if expected type 1 is a CVT
 				MapUtils.addToSet(cvtTypeToBinaries, innerInfo.expectedType1, innerInfo.formula);
 
-				List<Formula> outers = atomicExtype2ToBinaryMap.get(innerInfo.expectedType1); // find those whose expected type 2 is that CVT
-				for (Formula outer : outers)
+				final List<Formula> outers = atomicExtype2ToBinaryMap.get(innerInfo.expectedType1); // find those whose expected type 2 is that CVT
+				for (final Formula outer : outers)
 				{
-					BinaryFormulaInfo outerInfo = binaryFormulaInfoMap.get(outer);
+					final BinaryFormulaInfo outerInfo = binaryFormulaInfoMap.get(outer);
 					if (!isLegalCvt(innerInfo.formula, outer))
 						continue;
 
 					// build new formula
-					LambdaFormula cvtFormula = new LambdaFormula("x", new JoinFormula(outer, new JoinFormula(innerInfo.formula, new VariableFormula("x"))));
+					final LambdaFormula cvtFormula = new LambdaFormula("x", new JoinFormula(outer, new JoinFormula(innerInfo.formula, new VariableFormula("x"))));
 
 					BinaryFormulaInfo newFormulaInfo = binaryFormulaInfoMap.get(cvtFormula);
 					if (newFormulaInfo == null)
 					{
-						String exType1 = outerInfo.expectedType1;
+						final String exType1 = outerInfo.expectedType1;
 						if (exType1 == null)
 							throw new RuntimeException("Missing expected type 1 for formula: " + outer);
 
-						List<String> newDescriptions = new LinkedList<>();
+						final List<String> newDescriptions = new LinkedList<>();
 						newDescriptions.add(outerInfo.descriptions.get(0));
 						newDescriptions.add(innerInfo.descriptions.get(0));
 
@@ -201,15 +201,14 @@ public final class FbFormulasInfo
 					MapUtils.addToSet(cvtExpansionsMap, outerInfo.formula, newFormulaInfo);
 				}
 			}
-		}
-		for (BinaryFormulaInfo info : toAdd)
+		for (final BinaryFormulaInfo info : toAdd)
 		{
 			addMappingFromType2ToFormula(info.expectedType2, info.formula);
 			binaryFormulaInfoMap.put(info.formula, info);
 		}
 	}
 
-	private boolean isLegalCvt(Formula inner, Formula outer)
+	private boolean isLegalCvt(final Formula inner, final Formula outer)
 	{
 		if (FreebaseInfo.isReverseProperty(inner.toString()) && !FreebaseInfo.isReverseProperty(outer.toString()))
 			return false;
@@ -219,21 +218,21 @@ public final class FbFormulasInfo
 	}
 
 	/** supports chains only */
-	public boolean hasOpposite(String formula)
+	public boolean hasOpposite(final String formula)
 	{
 		return hasOpposite(LispTree.proto.parseFromString(formula));
 	}
 
-	public boolean hasOpposite(Formula formula)
+	public boolean hasOpposite(final Formula formula)
 	{
 		return hasOpposite(formula.toLispTree());
 	}
 
-	private boolean hasOpposite(LispTree tree)
+	private boolean hasOpposite(final LispTree tree)
 	{
 		if (tree.isLeaf())
 		{
-			String fbProperty = FreebaseInfo.isReverseProperty(tree.value) ? tree.value.substring(1) : tree.value;
+			final String fbProperty = FreebaseInfo.isReverseProperty(tree.value) ? tree.value.substring(1) : tree.value;
 			return freebaseInfo.propertyHasOpposite(fbProperty);
 		}
 		else
@@ -248,9 +247,9 @@ public final class FbFormulasInfo
 	}
 
 	/** supports chains only */
-	public boolean isReversed(Formula formula)
+	public boolean isReversed(final Formula formula)
 	{
-		LispTree tree = formula.toLispTree();
+		final LispTree tree = formula.toLispTree();
 		if (tree.isLeaf())
 			return FreebaseInfo.isReverseProperty(tree.value);
 		else
@@ -258,29 +257,29 @@ public final class FbFormulasInfo
 	}
 
 	/** assumes we checked there is an opposite formula */
-	public Formula equivalentFormula(String formula)
+	public Formula equivalentFormula(final String formula)
 	{
-		LispTree tree = LispTree.proto.parseFromString(formula);
+		final LispTree tree = LispTree.proto.parseFromString(formula);
 		return equivalentFormula(tree);
 	}
 
-	public Formula equivalentFormula(Formula formula)
+	public Formula equivalentFormula(final Formula formula)
 	{
-		LispTree tree = formula.toLispTree();
+		final LispTree tree = formula.toLispTree();
 		return equivalentFormula(tree);
 	}
 
 	// two formulas can be equivalent because there are two names for every edge using the reverse label
 	//fb:people.person.place_of_birth --> !fb:location.location.people_born_here
 	//!fb:people.person.place_of_birth --> fb:location.location.people_born_here
-	public Formula equivalentFormula(LispTree tree)
+	public Formula equivalentFormula(final LispTree tree)
 	{
 
 		if (tree.isLeaf())
 		{
-			boolean rev = FreebaseInfo.isReverseProperty(tree.value);
-			String fbProperty = rev ? tree.value.substring(1) : tree.value;
-			String oppositeProperty = freebaseInfo.getOppositeFbProperty(fbProperty);
+			final boolean rev = FreebaseInfo.isReverseProperty(tree.value);
+			final String fbProperty = rev ? tree.value.substring(1) : tree.value;
+			final String oppositeProperty = freebaseInfo.getOppositeFbProperty(fbProperty);
 			return rev ? Formulas.newNameFormula(oppositeProperty) : Formulas.newNameFormula("!" + oppositeProperty);
 		}
 		else
@@ -289,9 +288,9 @@ public final class FbFormulasInfo
 			binary1 = FreebaseInfo.isReverseProperty(binary1) ? binary1.substring(1) : binary1;
 			String binary2 = tree.child(2).child(1).child(0).value;
 			binary2 = FreebaseInfo.isReverseProperty(binary2) ? binary2.substring(1) : binary2;
-			String oppositeBinary1 = freebaseInfo.getOppositeFbProperty(binary1);
-			String oppositeBinary2 = freebaseInfo.getOppositeFbProperty(binary2);
-			boolean rev = FreebaseInfo.isReverseProperty(tree.child(2).child(0).value);
+			final String oppositeBinary1 = freebaseInfo.getOppositeFbProperty(binary1);
+			final String oppositeBinary2 = freebaseInfo.getOppositeFbProperty(binary2);
+			final boolean rev = FreebaseInfo.isReverseProperty(tree.child(2).child(0).value);
 			return buildLambdaFormula(oppositeBinary1, oppositeBinary2, !rev);
 		}
 	}
@@ -299,13 +298,13 @@ public final class FbFormulasInfo
 	//input: |binary1|=fb:people.place_lived.location,
 	// |binary2|=fb:people.person.places_lived, |reverse|=true
 	//output: (lambda x (!fb:people.place_lived.location (!fb:people.person.places_lived (var x))))
-	public static Formula buildLambdaFormula(String binary1, String binary2, boolean reverse)
+	public static Formula buildLambdaFormula(final String binary1, final String binary2, final boolean reverse)
 	{
 
-		Formula binary1Formula = reverse ? Formulas.newNameFormula("!" + binary1) : Formulas.newNameFormula(binary1);
-		Formula binary2Formula = reverse ? Formulas.newNameFormula("!" + binary2) : Formulas.newNameFormula(binary2);
-		Formula join1 = new JoinFormula(binary2Formula, new VariableFormula("x"));
-		Formula join2 = new JoinFormula(binary1Formula, join1);
+		final Formula binary1Formula = reverse ? Formulas.newNameFormula("!" + binary1) : Formulas.newNameFormula(binary1);
+		final Formula binary2Formula = reverse ? Formulas.newNameFormula("!" + binary2) : Formulas.newNameFormula(binary2);
+		final Formula join1 = new JoinFormula(binary2Formula, new VariableFormula("x"));
+		final Formula join2 = new JoinFormula(binary1Formula, join1);
 		return new LambdaFormula("x", join2);
 	}
 
@@ -313,57 +312,57 @@ public final class FbFormulasInfo
 	//then formula2 is the opposite if it is the path t-->s
 	// fb:people.person.place_of_birth is the opposite of !fb:people.person.place_of_birth
 	// fb:people.person.place_of_birth is the opposite of fb:
-	private boolean isOpposite(Formula formula1, Formula formula2)
+	private boolean isOpposite(final Formula formula1, final Formula formula2)
 	{
 
 		if (isReversed(formula1) && !isReversed(formula2))
 		{
-			String formula1Desc = formula1.toString().substring(1);
+			final String formula1Desc = formula1.toString().substring(1);
 			return formula1Desc.equals(formula2.toString());
 		}
 		if (isReversed(formula2) && !isReversed(formula1))
 		{
-			String formula2Desc = formula2.toString().substring(1);
+			final String formula2Desc = formula2.toString().substring(1);
 			return formula2Desc.equals(formula1.toString());
 		}
 		if (hasOpposite(formula1))
 		{
-			Formula equivalentFormula = equivalentFormula(formula1);
+			final Formula equivalentFormula = equivalentFormula(formula1);
 			if (isReversed(equivalentFormula))
 			{
-				String equivalentFormaulDesc = equivalentFormula.toString().substring(1);
+				final String equivalentFormaulDesc = equivalentFormula.toString().substring(1);
 				return equivalentFormaulDesc.equals(formula2.toString());
 			}
 			else
 			{
-				String formula2Desc = formula2.toString().substring(1);
+				final String formula2Desc = formula2.toString().substring(1);
 				return formula2Desc.equals(equivalentFormula.toString());
 			}
 		}
 		return false;
 	}
 
-	public List<Formula> getBinariesForType2(String type)
+	public List<Formula> getBinariesForType2(final String type)
 	{
 		return MapUtils.get(extype2ToNonCvtBinaryMap, type, new ArrayList<Formula>());
 	}
 
-	public List<Formula> getAtomicBinariesForType2(String type)
+	public List<Formula> getAtomicBinariesForType2(final String type)
 	{
 		return MapUtils.get(atomicExtype2ToBinaryMap, type, new ArrayList<Formula>());
 	}
 
-	public boolean isCvtFormula(BinaryFormulaInfo info)
+	public boolean isCvtFormula(final BinaryFormulaInfo info)
 	{
 		return isCvt(info.expectedType1) || isCvt(info.expectedType2);
 	}
 
-	public Set<BinaryFormulaInfo> getCvtExpansions(BinaryFormulaInfo info)
+	public Set<BinaryFormulaInfo> getCvtExpansions(final BinaryFormulaInfo info)
 	{
 		return MapUtils.getSet(cvtExpansionsMap, info.formula);
 	}
 
-	public Set<Formula> expandCvts(String cvt)
+	public Set<Formula> expandCvts(final String cvt)
 	{
 		return MapUtils.getSet(cvtTypeToBinaries, cvt);
 	}
@@ -373,35 +372,31 @@ public final class FbFormulasInfo
 	//example:
 	//input: (lambda (fb:people.person.places_lived (fb:people.place_lived.location (var x))))
 	//output: fb:people.place_lived/start_date, fb:people.place_lived.end_date
-	public List<Formula> getInjectableBinaries(Formula formula)
+	public List<Formula> getInjectableBinaries(final Formula formula)
 	{
-		List<Formula> res = new ArrayList<>();
+		final List<Formula> res = new ArrayList<>();
 		if (!(formula instanceof LambdaFormula))
 			return res;
-		LambdaFormula lambdaFormula = (LambdaFormula) formula;
-		Formula first = ((JoinFormula) lambdaFormula.body).relation;
-		Formula second = ((JoinFormula) ((JoinFormula) lambdaFormula.body).child).relation;
-		Set<Formula> binaryFormulas = expandCvts(getBinaryInfo(first).expectedType2);
+		final LambdaFormula lambdaFormula = (LambdaFormula) formula;
+		final Formula first = ((JoinFormula) lambdaFormula.body).relation;
+		final Formula second = ((JoinFormula) ((JoinFormula) lambdaFormula.body).child).relation;
+		final Set<Formula> binaryFormulas = expandCvts(getBinaryInfo(first).expectedType2);
 
-		for (Formula binaryFormula : binaryFormulas)
-		{
+		for (final Formula binaryFormula : binaryFormulas)
 			if (!second.equals(binaryFormula) && !isOpposite(first, binaryFormula))
-			{
 				res.add(binaryFormula);
-			}
-		}
 		return res;
 	}
 
-	public boolean isCvt(String type)
+	public boolean isCvt(final String type)
 	{
 		return freebaseInfo.isCvt(type);
 	}
 
 	public Comparator<Formula> getPopularityComparator()
 	{
-		Counter<Formula> counter = new ClassicCounter<>();
-		for (Formula binaryFormula : binaryFormulaInfoMap.keySet())
+		final Counter<Formula> counter = new ClassicCounter<>();
+		for (final Formula binaryFormula : binaryFormulaInfoMap.keySet())
 			counter.incrementCount(binaryFormula, binaryFormulaInfoMap.get(binaryFormula).popularity);
 
 		return new FormulaByCounterComparator(counter);
@@ -410,23 +405,23 @@ public final class FbFormulasInfo
 	public class FormulaByCounterComparator implements Comparator<Formula>
 	{
 
-		private Counter<Formula> fCounter;
+		private final Counter<Formula> fCounter;
 
-		public FormulaByCounterComparator(Counter<Formula> fCounter)
+		public FormulaByCounterComparator(final Counter<Formula> fCounter)
 		{
 			this.fCounter = fCounter;
 		}
 
-		public int compare(Formula f1, Formula f2)
+		public int compare(final Formula f1, final Formula f2)
 		{
-			double count1 = fCounter.getCount(f1);
-			double count2 = fCounter.getCount(f2);
+			final double count1 = fCounter.getCount(f1);
+			final double count2 = fCounter.getCount(f2);
 			if (count1 > count2)
 				return -1;
 			if (count1 < count2)
 				return +1;
-			double pop1 = binaryFormulaInfoMap.get(f1).popularity;
-			double pop2 = binaryFormulaInfoMap.get(f2).popularity;
+			final double pop1 = binaryFormulaInfoMap.get(f1).popularity;
+			final double pop2 = binaryFormulaInfoMap.get(f2).popularity;
 			if (pop1 > pop2)
 				return -1;
 			if (pop1 < pop2)
@@ -434,7 +429,7 @@ public final class FbFormulasInfo
 			return 0;
 		}
 
-		public double getCount(Formula f)
+		public double getCount(final Formula f)
 		{
 			return fCounter.getCount(f);
 		}
@@ -443,27 +438,27 @@ public final class FbFormulasInfo
 	public class FormulaByFeaturesComparator implements Comparator<Formula>
 	{
 
-		private Params params;
+		private final Params params;
 
-		public FormulaByFeaturesComparator(Params params)
+		public FormulaByFeaturesComparator(final Params params)
 		{
 			this.params = params;
 		}
 
-		public int compare(Formula f1, Formula f2)
+		public int compare(final Formula f1, final Formula f2)
 		{
 
-			FeatureVector features1 = BridgeFn.getBinaryBridgeFeatures(fbFormulaInfo.getBinaryInfo(f1));
-			FeatureVector features2 = BridgeFn.getBinaryBridgeFeatures(fbFormulaInfo.getBinaryInfo(f2));
+			final FeatureVector features1 = BridgeFn.getBinaryBridgeFeatures(fbFormulaInfo.getBinaryInfo(f1));
+			final FeatureVector features2 = BridgeFn.getBinaryBridgeFeatures(fbFormulaInfo.getBinaryInfo(f2));
 
-			double score1 = features1.dotProduct(params);
-			double score2 = features2.dotProduct(params);
+			final double score1 = features1.dotProduct(params);
+			final double score2 = features2.dotProduct(params);
 			if (score1 > score2)
 				return -1;
 			if (score1 < score2)
 				return +1;
-			double pop1 = binaryFormulaInfoMap.get(f1).popularity;
-			double pop2 = binaryFormulaInfoMap.get(f2).popularity;
+			final double pop1 = binaryFormulaInfoMap.get(f1).popularity;
+			final double pop2 = binaryFormulaInfoMap.get(f2).popularity;
 			if (pop1 > pop2)
 				return -1;
 			if (pop1 < pop2)
@@ -483,23 +478,23 @@ public final class FbFormulasInfo
 		public List<String> descriptions = new LinkedList<>(); // "place of birth"
 		public double popularity; //Number of instances of binary in KB: 16184.0
 
-		public BinaryFormulaInfo(Formula formula, String exType1, String exType2, List<String> descs, double popularity)
+		public BinaryFormulaInfo(final Formula formula, final String exType1, final String exType2, final List<String> descs, final double popularity)
 		{
 			this.formula = formula;
-			this.expectedType1 = exType1;
-			this.expectedType2 = exType2;
-			this.descriptions = descs;
+			expectedType1 = exType1;
+			expectedType2 = exType2;
+			descriptions = descs;
 			this.popularity = popularity;
-			this.unitId = "";
-			this.unitDesc = "";
+			unitId = "";
+			unitDesc = "";
 		}
 
-		public BinaryFormulaInfo(Formula formula, String exType1, String exType2, String unitId, String unitDesc, List<String> descs, double popularity)
+		public BinaryFormulaInfo(final Formula formula, final String exType1, final String exType2, final String unitId, final String unitDesc, final List<String> descs, final double popularity)
 		{
 			this.formula = formula;
-			this.expectedType1 = exType1;
-			this.expectedType2 = exType2;
-			this.descriptions = descs;
+			expectedType1 = exType1;
+			expectedType2 = exType2;
+			descriptions = descs;
 			this.popularity = popularity;
 			this.unitId = "";
 			this.unitDesc = "";
@@ -515,10 +510,10 @@ public final class FbFormulasInfo
 			return Formulas.reverseFormula(formula).toString() + "\t" + popularity + "\t" + expectedType2 + "\t" + expectedType1 + "\t" + unitId + "\t" + unitDesc + "\t" + Joiner.on("###").join(descriptions);
 		}
 
-		public static List<String> tokenizeFbDescription(String fbDesc)
+		public static List<String> tokenizeFbDescription(final String fbDesc)
 		{
-			List<String> res = new ArrayList<>();
-			String[] tokens = fbDesc.split("\\s+");
+			final List<String> res = new ArrayList<>();
+			final String[] tokens = fbDesc.split("\\s+");
 			for (String token : tokens)
 			{
 				token = token.replace("(", "");
@@ -541,9 +536,9 @@ public final class FbFormulasInfo
 			return SemType.newFuncSemType(expectedType2, expectedType1);
 		}
 
-		public String extractDomain(Formula binary)
+		public String extractDomain(final Formula binary)
 		{
-			LispTree tree = binary.toLispTree();
+			final LispTree tree = binary.toLispTree();
 			String property = tree.isLeaf() ? tree.value : tree.child(2).child(0).value;
 			if (property.startsWith("!"))
 				property = property.substring(1);
@@ -559,7 +554,7 @@ public final class FbFormulasInfo
 		public List<String> descriptions;
 		public Set<String> types;
 
-		public UnaryFormulaInfo(Formula formula, double popularity, List<String> descriptions, Set<String> types)
+		public UnaryFormulaInfo(final Formula formula, final double popularity, final List<String> descriptions, final Set<String> types)
 		{
 
 			this.formula = formula;

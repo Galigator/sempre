@@ -1,7 +1,11 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
-import java.util.*;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.StringDoubleVec;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Uses the SimpleLexicon. Example: (rule $ROOT ($PHRASE) (SimpleLexiconFn (type fb:type.any)))
@@ -31,28 +35,26 @@ public class SimpleLexiconFn extends SemanticFn
 		lexicon = SimpleLexicon.getSingleton();
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		for (int i = 1; i < tree.children.size(); i++)
 		{
 			// (type fb:people.person): allow us to restrict the type
-			LispTree arg = tree.child(i);
+			final LispTree arg = tree.child(i);
 			if ("type".equals(arg.child(0).value))
-			{
 				restrictType = SemType.fromLispTree(arg.child(1));
-			}
 		}
 	}
 
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
-		String phrase = c.childStringValue(0);
+		final String phrase = c.childStringValue(0);
 		List<SimpleLexicon.Entry> entries = lexicon.lookup(phrase);
 
 		// Filter by type
-		List<SimpleLexicon.Entry> newEntries = new ArrayList<SimpleLexicon.Entry>();
-		for (SimpleLexicon.Entry e : entries)
+		final List<SimpleLexicon.Entry> newEntries = new ArrayList<>();
+		for (final SimpleLexicon.Entry e : entries)
 		{
 			if (opts.verbose >= 3)
 				LogInfo.logs("SimpleLexiconFn: %s => %s [type = %s meet-> %s]", phrase, e.formula, e.type, restrictType.meet(e.type));
@@ -67,16 +69,16 @@ public class SimpleLexiconFn extends SemanticFn
 
 	public class MyDerivationStream extends MultipleDerivationStream
 	{
-		private Example ex;
-		private Callable callable;
-		private List<SimpleLexicon.Entry> entries;
-		private String phrase;
+		private final Example ex;
+		private final Callable callable;
+		private final List<SimpleLexicon.Entry> entries;
+		private final String phrase;
 		private int currIndex = 0;
 
-		public MyDerivationStream(Example ex, Callable c, List<SimpleLexicon.Entry> entries, String phrase)
+		public MyDerivationStream(final Example ex, final Callable c, final List<SimpleLexicon.Entry> entries, final String phrase)
 		{
 			this.ex = ex;
-			this.callable = c;
+			callable = c;
 			this.entries = entries;
 			this.phrase = phrase;
 		}
@@ -93,18 +95,14 @@ public class SimpleLexiconFn extends SemanticFn
 			if (currIndex == entries.size())
 				return null;
 
-			SimpleLexicon.Entry entry = entries.get(currIndex++);
-			FeatureVector features = new FeatureVector();
-			Derivation deriv = new Derivation.Builder().withCallable(callable).formula(entry.formula).type(entry.type).localFeatureVector(features).createDerivation();
+			final SimpleLexicon.Entry entry = entries.get(currIndex++);
+			final FeatureVector features = new FeatureVector();
+			final Derivation deriv = new Derivation.Builder().withCallable(callable).formula(entry.formula).type(entry.type).localFeatureVector(features).createDerivation();
 
 			if (FeatureExtractor.containsDomain("basicStats"))
-			{
 				if (entry.features != null)
-				{
-					for (StringDoubleVec.Entry e : entry.features)
+					for (final StringDoubleVec.Entry e : entry.features)
 						features.add("basicStats", e.getFirst(), e.getSecond());
-				}
-			}
 
 			// Doesn't generalize, but add it for now, otherwise not separable
 			if (FeatureExtractor.containsDomain("lexAlign"))

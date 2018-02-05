@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre.tables.test;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.Master;
 import fig.exec.Execution;
 
 /**
@@ -10,7 +11,7 @@ import fig.exec.Execution;
  */
 public class DPDParserChecker implements Runnable
 {
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "DPDParserCheckerMain", new DPDParserChecker(), Master.getOptionsParser());
 	}
@@ -18,7 +19,7 @@ public class DPDParserChecker implements Runnable
 	@Override
 	public void run()
 	{
-		DPDParserCheckerProcessor processor = new DPDParserCheckerProcessor();
+		final DPDParserCheckerProcessor processor = new DPDParserCheckerProcessor();
 		CustomExample.getDataset(Dataset.opts.inPaths, processor);
 		processor.summarize();
 	}

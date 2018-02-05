@@ -4,7 +4,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import edu.stanford.nlp.io.IOUtils;
 import fig.basic.LogInfo;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -43,27 +42,27 @@ public final class FreebaseUtils
 	public static final int NAME_INDEX = 3;
 
 	/** Checks if a string is a valid MID */
-	public static boolean isMid(String str)
+	public static boolean isMid(final String str)
 	{
 		return str.startsWith("/m/");
 	}
 
-	public static boolean isValidPropertyLine(String line)
+	public static boolean isValidPropertyLine(final String line)
 	{
 
-		String[] tokens = DELIMITER_PATTERN.split(line);
+		final String[] tokens = DELIMITER_PATTERN.split(line);
 
 		return tokens.length == 3 && isMid(tokens[MID_INDEX]) && isMid(tokens[VALUE_INDEX]) && !isMid(tokens[PROPERTY_INDEX]) && isValidTypePrefix(tokens[PROPERTY_INDEX]);
 	}
 
-	public static boolean isValidPropertyLineWithDate(String line)
+	public static boolean isValidPropertyLineWithDate(final String line)
 	{
 
-		String[] tokens = DELIMITER_PATTERN.split(line);
+		final String[] tokens = DELIMITER_PATTERN.split(line);
 
-		boolean regularProperty = tokens.length == 3 && isMid(tokens[MID_INDEX]) && !isMid(tokens[PROPERTY_INDEX]) && isValidTypePrefix(tokens[PROPERTY_INDEX]);
+		final boolean regularProperty = tokens.length == 3 && isMid(tokens[MID_INDEX]) && !isMid(tokens[PROPERTY_INDEX]) && isValidTypePrefix(tokens[PROPERTY_INDEX]);
 
-		boolean dateProperty = tokens.length == 4 && isMid(tokens[MID_INDEX]) && isValidTypePrefix(tokens[PROPERTY_INDEX]) && tokens[2].equals("") && isDate(tokens[3]);
+		final boolean dateProperty = tokens.length == 4 && isMid(tokens[MID_INDEX]) && isValidTypePrefix(tokens[PROPERTY_INDEX]) && tokens[2].equals("") && isDate(tokens[3]);
 
 		return regularProperty || dateProperty;
 	}
@@ -73,18 +72,14 @@ public final class FreebaseUtils
 
 		boolean res = true;
 		if (dateCandidate.startsWith("-"))
-		{
 			dateCandidate = dateCandidate.substring(1);
-		}
 		int i = 0;
 		for (; i < Math.min(4, dateCandidate.length()); ++i)
-		{
 			if (!Character.isDigit(dateCandidate.charAt(i)))
 			{
 				res = false;
 				break;
 			}
-		}
 		if (i != 4)
 			res = false;
 		if (dateCandidate.length() > 4 && dateCandidate.charAt(4) != '-')
@@ -104,84 +99,82 @@ public final class FreebaseUtils
 		return neg ? "-" + dateCandidate.substring(0, 4) : dateCandidate.substring(0, 4);
 	}
 
-	public static boolean isValidTypePrefix(String type)
+	public static boolean isValidTypePrefix(final String type)
 	{
 		if (type.equals("/type/datetime"))
 			return true;
 		return !(type.startsWith(BASE_DOMAIN_PREFIX) || type.startsWith(MID_PREFIX) || type.startsWith(COMMON_DOMAIN_PREFIX) || type.startsWith(USER_DOMAIN_PREFIX) || type.startsWith(DATA_DOMAIN_PREFIX) || type.startsWith(FREEBASE_DOMAIN_PREFIX) || type.startsWith(TYPE_DOMAIN_PREFIX) || type.startsWith("/guid/"));
 	}
 
-	public static String getNoPrefixMid(String line)
+	public static String getNoPrefixMid(final String line)
 	{
 		return DELIMITER_PATTERN.split(line)[MID_INDEX].substring(MID_PREFIX.length());
 	}
 
-	public static String getProperty(String line)
+	public static String getProperty(final String line)
 	{
 		return DELIMITER_PATTERN.split(line)[PROPERTY_INDEX];
 	}
 
-	public static String getValue(String line)
+	public static String getValue(final String line)
 	{
 		return DELIMITER_PATTERN.split(line)[VALUE_INDEX];
 	}
 
-	public static String getDateValue(String line)
+	public static String getDateValue(final String line)
 	{
 		return DELIMITER_PATTERN.split(line)[DATE_INDEX];
 	}
 
-	public static String getName(String line)
+	public static String getName(final String line)
 	{
 		return DELIMITER_PATTERN.split(line)[NAME_INDEX];
 	}
 
-	public static boolean isArg1Equal2Mid(String mid, String tupleTokens)
+	public static boolean isArg1Equal2Mid(final String mid, final String tupleTokens)
 	{
 		return DELIMITER_PATTERN.split(tupleTokens)[MID_INDEX].equals(mid);
 	}
 
-	public static Map<String, String> loadMid2NameMap(String filename) throws IOException
+	public static Map<String, String> loadMid2NameMap(final String filename) throws IOException
 	{
 
 		LogInfo.log("Loading mid to name file...");
 
-		Map<String, String> res = new HashMap<String, String>();
-		BufferedReader reader = IOUtils.getBufferedFileReader(filename);
+		final Map<String, String> res = new HashMap<>();
+		final BufferedReader reader = IOUtils.getBufferedFileReader(filename);
 		String line;
 		while ((line = reader.readLine()) != null)
 		{
-			String[] tokens = line.split("\t");
+			final String[] tokens = line.split("\t");
 			res.put(tokens[0], tokens[1]);
 		}
 		LogInfo.log("Loaded " + res.keySet().size() + " MIDs");
 		return res;
 	}
 
-	public static BiMap<Short, String> loadProperties(String propertyFileName) throws IOException
+	public static BiMap<Short, String> loadProperties(final String propertyFileName) throws IOException
 	{
 
-		BiMap<Short, String> res = HashBiMap.create();
-		BufferedReader reader = IOUtils.getBufferedFileReader(propertyFileName);
+		final BiMap<Short, String> res = HashBiMap.create();
+		final BufferedReader reader = IOUtils.getBufferedFileReader(propertyFileName);
 
 		String line;
 		short id = 1;
 		while ((line = reader.readLine()) != null)
-		{
 			res.put(id++, line);
-		}
 		return res;
 	}
 
 	public static boolean isUnary(String property)
 	{
 		property = FormatConverter.fromDotToSlash(property);
-		return (property.equals(TYPE_PROPERTY) || property.equals(PROFESSION_PROPERTY));
+		return property.equals(TYPE_PROPERTY) || property.equals(PROFESSION_PROPERTY);
 	}
 
 	public static boolean isNameProperty(String property)
 	{
 		property = FormatConverter.fromDotToSlash(property);
-		return (property.equals(ALIAS_PROPERTY) || property.equals(NAME_PROPERTY));
+		return property.equals(ALIAS_PROPERTY) || property.equals(NAME_PROPERTY);
 	}
 }

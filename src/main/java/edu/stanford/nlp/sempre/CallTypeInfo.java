@@ -9,7 +9,7 @@ public class CallTypeInfo
 	public final List<SemType> argTypes;
 	public final SemType retType;
 
-	public CallTypeInfo(String func, List<SemType> argTypes, SemType retType)
+	public CallTypeInfo(final String func, final List<SemType> argTypes, final SemType retType)
 	{
 		this.func = func;
 		this.argTypes = argTypes;

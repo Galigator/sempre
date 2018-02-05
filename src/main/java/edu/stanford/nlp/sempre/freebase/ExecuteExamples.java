@@ -1,13 +1,14 @@
 package edu.stanford.nlp.sempre.freebase;
 
-import edu.stanford.nlp.sempre.*;
-
-import com.google.common.base.Function;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.Executor;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.ListValue;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.Option;
 import fig.exec.Execution;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,7 @@ public class ExecuteExamples implements Runnable
 	public List<String> examplesPaths;
 
 	SparqlExecutor executor;
-	Map<Formula, Executor.Response> cache = new HashMap<Formula, Executor.Response>();
+	Map<Formula, Executor.Response> cache = new HashMap<>();
 
 	private boolean queryReturnsResults(Formula formula)
 	{
@@ -48,49 +49,44 @@ public class ExecuteExamples implements Runnable
 	}
 
 	// Test each individual nested NameFormula.
-	public Formula test(Formula formula)
+	public Formula test(final Formula formula)
 	{
-		return formula.map(new Function<Formula, Formula>()
+		return formula.map(formula1 ->
 		{
-			public Formula apply(Formula formula)
+			String name = Formulas.getNameId(formula1);
+			if (name != null)
 			{
-				String name = Formulas.getNameId(formula);
-				if (name != null)
-				{
-					if (name.startsWith("!"))
-						name = name.substring(1);
-					queryReturnsResults(Formulas.newNameFormula(name));
-				}
-				return null;
+				if (name.startsWith("!"))
+					name = name.substring(1);
+				queryReturnsResults(Formulas.newNameFormula(name));
 			}
+			return null;
 		});
 	}
 
 	public void run()
 	{
 		executor = new SparqlExecutor();
-		for (String path : examplesPaths)
+		for (final String path : examplesPaths)
 		{
-			Iterator<LispTree> it = LispTree.proto.parseFromFile(path);
+			final Iterator<LispTree> it = LispTree.proto.parseFromFile(path);
 			while (it.hasNext())
 			{
-				LispTree tree = it.next();
+				final LispTree tree = it.next();
 				if (!"example".equals(tree.child(0).value))
 					throw new RuntimeException("Bad: " + tree);
 				for (int i = 1; i < tree.children.size(); i++)
-				{
 					if ("targetFormula".equals(tree.child(i).child(0).value))
 					{
 						Formula formula = Formulas.fromLispTree(tree.child(i).child(1));
 						formula = test(formula);
 						queryReturnsResults(formula);
 					}
-				}
 			}
 		}
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, new ExecuteExamples(), "SparqlExecutor", SparqlExecutor.opts);
 	}

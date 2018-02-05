@@ -11,19 +11,19 @@ public class DescriptionValue extends Value
 {
 	public final String value;
 
-	public DescriptionValue(LispTree tree)
+	public DescriptionValue(final LispTree tree)
 	{
 		this(tree.child(1).value);
 	}
 
-	public DescriptionValue(String value)
+	public DescriptionValue(final String value)
 	{
 		this.value = value;
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("description");
 		tree.addChild(value);
 		return tree;
@@ -36,13 +36,13 @@ public class DescriptionValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		DescriptionValue that = (DescriptionValue) o;
-		return this.value.equals(that.value);
+		final DescriptionValue that = (DescriptionValue) o;
+		return value.equals(that.value);
 	}
 }

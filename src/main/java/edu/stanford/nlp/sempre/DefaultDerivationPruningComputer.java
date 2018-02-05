@@ -1,9 +1,11 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
 import fig.basic.LispTree;
 import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Common pruning strategies that can be used in many semantic parsing tasks.
@@ -20,7 +22,7 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 
 	public static Options opts = new Options();
 
-	public DefaultDerivationPruningComputer(DerivationPruner pruner)
+	public DefaultDerivationPruningComputer(final DerivationPruner pruner)
 	{
 		super(pruner);
 	}
@@ -43,15 +45,13 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 	}
 
 	@Override
-	public String isPruned(Derivation deriv)
+	public String isPruned(final Derivation deriv)
 	{
 		// atomic: Prune atomic formula at root.
-		//   e.g., Prevent "Who was taller, Lincoln or Obama" --> fb:en.lincoln generated from lexicon without any computation   
+		//   e.g., Prevent "Who was taller, Lincoln or Obama" --> fb:en.lincoln generated from lexicon without any computation
 		if (containsStrategy(atomic))
-		{
 			if (deriv.isRoot(ex.numTokens()) && deriv.formula instanceof ValueFormula)
 				return atomic;
-		}
 		// emptyDenotation: Prune if the denotation is empty
 		if (containsStrategy(emptyDenotation))
 		{
@@ -68,10 +68,8 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 		}
 		// tooManyValues: Prune if the denotation has too many values (at $ROOT only)
 		if (containsStrategy(tooManyValues) && deriv.isRoot(ex.numTokens()))
-		{
 			if (!(deriv.value instanceof ListValue) || ((ListValue) deriv.value).values.size() > DerivationPruner.opts.maxNumValues)
 				return tooManyValues;
-		}
 		// doubleSummarizers: Prune when two summarizers (aggregate or superlative) are directly nested
 		// e.g., in (sum (avg ...)) and (min (argmax ...)), the outer operation is redundant
 		if (containsStrategy(doubleSummarizers))
@@ -89,12 +87,12 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 		// (don't need to be adjacent)
 		if (containsStrategy(multipleSuperlatives))
 		{
-			List<LispTree> stack = new ArrayList<>();
+			final List<LispTree> stack = new ArrayList<>();
 			int count = 0;
 			stack.add(deriv.formula.toLispTree());
 			while (!stack.isEmpty())
 			{
-				LispTree tree = stack.remove(stack.size() - 1);
+				final LispTree tree = stack.remove(stack.size() - 1);
 				if (tree.isLeaf())
 				{
 					if ("argmax".equals(tree.value) || "argmin".equals(tree.value))
@@ -105,25 +103,23 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 					}
 				}
 				else
-				{
-					for (LispTree subtree : tree.children)
+					for (final LispTree subtree : tree.children)
 						stack.add(subtree);
-				}
 			}
 		}
 		// sameMerge: Prune merge formulas with two identical children
 		if (containsStrategy(sameMerge) && deriv.formula instanceof MergeFormula)
 		{
-			MergeFormula merge = (MergeFormula) deriv.formula;
+			final MergeFormula merge = (MergeFormula) deriv.formula;
 			if (merge.child1.equals(merge.child2))
 				return sameMerge;
 		}
 		// mistypedMerge: Prune merge formulas with children of different types
 		if (containsStrategy(mistypedMerge) && deriv.formula instanceof MergeFormula)
 		{
-			MergeFormula merge = (MergeFormula) deriv.formula;
-			SemType type1 = TypeInference.inferType(merge.child1, true);
-			SemType type2 = TypeInference.inferType(merge.child2, true);
+			final MergeFormula merge = (MergeFormula) deriv.formula;
+			final SemType type1 = TypeInference.inferType(merge.child1, true);
+			final SemType type2 = TypeInference.inferType(merge.child2, true);
 			if (!type1.meet(type2).isValid())
 				return mistypedMerge;
 		}
@@ -131,8 +127,8 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 		//   Will remove redundant (and Y X) when (and Y X) is already present.
 		if (containsStrategy(unsortedMerge) && deriv.formula instanceof MergeFormula)
 		{
-			MergeFormula merge = (MergeFormula) deriv.formula;
-			String child1 = merge.child1.toString(), child2 = merge.child2.toString();
+			final MergeFormula merge = (MergeFormula) deriv.formula;
+			final String child1 = merge.child1.toString(), child2 = merge.child2.toString();
 			if (child1.compareTo(child2) >= 0)
 				return unsortedMerge;
 		}
@@ -152,29 +148,27 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 						isCount = true;
 				}
 			if (innerFormula != null)
-			{
 				try
 				{
 					TypeInference.inferType(innerFormula);
-					Value innerValue = parser.executor.execute(innerFormula, ex.context).value;
+					final Value innerValue = parser.executor.execute(innerFormula, ex.context).value;
 					if (innerValue instanceof ListValue)
 					{
-						int size = ((ListValue) innerValue).values.size();
-						if (size == 0 || (size == 1 && !(opts.allowCountOne && isCount)))
+						final int size = ((ListValue) innerValue).values.size();
+						if (size == 0 || size == 1 && !(opts.allowCountOne && isCount))
 							return badSummarizerHead;
 					}
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					// TypeInference fails; probably because of free variables. No need to do anything.
 				}
-			}
 		}
 		return null;
 	}
 
 	// Helper function: return true if the result is clearly a binary
-	private boolean isLambdaFormula(Formula formula)
+	private boolean isLambdaFormula(final Formula formula)
 	{
 		if (formula instanceof LambdaFormula)
 			return true;

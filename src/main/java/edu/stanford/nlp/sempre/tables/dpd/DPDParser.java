@@ -1,14 +1,50 @@
 package edu.stanford.nlp.sempre.tables.dpd;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.CatSizeBound;
+import edu.stanford.nlp.sempre.ChildDerivationsGroup;
+import edu.stanford.nlp.sempre.DefaultDerivationPruningComputer;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationPruner;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FloatingParser;
+import edu.stanford.nlp.sempre.FloatingRuleUtils;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.PairListValue;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.ParserState;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.SemanticFn;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.DenotationTypeInference;
 import edu.stanford.nlp.sempre.tables.InfiniteListValue;
 import edu.stanford.nlp.sempre.tables.ScopedValue;
 import edu.stanford.nlp.sempre.tables.TableDerivationPruningComputer;
 import edu.stanford.nlp.sempre.tables.grow.ApplyFn;
-import fig.basic.*;
+import fig.basic.ListUtils;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.Pair;
+import fig.basic.StopWatch;
+import fig.basic.StopWatchSet;
+import fig.basic.ValueComparator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * A DPDParser parses utterances like a FloatingParser, but the dynamic programming states also include the *denotation* in addition to (start,end) or
@@ -65,13 +101,13 @@ public class DPDParser extends FloatingParser
 		NONE, UNIQUE, NONERROR, ALL, FORMULA
 	}
 
-	public DPDParser(Spec spec)
+	public DPDParser(final Spec spec)
 	{
 		super(spec);
 	}
 
 	@Override
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		if (computeExpectedCounts)
 		{ // Training
@@ -111,12 +147,12 @@ class DPDParserState extends ParserState
 
 	private Map<Rule, Long> ruleTime;
 
-	public DPDParserState(DPDParser parser, Params params, Example ex, boolean computeExpectedCounts)
+	public DPDParserState(final DPDParser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		this(parser, params, ex, computeExpectedCounts, null);
 	}
 
-	public DPDParserState(DPDParser parser, Params params, Example ex, boolean computeExpectedCounts, ParserState backoff)
+	public DPDParserState(final DPDParser parser, final Params params, final Example ex, final boolean computeExpectedCounts, final ParserState backoff)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 		pruner = new DerivationPruner(this);
@@ -132,7 +168,7 @@ class DPDParserState extends ParserState
 		return beamSize;
 	}
 
-	protected void ensureExecuted(Derivation deriv)
+	protected void ensureExecuted(final Derivation deriv)
 	{
 		deriv.ensureExecuted(parser.executor, ex.context);
 		if (!deriv.isFeaturizedAndScored() && currentPass != ParsingPass.FIRST)
@@ -174,49 +210,45 @@ class DPDParserState extends ParserState
 		public final Value child1, child2;
 		private final int hashCode;
 
-		public Ingredient(String parentCell, Rule rule, Derivation deriv1, Derivation deriv2)
+		public Ingredient(final String parentCell, final Rule rule, final Derivation deriv1, final Derivation deriv2)
 		{
 			this.parentCell = parentCell;
 			this.rule = rule;
 			if (deriv1 == null)
-			{
-				this.child1 = null;
-			}
+				child1 = null;
 			else
 			{
 				ensureExecuted(deriv1);
-				this.child1 = deriv1.value;
+				child1 = deriv1.value;
 			}
 			if (deriv2 == null)
-			{
-				this.child2 = null;
-			}
+				child2 = null;
 			else
 			{
 				ensureExecuted(deriv2);
-				this.child2 = deriv2.value;
+				child2 = deriv2.value;
 			}
-			hashCode = parentCell.hashCode() + ((rule == null) ? 0 : rule.hashCode() * 1729) + ((child1 == null) ? 0 : child1.hashCode() * 42) + ((child2 == null) ? 0 : child2.hashCode() * 345);
+			hashCode = parentCell.hashCode() + (rule == null ? 0 : rule.hashCode() * 1729) + (child1 == null ? 0 : child1.hashCode() * 42) + (child2 == null ? 0 : child2.hashCode() * 345);
 		}
 
-		public Ingredient(String parentCell)
+		public Ingredient(final String parentCell)
 		{
 			this(parentCell, null, null, null);
 		}
 
 		@Override
-		public boolean equals(Object o)
+		public boolean equals(final Object o)
 		{
 			if (!(o instanceof Ingredient))
 				return false;
-			Ingredient that = (Ingredient) o;
+			final Ingredient that = (Ingredient) o;
 			if (!parentCell.equals(that.parentCell))
 				return false;
 			if (rule != that.rule)
 				return false; // Rules must be the same object
-			if ((child1 == null && that.child1 != null) || (child1 != null && !child1.equals(that.child1)))
+			if (child1 == null && that.child1 != null || child1 != null && !child1.equals(that.child1))
 				return false;
-			if ((child2 == null && that.child2 != null) || (child2 != null && !child2.equals(that.child2)))
+			if (child2 == null && that.child2 != null || child2 != null && !child2.equals(that.child2))
 				return false;
 			return true;
 		}
@@ -233,7 +265,7 @@ class DPDParserState extends ParserState
 			String cellName = parentCell;
 			if (cellName.contains(":"))
 			{
-				String[] parts = cellName.split(":");
+				final String[] parts = cellName.split(":");
 				assert parts.length == 2;
 				cellName = String.format("&%2s:%s", parts[1], parts[0]);
 			}
@@ -253,18 +285,18 @@ class DPDParserState extends ParserState
 		public final String cell;
 		public final Value value;
 
-		public BackPointer(String cell, Value denotation)
+		public BackPointer(final String cell, final Value denotation)
 		{
 			this.cell = cell;
-			this.value = denotation;
+			value = denotation;
 		}
 
 		@Override
-		public boolean equals(Object o)
+		public boolean equals(final Object o)
 		{
 			if (!(o instanceof BackPointer))
 				return false;
-			BackPointer that = (BackPointer) o;
+			final BackPointer that = (BackPointer) o;
 			return cell.equals(that.cell) && value.equals(that.value);
 		}
 
@@ -286,7 +318,7 @@ class DPDParserState extends ParserState
 		}
 	}
 
-	public BackPointer getBackPointer(String cell, Derivation child)
+	public BackPointer getBackPointer(final String cell, final Derivation child)
 	{
 		if (cell == null || child == null)
 			return null;
@@ -315,12 +347,12 @@ class DPDParserState extends ParserState
 		// If so, we can apply any pruning heuristic on the formulas built upon this formula.
 		public boolean singleFormula = true;
 
-		public Metadata(Value value)
+		public Metadata(final Value value)
 		{
 			this.value = value;
 		}
 
-		public void add(Derivation deriv, Ingredient ingredient, BackPointer bp1, BackPointer bp2)
+		public void add(final Derivation deriv, final Ingredient ingredient, final BackPointer bp1, final BackPointer bp2)
 		{
 			if (currentPass == ParsingPass.FIRST)
 			{
@@ -332,13 +364,9 @@ class DPDParserState extends ParserState
 				}
 				else
 					if (!derivations.get(0).formula.equals(deriv.formula))
-					{
 						singleFormula = false;
-					}
 				if (Parser.opts.verbose >= 3)
-				{
 					LogInfo.logs("possibleIngredients.add: %s", ingredient);
-				}
 				possibleIngredients.add(ingredient);
 				if (bp1 != null)
 				{
@@ -357,7 +385,7 @@ class DPDParserState extends ParserState
 				if (currentPass == ParsingPass.SECOND)
 				{
 					derivations.add(deriv);
-					singleFormula = (derivations.size() == 1);
+					singleFormula = derivations.size() == 1;
 				}
 		}
 	}
@@ -366,12 +394,12 @@ class DPDParserState extends ParserState
 	// Add to Chart
 	// ============================================================
 
-	private void addToChart(Derivation deriv, Ingredient ingredient, BackPointer bp1, BackPointer bp2)
+	private void addToChart(final Derivation deriv, final Ingredient ingredient, final BackPointer bp1, final BackPointer bp2)
 	{
 		if (Parser.opts.verbose >= 3)
 			LogInfo.logs("addToChart %s %s: %s", ingredient.parentCell, deriv.value, deriv);
 		ensureExecuted(deriv);
-		Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
+		final Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
 		Map<Value, Metadata> denotationToData = cells.get(ingredient.parentCell);
 		if (denotationToData == null)
 			cells.put(ingredient.parentCell, denotationToData = new HashMap<>());
@@ -381,12 +409,12 @@ class DPDParserState extends ParserState
 		metadata.add(deriv, ingredient, bp1, bp2);
 	}
 
-	private String anchoredCell(String cat, int start, int end)
+	private String anchoredCell(final String cat, final int start, final int end)
 	{
 		return (cat + "[" + start + "," + end + "]").intern();
 	}
 
-	private String floatingCell(String cat, int depth)
+	private String floatingCell(final String cat, final int depth)
 	{
 		return (cat + ":" + depth).intern();
 	}
@@ -395,12 +423,12 @@ class DPDParserState extends ParserState
 	// Apply Rule
 	// ============================================================
 
-	private boolean isRootRule(Rule rule)
+	private boolean isRootRule(final Rule rule)
 	{
 		return Rule.rootCat.equals(rule.lhs);
 	}
 
-	private boolean applyRule(Rule rule, int start, int end, int depth, String cell1, Derivation child1, String cell2, Derivation child2)
+	private boolean applyRule(final Rule rule, final int start, final int end, final int depth, final String cell1, final Derivation child1, final String cell2, final Derivation child2)
 	{
 		if (timeout && !isRootRule(rule))
 			return false;
@@ -408,7 +436,7 @@ class DPDParserState extends ParserState
 		return true;
 	}
 
-	private void applyRuleActual(Rule rule, int start, int end, int depth, String cell1, Derivation child1, String cell2, Derivation child2)
+	private void applyRuleActual(final Rule rule, final int start, final int end, final int depth, final String cell1, final Derivation child1, final String cell2, final Derivation child2)
 	{
 		if (Parser.opts.verbose >= 5)
 			LogInfo.logs("applyRule %s [%s:%s] depth=%s, %s %s", rule, start, end, depth, child1, child2);
@@ -420,17 +448,13 @@ class DPDParserState extends ParserState
 			floatingIngredient = new Ingredient(floatingCell(rule.lhs, 0), rule, child1, child2);
 		}
 		else
-		{
 			floatingIngredient = new Ingredient(floatingCell(rule.lhs, depth), rule, child1, child2);
-		}
 		if (currentPass == ParsingPass.SECOND && !DPDParser.opts.ignoreFirstPass)
-		{
 			// Prune invalid ingredient
 			if (!allowedIngredients.contains(anchoredIngredient) && !allowedIngredients.contains(floatingIngredient))
 				return;
-		}
-		BackPointer bp1 = getBackPointer(cell1, child1), bp2 = getBackPointer(cell2, child2);
-		boolean singleFormula = (bp1 == null || bp1.isSingleFormula()) && (bp2 == null || bp2.isSingleFormula());
+		final BackPointer bp1 = getBackPointer(cell1, child1), bp2 = getBackPointer(cell2, child2);
+		final boolean singleFormula = (bp1 == null || bp1.isSingleFormula()) && (bp2 == null || bp2.isSingleFormula());
 
 		List<Derivation> children;
 		if (child1 == null) // 0-ary
@@ -444,7 +468,6 @@ class DPDParserState extends ParserState
 				// optionally: ensure that specific anchors are only used once (or K times) per final derivation
 				// Cannot impose useAnchorsOnce on the first pass without dropping correct derivations!
 				if (currentPass != ParsingPass.FIRST)
-				{
 					if (FloatingParser.opts.useAnchorsOnce)
 					{
 						if (FloatingRuleUtils.derivationAnchorsOverlap(child1, child2))
@@ -452,15 +475,12 @@ class DPDParserState extends ParserState
 					}
 					else
 						if (FloatingParser.opts.useMaxAnchors >= 0)
-						{
 							if (FloatingRuleUtils.maxNumAnchorOverlaps(child1, child2) > FloatingParser.opts.useMaxAnchors)
 								return;
-						}
-				}
 			}
 
 		// Call the semantic function on the children and read the results
-		DerivationStream results = rule.sem.call(ex, new SemanticFn.CallInfo(rule.lhs, start, end, rule, children));
+		final DerivationStream results = rule.sem.call(ex, new SemanticFn.CallInfo(rule.lhs, start, end, rule, children));
 		while (results.hasNext())
 		{
 			Derivation newDeriv = results.next();
@@ -473,21 +493,15 @@ class DPDParserState extends ParserState
 						continue;
 				}
 				else
-				{
 					if (pruner.isPruned(newDeriv))
 						continue;
-				}
 			}
 			else
-			{
 				if (pruner.isPruned(newDeriv))
 					continue;
-			}
 			if (newDeriv.value instanceof ErrorValue)
-			{
 				// Assign canonical error value
 				newDeriv.value = new DPDErrorValue(newDeriv, rule, child1, child2);
-			}
 			if (depth == -1)
 			{
 				// Anchored rule
@@ -495,39 +509,37 @@ class DPDParserState extends ParserState
 				addToChart(newDeriv, floatingIngredient, bp1, bp2);
 			}
 			else
-			{
 				// Floating rule
 				addToChart(newDeriv, floatingIngredient, bp1, bp2);
-			}
 		}
 	}
 
-	private boolean applyAnchoredRule(Rule rule, int start, int end)
+	private boolean applyAnchoredRule(final Rule rule, final int start, final int end)
 	{
 		return applyRule(rule, start, end, -1, null, null, null, null);
 	}
 
-	private boolean applyAnchoredRule(Rule rule, int start, int end, String cell1, Derivation child1)
+	private boolean applyAnchoredRule(final Rule rule, final int start, final int end, final String cell1, final Derivation child1)
 	{
 		return applyRule(rule, start, end, -1, cell1, child1, null, null);
 	}
 
-	private boolean applyAnchoredRule(Rule rule, int start, int end, String cell1, Derivation child1, String cell2, Derivation child2)
+	private boolean applyAnchoredRule(final Rule rule, final int start, final int end, final String cell1, final Derivation child1, final String cell2, final Derivation child2)
 	{
 		return applyRule(rule, start, end, -1, cell1, child1, cell2, child2);
 	}
 
-	private boolean applyFloatingRule(Rule rule, int depth)
+	private boolean applyFloatingRule(final Rule rule, final int depth)
 	{
 		return applyRule(rule, -1, -1, depth, null, null, null, null);
 	}
 
-	private boolean applyFloatingRule(Rule rule, int depth, String cell1, Derivation child1)
+	private boolean applyFloatingRule(final Rule rule, final int depth, final String cell1, final Derivation child1)
 	{
 		return applyRule(rule, -1, -1, depth, cell1, child1, null, null);
 	}
 
-	private boolean applyFloatingRule(Rule rule, int depth, String cell1, Derivation child1, String cell2, Derivation child2)
+	private boolean applyFloatingRule(final Rule rule, final int depth, final String cell1, final Derivation child1, final String cell2, final Derivation child2)
 	{
 		return applyRule(rule, -1, -1, depth, cell1, child1, cell2, child2);
 	}
@@ -536,26 +548,24 @@ class DPDParserState extends ParserState
 	// Get derivations
 	// ============================================================
 
-	private List<Derivation> getDerivations(Object cell)
+	private List<Derivation> getDerivations(final Object cell)
 	{
-		Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
-		Map<Value, Metadata> denotationToData = cells.get(cell);
+		final Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
+		final Map<Value, Metadata> denotationToData = cells.get(cell);
 		if (denotationToData == null)
 			return Collections.emptyList();
-		List<Derivation> derivations = new ArrayList<>();
-		for (Metadata metadata : denotationToData.values())
-		{
+		final List<Derivation> derivations = new ArrayList<>();
+		for (final Metadata metadata : denotationToData.values())
 			derivations.addAll(metadata.derivations);
-		}
 		return derivations;
 	}
 
 	/**
 	 * Return a collection of ChildDerivationsGroup. The rule should be applied on all derivations (or all pairs of derivations) in each ChildDerivationsGroup.
 	 */
-	private Collection<ChildDerivationsGroup> getFilteredDerivations(Rule rule, String cell1, String cell2)
+	private Collection<ChildDerivationsGroup> getFilteredDerivations(final Rule rule, final String cell1, final String cell2)
 	{
-		List<Derivation> derivations1 = getDerivations(cell1), derivations2 = (cell2 == null) ? null : getDerivations(cell2);
+		final List<Derivation> derivations1 = getDerivations(cell1), derivations2 = cell2 == null ? null : getDerivations(cell2);
 		if (!FloatingParser.opts.filterChildDerivations)
 			return Collections.singleton(new ChildDerivationsGroup(derivations1, derivations2));
 		// Try to filter down the number of partial logical forms
@@ -564,7 +574,7 @@ class DPDParserState extends ParserState
 		return Collections.singleton(new ChildDerivationsGroup(derivations1, derivations2));
 	}
 
-	private Collection<ChildDerivationsGroup> getFilteredDerivations(Rule rule, String cell)
+	private Collection<ChildDerivationsGroup> getFilteredDerivations(final Rule rule, final String cell)
 	{
 		return getFilteredDerivations(rule, cell, null);
 	}
@@ -574,10 +584,10 @@ class DPDParserState extends ParserState
 	// ============================================================
 
 	// Build derivations over span |start|, |end|.
-	private void buildAnchored(int start, int end)
+	private void buildAnchored(final int start, final int end)
 	{
 		// Apply unary tokens on spans (rule $A (a))
-		for (Rule rule : parser.grammar.getRules())
+		for (final Rule rule : parser.grammar.getRules())
 		{
 			if (timeout && !isRootRule(rule))
 				continue;
@@ -585,19 +595,18 @@ class DPDParserState extends ParserState
 				continue;
 			if (rule.rhs.size() != 1 || rule.isCatUnary())
 				continue;
-			boolean match = (end - start == 1) && ex.token(start).equals(rule.rhs.get(0));
+			final boolean match = end - start == 1 && ex.token(start).equals(rule.rhs.get(0));
 			if (!match)
 				continue;
 
-			StopWatch stopWatch = new StopWatch().start();
+			final StopWatch stopWatch = new StopWatch().start();
 			applyAnchoredRule(rule, start, end);
 			ruleTime.put(rule, ruleTime.getOrDefault(rule, 0L) + stopWatch.stop().ms);
 		}
 
 		// Apply binaries on spans (rule $A ($B $C)), ...
 		for (int mid = start + 1; mid < end; mid++)
-		{
-			for (Rule rule : parser.grammar.getRules())
+			for (final Rule rule : parser.grammar.getRules())
 			{
 				if (timeout && !isRootRule(rule))
 					continue;
@@ -606,19 +615,19 @@ class DPDParserState extends ParserState
 				if (rule.rhs.size() != 2)
 					continue;
 
-				StopWatch stopWatch = new StopWatch().start();
-				String rhs1 = rule.rhs.get(0);
-				String rhs2 = rule.rhs.get(1);
-				boolean match1 = (mid - start == 1) && ex.token(start).equals(rhs1);
-				boolean match2 = (end - mid == 1) && ex.token(mid).equals(rhs2);
+				final StopWatch stopWatch = new StopWatch().start();
+				final String rhs1 = rule.rhs.get(0);
+				final String rhs2 = rule.rhs.get(1);
+				final boolean match1 = mid - start == 1 && ex.token(start).equals(rhs1);
+				final boolean match2 = end - mid == 1 && ex.token(mid).equals(rhs2);
 
 				if (!Rule.isCat(rhs1) && Rule.isCat(rhs2))
 				{ // token $Cat
 					if (match1)
 					{
-						String cell = anchoredCell(rhs2, mid, end);
-						List<Derivation> derivations = getDerivations(cell);
-						for (Derivation deriv : derivations)
+						final String cell = anchoredCell(rhs2, mid, end);
+						final List<Derivation> derivations = getDerivations(cell);
+						for (final Derivation deriv : derivations)
 							if (!applyAnchoredRule(rule, start, end, cell, deriv))
 								break;
 					}
@@ -628,9 +637,9 @@ class DPDParserState extends ParserState
 					{ // $Cat token
 						if (match2)
 						{
-							String cell = anchoredCell(rhs1, start, mid);
-							List<Derivation> derivations = getDerivations(cell);
-							for (Derivation deriv : derivations)
+							final String cell = anchoredCell(rhs1, start, mid);
+							final List<Derivation> derivations = getDerivations(cell);
+							for (final Derivation deriv : derivations)
 								if (!applyAnchoredRule(rule, start, end, cell, deriv))
 									break;
 						}
@@ -644,36 +653,33 @@ class DPDParserState extends ParserState
 						}
 						else
 						{ // $Cat $Cat
-							String cell1 = anchoredCell(rhs1, start, mid);
-							String cell2 = anchoredCell(rhs2, mid, end);
-							List<Derivation> derivations1 = getDerivations(cell1);
-							List<Derivation> derivations2 = getDerivations(cell2);
-							derivLoop: for (Derivation deriv1 : derivations1)
-								for (Derivation deriv2 : derivations2)
+							final String cell1 = anchoredCell(rhs1, start, mid);
+							final String cell2 = anchoredCell(rhs2, mid, end);
+							final List<Derivation> derivations1 = getDerivations(cell1);
+							final List<Derivation> derivations2 = getDerivations(cell2);
+							derivLoop: for (final Derivation deriv1 : derivations1)
+								for (final Derivation deriv2 : derivations2)
 									if (!applyAnchoredRule(rule, start, end, cell1, deriv1, cell2, deriv2))
 										break derivLoop;
 						}
 				ruleTime.put(rule, ruleTime.getOrDefault(rule, 0L) + stopWatch.stop().ms);
 			}
-		}
 
 		// Apply unary categories on spans (rule $A ($B))
 		// Important: do this in topologically sorted order and after all the binaries are done.
-		for (Rule rule : parser.getCatUnaryRules())
+		for (final Rule rule : parser.getCatUnaryRules())
 		{
 			if (timeout && !isRootRule(rule))
 				continue;
 			if (!rule.isAnchored())
 				continue;
 
-			StopWatch stopWatch = new StopWatch().start();
-			String cell = anchoredCell(rule.rhs.get(0), start, end);
-			List<Derivation> derivations = getDerivations(cell);
-			for (Derivation deriv : derivations)
-			{
+			final StopWatch stopWatch = new StopWatch().start();
+			final String cell = anchoredCell(rule.rhs.get(0), start, end);
+			final List<Derivation> derivations = getDerivations(cell);
+			for (final Derivation deriv : derivations)
 				if (!applyAnchoredRule(rule, start, end, cell, deriv))
 					break;
-			}
 			ruleTime.put(rule, ruleTime.getOrDefault(rule, 0L) + stopWatch.stop().ms);
 		}
 	}
@@ -683,13 +689,12 @@ class DPDParserState extends ParserState
 	// ============================================================
 
 	// Build floating derivations of exactly depth |depth|.
-	private void buildFloating(int depth)
+	private void buildFloating(final int depth)
 	{
 		// Build a floating predicate from thin air
 		// (rule $A (a)); note that "a" is ignored
 		if (depth == 0)
-		{
-			for (Rule rule : parser.grammar.getRules())
+			for (final Rule rule : parser.grammar.getRules())
 			{
 				if (timeout && !isRootRule(rule))
 					continue;
@@ -698,14 +703,13 @@ class DPDParserState extends ParserState
 				if (rule.rhs.size() != 1 || rule.isCatUnary())
 					continue;
 
-				StopWatch stopWatch = new StopWatch().start();
+				final StopWatch stopWatch = new StopWatch().start();
 				applyFloatingRule(rule, depth);
 				ruleTime.put(rule, ruleTime.getOrDefault(rule, 0L) + stopWatch.stop().ms);
 			}
-		}
 
 		// Apply unary categories on spans (rule $A ($B))
-		for (Rule rule : parser.getCatUnaryRules())
+		for (final Rule rule : parser.getCatUnaryRules())
 		{
 			if (timeout && !isRootRule(rule))
 				continue;
@@ -714,17 +718,17 @@ class DPDParserState extends ParserState
 			if (catSizeBound.getBound(rule.lhs) < depth)
 				continue;
 
-			StopWatch stopWatch = new StopWatch().start();
-			String cell = floatingCell(rule.rhs.get(0), depth - 1);
-			derivLoop: for (ChildDerivationsGroup group : getFilteredDerivations(rule, cell))
-				for (Derivation deriv : group.derivations1)
+			final StopWatch stopWatch = new StopWatch().start();
+			final String cell = floatingCell(rule.rhs.get(0), depth - 1);
+			derivLoop: for (final ChildDerivationsGroup group : getFilteredDerivations(rule, cell))
+				for (final Derivation deriv : group.derivations1)
 					if (!applyFloatingRule(rule, depth, cell, deriv))
 						break derivLoop;
 			ruleTime.put(rule, ruleTime.getOrDefault(rule, 0L) + stopWatch.stop().ms);
 		}
 
 		// Apply binaries on spans (rule $A ($B $C)), ...
-		for (Rule rule : parser.grammar.getRules())
+		for (final Rule rule : parser.grammar.getRules())
 		{
 			if (timeout && !isRootRule(rule))
 				continue;
@@ -735,36 +739,34 @@ class DPDParserState extends ParserState
 			if (catSizeBound.getBound(rule.lhs) < depth)
 				continue;
 
-			StopWatch stopWatch = new StopWatch().start();
-			String rhs1 = rule.rhs.get(0);
-			String rhs2 = rule.rhs.get(1);
+			final StopWatch stopWatch = new StopWatch().start();
+			final String rhs1 = rule.rhs.get(0);
+			final String rhs2 = rule.rhs.get(1);
 			if (!Rule.isCat(rhs1) || !Rule.isCat(rhs2))
 				throw new RuntimeException("Floating rules with > 1 arguments cannot have tokens on the RHS: " + rule);
 
 			if (FloatingParser.opts.useSizeInsteadOfDepth)
-			{
 				derivLoop: for (int depth1 = 0; depth1 < depth; depth1++)
 				{ // sizes must add up to depth-1 (actually size-1)
-					int depth2 = depth - 1 - depth1;
-					String cell1 = floatingCell(rhs1, depth1);
-					String cell2 = floatingCell(rhs2, depth2);
-					for (ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
-						for (Derivation deriv1 : group.derivations1)
-							for (Derivation deriv2 : group.derivations2)
+					final int depth2 = depth - 1 - depth1;
+					final String cell1 = floatingCell(rhs1, depth1);
+					final String cell2 = floatingCell(rhs2, depth2);
+					for (final ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
+						for (final Derivation deriv1 : group.derivations1)
+							for (final Derivation deriv2 : group.derivations2)
 								if (!applyFloatingRule(rule, depth, cell1, deriv1, cell2, deriv2))
 									break derivLoop;
 				}
-			}
 			else
 			{
 				{
 					derivLoop: for (int subDepth = 0; subDepth < depth; subDepth++)
 					{ // depth-1 <=depth-1
-						String cell1 = floatingCell(rhs1, depth - 1);
-						String cell2 = floatingCell(rhs2, subDepth);
-						for (ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
-							for (Derivation deriv1 : group.derivations1)
-								for (Derivation deriv2 : group.derivations2)
+						final String cell1 = floatingCell(rhs1, depth - 1);
+						final String cell2 = floatingCell(rhs2, subDepth);
+						for (final ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
+							for (final Derivation deriv1 : group.derivations1)
+								for (final Derivation deriv2 : group.derivations2)
 									if (!applyFloatingRule(rule, depth, cell1, deriv1, cell2, deriv2))
 										break derivLoop;
 					}
@@ -772,11 +774,11 @@ class DPDParserState extends ParserState
 				{
 					derivLoop: for (int subDepth = 0; subDepth < depth - 1; subDepth++)
 					{ // <depth-1 depth-1
-						String cell1 = floatingCell(rhs1, subDepth);
-						String cell2 = floatingCell(rhs2, depth - 1);
-						for (ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
-							for (Derivation deriv1 : group.derivations1)
-								for (Derivation deriv2 : group.derivations2)
+						final String cell1 = floatingCell(rhs1, subDepth);
+						final String cell2 = floatingCell(rhs2, depth - 1);
+						for (final ChildDerivationsGroup group : getFilteredDerivations(rule, cell1, cell2))
+							for (final Derivation deriv1 : group.derivations1)
+								for (final Derivation deriv2 : group.derivations2)
 									if (!applyFloatingRule(rule, depth, cell1, deriv1, cell2, deriv2))
 										break derivLoop;
 					}
@@ -839,7 +841,7 @@ class DPDParserState extends ParserState
 	{
 		// Create a parsing thread and run for some time
 		timeout = false;
-		Thread parsingThread = new Thread(new DPDParserParsingThread());
+		final Thread parsingThread = new Thread(new DPDParserParsingThread());
 		parsingThread.start();
 		try
 		{
@@ -853,7 +855,7 @@ class DPDParserState extends ParserState
 				parsingThread.join();
 			}
 		}
-		catch (InterruptedException e)
+		catch (final InterruptedException e)
 		{
 			e.printStackTrace();
 			LogInfo.fails("DPDParser error: %s", e);
@@ -868,43 +870,37 @@ class DPDParserState extends ParserState
 		{
 			ruleTime = new HashMap<>();
 
-			Set<String> categories = new HashSet<String>();
-			for (Rule rule : parser.grammar.getRules())
+			final Set<String> categories = new HashSet<>();
+			for (final Rule rule : parser.grammar.getRules())
 				categories.add(rule.lhs);
 
 			// Set the pruner
 			if (currentPass == ParsingPass.FIRST)
-			{
 				pruner.setCustomAllowedPruningStrategies(DPDParser.opts.allowedPrunersInFirstPass);
-			}
 			else
-			{
 				pruner.setCustomAllowedPruningStrategies(null); // All pruners allowed
-			}
 
 			// Base case ($TOKEN, $PHRASE, $LEMMA_PHRASE)
 			// Denotations are StringValue
-			for (Derivation deriv : gatherTokenAndPhraseDerivations())
+			for (final Derivation deriv : gatherTokenAndPhraseDerivations())
 			{
 				ensureExecuted(deriv);
 				addToChart(deriv, new Ingredient(anchoredCell(deriv.cat, deriv.start, deriv.end)), null, null);
 			}
 
 			// Build up anchored derivations
-			int numTokens = ex.numTokens();
+			final int numTokens = ex.numTokens();
 			for (int len = 1; len <= numTokens; len++)
-			{
 				for (int i = 0; i + len <= numTokens; i++)
 				{
 					buildAnchored(i, i + len);
-					for (String cat : categories)
+					for (final String cat : categories)
 					{
 						if (Rule.rootCat.equals(cat))
 							continue;
 						pruneBeam(anchoredCell(cat, i, i + len));
 					}
 				}
-			}
 
 			// Build up floating derivations
 			for (int depth = 0; depth <= maxDepth; depth++)
@@ -912,7 +908,7 @@ class DPDParserState extends ParserState
 				if (Parser.opts.verbose >= 1)
 					LogInfo.begin_track("(%s) %s = %d", currentPass, FloatingParser.opts.useSizeInsteadOfDepth ? "SIZE" : "DEPTH", depth);
 				buildFloating(depth);
-				for (String cat : categories)
+				for (final String cat : categories)
 				{
 					if (Rule.rootCat.equals(cat))
 						continue;
@@ -920,11 +916,11 @@ class DPDParserState extends ParserState
 				}
 				if (Parser.opts.verbose >= 1)
 				{
-					Map<String, Integer> statistics = countNumCells(getCellsForCurrentPass());
+					final Map<String, Integer> statistics = countNumCells(getCellsForCurrentPass());
 					LogInfo.logs("(%s) %d cells | %d unique-denotations | %d cell-denotations | %d derivations", currentPass, statistics.get("Cells"), statistics.get("UniqueDenotations"), statistics.get("CellDenotations"), statistics.get("Derivations"));
 					LogInfo.end_track();
 				}
-				int numCellDenotations = getNumCellDenotations(), maxNumCellDenotations = DPDParser.opts.maxNumCellDenotations;
+				final int numCellDenotations = getNumCellDenotations(), maxNumCellDenotations = DPDParser.opts.maxNumCellDenotations;
 				if (depth != maxDepth && maxNumCellDenotations >= 0 && maxNumCellDenotations < numCellDenotations)
 				{
 					LogInfo.logs("Stop parsing: number of (cell, denotation) pairs is %d > %d", numCellDenotations, maxNumCellDenotations);
@@ -941,34 +937,32 @@ class DPDParserState extends ParserState
 	}
 
 	// Prune to the beam size
-	private void pruneBeam(String cell)
+	private void pruneBeam(final String cell)
 	{
 		if (currentPass == ParsingPass.FIRST && DPDParser.opts.firstPassBeamSize > 0)
 		{
-			Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
+			final Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
 			Map<Value, Metadata> denotationToData = cells.get(cell);
 			if (denotationToData == null || denotationToData.size() <= DPDParser.opts.firstPassBeamSize)
 				return;
 			// TODO: Prune based on some criteria
 			if (Parser.opts.verbose >= 1)
 				LogInfo.logs("Pruning first pass beam: %d => %d", denotationToData.entrySet().size(), DPDParser.opts.firstPassBeamSize);
-			List<Map.Entry<Value, Metadata>> pruned = new ArrayList<>(denotationToData.entrySet());
+			final List<Map.Entry<Value, Metadata>> pruned = new ArrayList<>(denotationToData.entrySet());
 			denotationToData = new HashMap<>();
-			for (Map.Entry<Value, Metadata> entry : pruned.subList(0, DPDParser.opts.firstPassBeamSize))
+			for (final Map.Entry<Value, Metadata> entry : pruned.subList(0, DPDParser.opts.firstPassBeamSize))
 				denotationToData.put(entry.getKey(), entry.getValue());
 			cells.put(cell, denotationToData);
 		}
 		else
 			if (currentPass == ParsingPass.SECOND)
 			{
-				Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
-				Map<Value, Metadata> denotationToData = cells.get(cell);
+				final Map<String, Map<Value, Metadata>> cells = getCellsForCurrentPass();
+				final Map<Value, Metadata> denotationToData = cells.get(cell);
 				if (denotationToData == null)
 					return;
-				for (Metadata metadata : denotationToData.values())
-				{
+				for (final Metadata metadata : denotationToData.values())
 					pruneCell(cell, metadata.derivations);
-				}
 			}
 	}
 
@@ -980,62 +974,60 @@ class DPDParserState extends ParserState
 	{
 		if (Parser.opts.verbose >= 4)
 			LogInfo.logs("DPDParserState.collectPossibleIngredients()");
-		Set<BackPointer> usedBps = new HashSet<>();
+		final Set<BackPointer> usedBps = new HashSet<>();
 		collectPossibleIngredients(anchoredCell(Rule.rootCat, 0, numTokens), usedBps);
 		for (int depth = 1; depth <= maxDepth; depth++)
 			collectPossibleIngredients(floatingCell(Rule.rootCat, depth), usedBps);
 		if (Parser.opts.verbose >= 4 || DPDParser.opts.dumpAllowedIngredients)
 		{
 			LogInfo.begin_track("allowedDenotationIngredients");
-			Set<String> sorted = new TreeSet<>();
-			for (Ingredient ingredient : allowedIngredients)
+			final Set<String> sorted = new TreeSet<>();
+			for (final Ingredient ingredient : allowedIngredients)
 				sorted.add(ingredient.toString());
-			for (String ingredient : sorted)
+			for (final String ingredient : sorted)
 				LogInfo.logs("%s", ingredient);
 			LogInfo.end_track();
 		}
 	}
 
-	private void collectPossibleIngredients(String cell, Set<BackPointer> usedBps)
+	private void collectPossibleIngredients(final String cell, final Set<BackPointer> usedBps)
 	{
 		if (Parser.opts.verbose >= 4)
 			LogInfo.logs("DPDParserState.collectPossibleIngredients(%s)", cell);
-		Map<Value, Metadata> denotationToMetadata = firstPassCells.get(cell);
+		final Map<Value, Metadata> denotationToMetadata = firstPassCells.get(cell);
 		if (denotationToMetadata == null)
 			return;
-		for (Value denotation : denotationToMetadata.keySet())
+		for (final Value denotation : denotationToMetadata.keySet())
 		{
-			double compatibility = parser.valueEvaluator.getCompatibility(ex.targetValue, denotation);
+			final double compatibility = parser.valueEvaluator.getCompatibility(ex.targetValue, denotation);
 			if (compatibility != 1)
 				continue;
 			if (Parser.opts.verbose >= 2)
 				LogInfo.logs("[%f] %s", compatibility, denotationToMetadata.get(denotation).derivations.get(0));
-			BackPointer bp = new BackPointer(cell, denotation);
+			final BackPointer bp = new BackPointer(cell, denotation);
 			if (!usedBps.contains(bp))
 				collectPossibleIngredients(bp, usedBps, 0);
 		}
 	}
 
-	private void collectPossibleIngredients(BackPointer bp, Set<BackPointer> usedBps, int depth)
+	private void collectPossibleIngredients(final BackPointer bp, final Set<BackPointer> usedBps, final int depth)
 	{
 		if (Parser.opts.verbose >= 4)
 			LogInfo.logs("DPDParserState.collectPossibleIngredients(%s)", bp);
 		usedBps.add(bp);
-		Map<Value, Metadata> denotationToMetadata = firstPassCells.get(bp.cell);
+		final Map<Value, Metadata> denotationToMetadata = firstPassCells.get(bp.cell);
 		if (denotationToMetadata == null)
 			return;
-		Metadata metadata = denotationToMetadata.get(bp.value);
+		final Metadata metadata = denotationToMetadata.get(bp.value);
 		if (metadata == null)
 			return;
 		allowedIngredients.addAll(metadata.possibleIngredients);
 		if (Parser.opts.verbose >= 4)
 			LogInfo.logs("Adding %s", metadata.possibleIngredients);
 		// Recurse
-		for (BackPointer childBp : metadata.backPointers)
-		{
+		for (final BackPointer childBp : metadata.backPointers)
 			if (!usedBps.contains(childBp))
 				collectPossibleIngredients(childBp, usedBps, depth + 1);
-		}
 	}
 
 	// ============================================================
@@ -1045,7 +1037,7 @@ class DPDParserState extends ParserState
 	private void collectFinalDerivations()
 	{
 		String cellName = anchoredCell(Rule.rootCat, 0, numTokens);
-		for (Derivation deriv : getDerivations(cellName))
+		for (final Derivation deriv : getDerivations(cellName))
 		{
 			if (DPDParser.opts.putCellNameInCanonicalUtterance)
 				deriv.canonicalUtterance = cellName;
@@ -1054,7 +1046,7 @@ class DPDParserState extends ParserState
 		for (int depth = 0; depth <= maxDepth; depth++)
 		{
 			cellName = floatingCell(Rule.rootCat, depth);
-			for (Derivation deriv : getDerivations(cellName))
+			for (final Derivation deriv : getDerivations(cellName))
 			{
 				if (DPDParser.opts.putCellNameInCanonicalUtterance)
 					deriv.canonicalUtterance = cellName;
@@ -1086,27 +1078,27 @@ class DPDParserState extends ParserState
 		evaluation.add("firstPassParseTime", firstPassParseTime);
 		evaluation.add("secondPassParseTime", secondPassParseTime);
 		// Number of cells
-		for (Map.Entry<String, Integer> entry : countNumCells(firstPassCells).entrySet())
+		for (final Map.Entry<String, Integer> entry : countNumCells(firstPassCells).entrySet())
 			evaluation.add("firstPass" + entry.getKey(), entry.getValue());
-		for (Map.Entry<String, Integer> entry : countNumCells(secondPassCells).entrySet())
+		for (final Map.Entry<String, Integer> entry : countNumCells(secondPassCells).entrySet())
 			evaluation.add("secondPass" + entry.getKey(), entry.getValue());
 		// Number of possible ingredients
 		evaluation.add("allowedIngredients", allowedIngredients.size());
 	}
 
-	private Map<String, Integer> countNumCells(Map<String, Map<Value, Metadata>> cells)
+	private Map<String, Integer> countNumCells(final Map<String, Map<Value, Metadata>> cells)
 	{
 		int numAnchored = 0, numFloating = 0, numDenotations = 0, numErrorDenotations = 0, numUniqueErrorDenotations = 0, numDerivations = 0;
-		Set<Value> uniqueDenotations = new HashSet<>();
-		for (Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
+		final Set<Value> uniqueDenotations = new HashSet<>();
+		for (final Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
 		{
 			if (entry.getKey().contains(","))
 				numAnchored++;
 			else
 				numFloating++;
-			for (Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
+			for (final Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
 			{
-				Value denotation = subentry.getKey();
+				final Value denotation = subentry.getKey();
 				numDenotations++;
 				uniqueDenotations.add(denotation);
 				if (denotation instanceof ErrorValue)
@@ -1114,12 +1106,10 @@ class DPDParserState extends ParserState
 				numDerivations += subentry.getValue().derivations.size();
 			}
 		}
-		for (Value denotation : uniqueDenotations)
-		{
+		for (final Value denotation : uniqueDenotations)
 			if (denotation instanceof ErrorValue)
 				numUniqueErrorDenotations++;
-		}
-		Map<String, Integer> statistics = new HashMap<>();
+		final Map<String, Integer> statistics = new HashMap<>();
 		statistics.put("Cells", cells.size());
 		statistics.put("Anchored", numAnchored);
 		statistics.put("Floating", numFloating);
@@ -1134,10 +1124,8 @@ class DPDParserState extends ParserState
 	private int getNumCellDenotations()
 	{
 		int numDenotations = 0;
-		for (Map<Value, Metadata> value : getCellsForCurrentPass().values())
-		{
+		for (final Map<Value, Metadata> value : getCellsForCurrentPass().values())
 			numDenotations += value.size();
-		}
 		return numDenotations;
 	}
 
@@ -1145,23 +1133,23 @@ class DPDParserState extends ParserState
 	// Debug: print all denotations in all cells
 	// ============================================================
 
-	protected void dumpDenotations(Map<String, Map<Value, Metadata>> cells)
+	protected void dumpDenotations(final Map<String, Map<Value, Metadata>> cells)
 	{
-		Map<String, Formula> denotationToSampleFormula = new TreeMap<>();
-		for (Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
+		final Map<String, Formula> denotationToSampleFormula = new TreeMap<>();
+		for (final Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
 		{
 			String cellName = entry.getKey();
 			if (DPDParser.opts.dumpDenotations == DPDParser.DumpSpec.NONERROR && Grammar.isIntermediate(cellName))
 				continue;
 			if (cellName.contains(":"))
 			{
-				String[] parts = cellName.split(":");
+				final String[] parts = cellName.split(":");
 				assert parts.length == 2;
 				cellName = String.format("&%2s:%s", parts[1], parts[0]);
 			}
-			for (Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
+			for (final Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
 			{
-				Value denotation = subentry.getKey();
+				final Value denotation = subentry.getKey();
 				String key = null;
 				switch (DPDParser.opts.dumpDenotations)
 				{
@@ -1184,7 +1172,7 @@ class DPDParserState extends ParserState
 			}
 		}
 		LogInfo.begin_track("%s DENOTATIONS", DPDParser.opts.dumpDenotations);
-		for (Map.Entry<String, Formula> entry : denotationToSampleFormula.entrySet())
+		for (final Map.Entry<String, Formula> entry : denotationToSampleFormula.entrySet())
 			LogInfo.logs("%s | %s", entry.getKey(), entry.getValue());
 		LogInfo.end_track();
 	}
@@ -1193,33 +1181,29 @@ class DPDParserState extends ParserState
 	// Debug: classify unique-denotations by attributes
 	// ============================================================
 
-	protected void classifyUniqueDenotations(Map<String, Map<Value, Metadata>> cells)
+	protected void classifyUniqueDenotations(final Map<String, Map<Value, Metadata>> cells)
 	{
-		Set<String> denotations = new HashSet<>();
-		Map<String, Integer> attributeCounter = new TreeMap<>();
-		for (Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
-		{
-			for (Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
+		final Set<String> denotations = new HashSet<>();
+		final Map<String, Integer> attributeCounter = new TreeMap<>();
+		for (final Map.Entry<String, Map<Value, Metadata>> entry : cells.entrySet())
+			for (final Map.Entry<Value, Metadata> subentry : entry.getValue().entrySet())
 			{
-				Value denotation = subentry.getKey();
-				String key = denotation.toString();
+				final Value denotation = subentry.getKey();
+				final String key = denotation.toString();
 				if (denotations.contains(key))
 					continue;
 				MapUtils.incr(attributeCounter, getDenotationAttributes(denotation));
 				denotations.add(key);
 			}
-		}
 		LogInfo.begin_track("Denotation Classification");
-		for (Map.Entry<String, Integer> entry : attributeCounter.entrySet())
-		{
+		for (final Map.Entry<String, Integer> entry : attributeCounter.entrySet())
 			LogInfo.logs("%7d (%6.2f%%) : %s", entry.getValue(), entry.getValue() * 100.0 / denotations.size(), entry.getKey());
-		}
 		LogInfo.end_track();
 	}
 
-	protected String getDenotationAttributes(Value denotation)
+	protected String getDenotationAttributes(final Value denotation)
 	{
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		if (denotation instanceof ListValue || denotation instanceof InfiniteListValue)
 		{
 			sb.append("L");
@@ -1231,7 +1215,7 @@ class DPDParserState extends ParserState
 			else
 			{
 				// Size
-				List<Value> values = ((ListValue) denotation).values;
+				final List<Value> values = ((ListValue) denotation).values;
 				if (values.size() == 0)
 					sb.append("|size=0");
 				else
@@ -1250,8 +1234,8 @@ class DPDParserState extends ParserState
 				sb.append("S");
 				try
 				{
-					ListValue head = (ListValue) ((ScopedValue) denotation).head;
-					PairListValue relation = (PairListValue) ((ScopedValue) denotation).relation;
+					final ListValue head = (ListValue) ((ScopedValue) denotation).head;
+					final PairListValue relation = (PairListValue) ((ScopedValue) denotation).relation;
 					// Head
 					if (head.values.size() == 1)
 						sb.append("|hsize=1");
@@ -1260,22 +1244,14 @@ class DPDParserState extends ParserState
 					sb.append("|htype=").append(DenotationTypeInference.getKeyType(denotation));
 					// Relation
 					int relationSize = 0;
-					for (Pair<Value, Value> pair : relation.pairs)
-					{
+					for (final Pair<Value, Value> pair : relation.pairs)
 						if (pair.getSecond() instanceof ListValue)
-						{
 							relationSize = Math.max(relationSize, ((ListValue) pair.getSecond()).values.size());
-						}
 						else
 							if (pair.getSecond() instanceof InfiniteListValue)
-							{
 								relationSize = Integer.MAX_VALUE;
-							}
 							else
-							{
 								throw new RuntimeException();
-							}
-					}
 					if (relationSize == 0)
 						sb.append("|vsize=0");
 					else
@@ -1288,17 +1264,15 @@ class DPDParserState extends ParserState
 								sb.append("|vsize=many");
 					sb.append("|vtype=").append(DenotationTypeInference.getValueType(denotation));
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					sb.append("|???=").append(e);
 				}
 			}
 			else
-			{
 				// Currently PairListValue and ErrorValue, which don't appear in grow grammar,
 				// are not handled explicitly.
 				sb.append("X=" + denotation.getClass().getSimpleName());
-			}
 		return sb.toString();
 	}
 
@@ -1308,21 +1282,19 @@ class DPDParserState extends ParserState
 
 	private void countUseful()
 	{
-		Set<String> allUniqueDenotations = new HashSet<>(), usefulUniqueDenotations = new HashSet<>(), allCellDenotations = new HashSet<>(), usefulCellDenotations = new HashSet<>();
-		Set<BackPointer> usedBps = new HashSet<>();
+		final Set<String> allUniqueDenotations = new HashSet<>(), usefulUniqueDenotations = new HashSet<>(), allCellDenotations = new HashSet<>(), usefulCellDenotations = new HashSet<>();
+		final Set<BackPointer> usedBps = new HashSet<>();
 		// All cells and denotations
-		for (Map.Entry<String, Map<Value, Metadata>> entry : firstPassCells.entrySet())
-		{
-			for (Value value : entry.getValue().keySet())
+		for (final Map.Entry<String, Map<Value, Metadata>> entry : firstPassCells.entrySet())
+			for (final Value value : entry.getValue().keySet())
 			{
 				// Unique-denotations
-				String denotation = value.toString();
+				final String denotation = value.toString();
 				allUniqueDenotations.add(denotation);
 				// Cell-denotations
-				String cellDenotation = entry.getKey() + " | " + denotation;
+				final String cellDenotation = entry.getKey() + " | " + denotation;
 				allCellDenotations.add(cellDenotation);
 			}
-		}
 		// Useful unique-denotations and cell-denotations
 		findUseful(anchoredCell(Rule.rootCat, 0, numTokens), usedBps, usefulUniqueDenotations, usefulCellDenotations);
 		for (int depth = 1; depth <= maxDepth; depth++)
@@ -1334,39 +1306,37 @@ class DPDParserState extends ParserState
 		LogInfo.end_track();
 	}
 
-	private void findUseful(String cell, Set<BackPointer> usedBps, Set<String> usefulUniqueDenotations, Set<String> usefulCellDenotations)
+	private void findUseful(final String cell, final Set<BackPointer> usedBps, final Set<String> usefulUniqueDenotations, final Set<String> usefulCellDenotations)
 	{
-		Map<Value, Metadata> denotationToMetadata = firstPassCells.get(cell);
+		final Map<Value, Metadata> denotationToMetadata = firstPassCells.get(cell);
 		if (denotationToMetadata == null)
 			return;
-		for (Value denotation : denotationToMetadata.keySet())
+		for (final Value denotation : denotationToMetadata.keySet())
 		{
-			BackPointer bp = new BackPointer(cell, denotation);
+			final BackPointer bp = new BackPointer(cell, denotation);
 			findUseful(bp, usedBps, usefulUniqueDenotations, usefulCellDenotations);
 		}
 	}
 
-	private void findUseful(BackPointer bp, Set<BackPointer> usedBps, Set<String> usefulUniqueDenotations, Set<String> usefulCellDenotations)
+	private void findUseful(final BackPointer bp, final Set<BackPointer> usedBps, final Set<String> usefulUniqueDenotations, final Set<String> usefulCellDenotations)
 	{
 		usedBps.add(bp);
 		// Unique-denotations
-		String denotation = bp.value.toString();
+		final String denotation = bp.value.toString();
 		usefulUniqueDenotations.add(denotation);
 		// Cell-denotations
-		String cellDenotation = bp.cell + " | " + denotation;
+		final String cellDenotation = bp.cell + " | " + denotation;
 		usefulCellDenotations.add(cellDenotation);
 		// Recurse
-		Map<Value, Metadata> denotationToMetadata = firstPassCells.get(bp.cell);
+		final Map<Value, Metadata> denotationToMetadata = firstPassCells.get(bp.cell);
 		if (denotationToMetadata == null)
 			return;
-		Metadata metadata = denotationToMetadata.get(bp.value);
+		final Metadata metadata = denotationToMetadata.get(bp.value);
 		if (metadata == null)
 			return;
-		for (BackPointer childBp : metadata.backPointers)
-		{
+		for (final BackPointer childBp : metadata.backPointers)
 			if (!usedBps.contains(childBp))
 				findUseful(childBp, usedBps, usefulUniqueDenotations, usefulCellDenotations);
-		}
 	}
 
 	// ============================================================
@@ -1375,13 +1345,11 @@ class DPDParserState extends ParserState
 
 	private void summarizeRuleTime()
 	{
-		List<Map.Entry<Rule, Long>> entries = new ArrayList<>(ruleTime.entrySet());
+		final List<Map.Entry<Rule, Long>> entries = new ArrayList<>(ruleTime.entrySet());
 		entries.sort(new ValueComparator<>(true));
 		LogInfo.begin_track("(%s) Rule time", currentPass);
-		for (Map.Entry<Rule, Long> entry : entries)
-		{
+		for (final Map.Entry<Rule, Long> entry : entries)
 			LogInfo.logs("%9d : %s", entry.getValue(), entry.getKey());
-		}
 		LogInfo.end_track();
 	}
 }

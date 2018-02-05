@@ -9,8 +9,10 @@ import com.google.common.collect.Sets;
 import fig.basic.Evaluation;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An example corresponds roughly to an input-output pair, the basic unit which we make predictions on. The Example object stores both the input, preprocessing,
@@ -67,43 +69,43 @@ public class Example
 		private Value targetValue;
 		private LanguageInfo languageInfo;
 
-		public Builder setId(String id)
+		public Builder setId(final String id)
 		{
 			this.id = id;
 			return this;
 		}
 
-		public Builder setUtterance(String utterance)
+		public Builder setUtterance(final String utterance)
 		{
 			this.utterance = utterance;
 			return this;
 		}
 
-		public Builder setContext(ContextValue context)
+		public Builder setContext(final ContextValue context)
 		{
 			this.context = context;
 			return this;
 		}
 
-		public Builder setTargetFormula(Formula targetFormula)
+		public Builder setTargetFormula(final Formula targetFormula)
 		{
 			this.targetFormula = targetFormula;
 			return this;
 		}
 
-		public Builder setTargetValue(Value targetValue)
+		public Builder setTargetValue(final Value targetValue)
 		{
 			this.targetValue = targetValue;
 			return this;
 		}
 
-		public Builder setLanguageInfo(LanguageInfo languageInfo)
+		public Builder setLanguageInfo(final LanguageInfo languageInfo)
 		{
 			this.languageInfo = languageInfo;
 			return this;
 		}
 
-		public Builder withExample(Example ex)
+		public Builder withExample(final Example ex)
 		{
 			setId(ex.id);
 			setUtterance(ex.utterance);
@@ -120,7 +122,7 @@ public class Example
 	}
 
 	@JsonCreator
-	public Example(@JsonProperty("id") String id, @JsonProperty("utterance") String utterance, @JsonProperty("context") ContextValue context, @JsonProperty("targetFormula") Formula targetFormula, @JsonProperty("targetValue") Value targetValue, @JsonProperty("languageInfo") LanguageInfo languageInfo)
+	public Example(@JsonProperty("id") final String id, @JsonProperty("utterance") final String utterance, @JsonProperty("context") final ContextValue context, @JsonProperty("targetFormula") final Formula targetFormula, @JsonProperty("targetValue") final Value targetValue, @JsonProperty("languageInfo") final LanguageInfo languageInfo)
 	{
 		this.id = id;
 		this.utterance = utterance;
@@ -151,39 +153,39 @@ public class Example
 		return predDerivations;
 	}
 
-	public void setContext(ContextValue context)
+	public void setContext(final ContextValue context)
 	{
 		this.context = context;
 	}
 
-	public void setTargetFormula(Formula targetFormula)
+	public void setTargetFormula(final Formula targetFormula)
 	{
 		this.targetFormula = targetFormula;
 	}
 
-	public void setAlternativeFormulas(List<Formula> alternativeFormulas)
+	public void setAlternativeFormulas(final List<Formula> alternativeFormulas)
 	{
 		this.alternativeFormulas = alternativeFormulas;
 	}
 
-	public void addAlternativeFormula(Formula alternativeFormula)
+	public void addAlternativeFormula(final Formula alternativeFormula)
 	{
-		if (this.alternativeFormulas == null)
-			this.alternativeFormulas = new ArrayList<>();
-		this.alternativeFormulas.add(alternativeFormula);
+		if (alternativeFormulas == null)
+			alternativeFormulas = new ArrayList<>();
+		alternativeFormulas.add(alternativeFormula);
 	}
 
-	public void setTargetValue(Value targetValue)
+	public void setTargetValue(final Value targetValue)
 	{
 		this.targetValue = targetValue;
 	}
 
-	public String spanString(int start, int end)
+	public String spanString(final int start, final int end)
 	{
 		return String.format("%d:%d[%s]", start, end, start != -1 ? phraseString(start, end) : "...");
 	}
 
-	public String phraseString(int start, int end)
+	public String phraseString(final int start, final int end)
 	{
 		return Joiner.on(' ').join(languageInfo.tokens.subList(start, end));
 	}
@@ -199,27 +201,27 @@ public class Example
 		return languageInfo.lemmaTokens;
 	}
 
-	public String token(int i)
+	public String token(final int i)
 	{
 		return languageInfo.tokens.get(i);
 	}
 
-	public String lemmaToken(int i)
+	public String lemmaToken(final int i)
 	{
 		return languageInfo.lemmaTokens.get(i);
 	}
 
-	public String posTag(int i)
+	public String posTag(final int i)
 	{
 		return languageInfo.posTags.get(i);
 	}
 
-	public String phrase(int start, int end)
+	public String phrase(final int start, final int end)
 	{
 		return languageInfo.phrase(start, end);
 	}
 
-	public String lemmaPhrase(int start, int end)
+	public String lemmaPhrase(final int start, final int end)
 	{
 		return languageInfo.lemmaPhrase(start, end);
 	}
@@ -229,38 +231,30 @@ public class Example
 		return Json.writeValueAsStringHard(this);
 	}
 
-	public static Example fromJson(String json)
+	public static Example fromJson(final String json)
 	{
 		return Json.readValueHard(json, Example.class);
 	}
 
-	public static Example fromLispTree(LispTree tree, String defaultId)
+	public static Example fromLispTree(final LispTree tree, final String defaultId)
 	{
-		Builder b = new Builder().setId(defaultId);
+		final Builder b = new Builder().setId(defaultId);
 
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			LispTree arg = tree.child(i);
-			String label = arg.child(0).value;
+			final LispTree arg = tree.child(i);
+			final String label = arg.child(0).value;
 			if ("id".equals(label))
-			{
 				b.setId(arg.child(1).value);
-			}
 			else
 				if ("utterance".equals(label))
-				{
 					b.setUtterance(arg.child(1).value);
-				}
 				else
 					if ("canonicalUtterance".equals(label))
-					{
 						b.setUtterance(arg.child(1).value);
-					}
 					else
 						if ("targetFormula".equals(label))
-						{
 							b.setTargetFormula(Formulas.fromLispTree(arg.child(1)));
-						}
 						else
 							if ("targetValue".equals(label) || "targetValues".equals(label))
 							{
@@ -270,57 +264,41 @@ public class Example
 							}
 							else
 								if ("context".equals(label))
-								{
 									b.setContext(new ContextValue(arg));
-								}
 		}
 		b.setLanguageInfo(new LanguageInfo());
 
-		Example ex = b.createExample();
+		final Example ex = b.createExample();
 
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			LispTree arg = tree.child(i);
-			String label = arg.child(0).value;
+			final LispTree arg = tree.child(i);
+			final String label = arg.child(0).value;
 			if ("tokens".equals(label))
-			{
-				for (LispTree child : arg.child(1).children)
+				for (final LispTree child : arg.child(1).children)
 					ex.languageInfo.tokens.add(child.value);
-			}
 			else
 				if ("lemmaTokens".equals(label))
-				{
-					for (LispTree child : arg.child(1).children)
+					for (final LispTree child : arg.child(1).children)
 						ex.languageInfo.lemmaTokens.add(child.value);
-				}
 				else
 					if ("posTags".equals(label))
-					{
-						for (LispTree child : arg.child(1).children)
+						for (final LispTree child : arg.child(1).children)
 							ex.languageInfo.posTags.add(child.value);
-					}
 					else
 						if ("nerTags".equals(label))
-						{
-							for (LispTree child : arg.child(1).children)
+							for (final LispTree child : arg.child(1).children)
 								ex.languageInfo.nerTags.add(child.value);
-						}
 						else
 							if ("nerValues".equals(label))
-							{
-								for (LispTree child : arg.child(1).children)
+								for (final LispTree child : arg.child(1).children)
 									ex.languageInfo.nerValues.add("null".equals(child.value) ? null : child.value);
-							}
 							else
 								if ("alternativeFormula".equals(label))
-								{
 									ex.addAlternativeFormula(Formulas.fromLispTree(arg.child(1)));
-								}
 								else
 									if ("evaluation".equals(label))
-									{
 										ex.evaluation = Evaluation.fromLispTree(arg.child(1));
-									}
 									else
 										if ("predDerivations".equals(label))
 										{
@@ -338,7 +316,8 @@ public class Example
 													ex.predDerivations.add(rawDerivationFromLispTree(arg.child(j)));
 											}
 											else
-												if (!Sets.newHashSet("id", "utterance", "targetFormula", "targetValue", "targetValues", "context", "original").contains(label)) { throw new RuntimeException("Invalid example argument: " + arg); }
+												if (!Sets.newHashSet("id", "utterance", "targetFormula", "targetValue", "targetValues", "context", "original").contains(label))
+													throw new RuntimeException("Invalid example argument: " + arg);
 		}
 
 		return ex;
@@ -346,8 +325,8 @@ public class Example
 
 	public void preprocess()
 	{
-		this.languageInfo = LanguageAnalyzer.getSingleton().analyze(this.utterance);
-		this.targetValue = TargetValuePreprocessor.getSingleton().preprocess(this.targetValue, this);
+		languageInfo = LanguageAnalyzer.getSingleton().analyze(utterance);
+		targetValue = TargetValuePreprocessor.getSingleton().preprocess(targetValue, this);
 	}
 
 	public void log()
@@ -386,8 +365,8 @@ public class Example
 
 	public List<Derivation> getCorrectDerivations()
 	{
-		List<Derivation> res = new ArrayList<>();
-		for (Derivation deriv : predDerivations)
+		final List<Derivation> res = new ArrayList<>();
+		for (final Derivation deriv : predDerivations)
 		{
 			if (deriv.compatibility == Double.NaN)
 				throw new RuntimeException("Compatibility is not set");
@@ -397,9 +376,9 @@ public class Example
 		return res;
 	}
 
-	public LispTree toLispTree(boolean outputPredDerivations)
+	public LispTree toLispTree(final boolean outputPredDerivations)
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("example");
 
 		if (id != null)
@@ -426,9 +405,9 @@ public class Example
 
 		if (predDerivations != null && outputPredDerivations)
 		{
-			LispTree list = LispTree.proto.newList();
+			final LispTree list = LispTree.proto.newList();
 			list.addChild("predDerivations");
-			for (Derivation deriv : predDerivations)
+			for (final Derivation deriv : predDerivations)
 				list.addChild(derivationToLispTree(deriv));
 			tree.addChild(list);
 		}
@@ -440,23 +419,23 @@ public class Example
 	 * Parse a featurized derivation. Format: ({compatibility} {prob} {score} {value|null} {formula} {features}) where {features} = (({key} {value}) ({key}
 	 * {value}) ...)
 	 */
-	public static Derivation derivationFromLispTree(LispTree item)
+	public static Derivation derivationFromLispTree(final LispTree item)
 	{
-		Derivation.Builder b = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).rule(Rule.nullRule).children(new ArrayList<Derivation>());
+		final Derivation.Builder b = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).rule(Rule.nullRule).children(new ArrayList<Derivation>());
 		int i = 0;
 
 		b.compatibility(Double.parseDouble(item.child(i++).value));
 		b.prob(Double.parseDouble(item.child(i++).value));
 		b.score(Double.parseDouble(item.child(i++).value));
 
-		LispTree valueTree = item.child(i++);
+		final LispTree valueTree = item.child(i++);
 		if (!valueTree.isLeaf() || !"null".equals(valueTree.value))
 			b.value(Values.fromLispTree(valueTree));
 
 		b.formula(Formulas.fromLispTree(item.child(i++)));
 
-		FeatureVector fv = new FeatureVector();
-		LispTree features = item.child(i++);
+		final FeatureVector fv = new FeatureVector();
+		final LispTree features = item.child(i++);
 		for (int j = 0; j < features.children.size(); j++)
 			fv.addFromString(features.child(j).child(0).value, Double.parseDouble(features.child(j).child(1).value));
 
@@ -465,9 +444,9 @@ public class Example
 		return b.createDerivation();
 	}
 
-	public static LispTree derivationToLispTree(Derivation deriv)
+	public static LispTree derivationToLispTree(final Derivation deriv)
 	{
-		LispTree item = LispTree.proto.newList();
+		final LispTree item = LispTree.proto.newList();
 
 		item.addChild(deriv.compatibility + "");
 		item.addChild(deriv.prob + "");
@@ -478,7 +457,7 @@ public class Example
 			item.addChild("null");
 		item.addChild(deriv.formula.toLispTree());
 
-		HashMap<String, Double> features = new HashMap<>();
+		final HashMap<String, Double> features = new HashMap<>();
 		deriv.incrementAllFeatureVector(1, features);
 		item.addChild(LispTree.proto.newList(features));
 
@@ -492,41 +471,31 @@ public class Example
 	 * @param item
 	 * @return
 	 */
-	public static Derivation rawDerivationFromLispTree(LispTree item)
+	public static Derivation rawDerivationFromLispTree(final LispTree item)
 	{
-		Derivation.Builder b = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).rule(Rule.nullRule).children(new ArrayList<Derivation>());
+		final Derivation.Builder b = new Derivation.Builder().cat(Rule.rootCat).start(-1).end(-1).rule(Rule.nullRule).children(new ArrayList<Derivation>());
 		for (int i = 1; i < item.children.size(); i++)
 		{
-			LispTree arg = item.child(i);
-			String label = arg.child(0).value;
+			final LispTree arg = item.child(i);
+			final String label = arg.child(0).value;
 			if ("formula".equals(label))
-			{
 				b.formula(Formulas.fromLispTree(arg.child(1)));
-			}
 			else
 				if ("value".equals(label))
-				{
 					b.value(Values.fromLispTree(arg.child(1)));
-				}
 				else
 					if ("type".equals(label))
-					{
 						b.type(SemType.fromLispTree(arg.child(1)));
-					}
 					else
 						if ("canonicalUtterance".equals(label))
-						{
 							b.canonicalUtterance(arg.child(1).value);
-						}
 						else
-						{
 							throw new RuntimeException("Invalid example argument: " + arg);
-						}
 		}
 		return b.createDerivation();
 	}
 
-	public static LispTree rawDerivationToLispTree(Derivation deriv)
+	public static LispTree rawDerivationToLispTree(final Derivation deriv)
 	{
 		return deriv.toLispTree();
 	}
@@ -535,7 +504,7 @@ public class Example
 	{
 		// Create the tempState if it doesn't exist.
 		if (tempState == null)
-			tempState = new HashMap<String, Object>();
+			tempState = new HashMap<>();
 		return tempState;
 	}
 

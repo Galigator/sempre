@@ -19,7 +19,7 @@ public class BinaryDenotation<PL extends PairList> implements Binarylike
 		return toLispTree().toString();
 	}
 
-	public BinaryDenotation(PL pairList)
+	public BinaryDenotation(final PL pairList)
 	{
 		this.pairList = pairList;
 	}
@@ -36,9 +36,9 @@ public class BinaryDenotation<PL extends PairList> implements Binarylike
 		return pairList.toValue();
 	}
 
-	public MappingDenotation<PL> asMapping(String domainVar)
+	public MappingDenotation<PL> asMapping(final String domainVar)
 	{
-		return new MappingDenotation<PL>(domainVar, pairList);
+		return new MappingDenotation<>(domainVar, pairList);
 	}
 
 	@Override
@@ -48,25 +48,25 @@ public class BinaryDenotation<PL extends PairList> implements Binarylike
 	}
 
 	@Override
-	public UnaryDenotation joinOnKey(UnaryDenotation keys)
+	public UnaryDenotation joinOnKey(final UnaryDenotation keys)
 	{
 		return pairList.joinOnKey(keys);
 	}
 
 	@Override
-	public UnaryDenotation joinOnValue(UnaryDenotation values)
+	public UnaryDenotation joinOnValue(final UnaryDenotation values)
 	{
 		return pairList.joinOnValue(values);
 	}
 
 	@Override
-	public BinaryDenotation<ExplicitPairList> explicitlyFilterOnKey(UnaryDenotation keys)
+	public BinaryDenotation<ExplicitPairList> explicitlyFilterOnKey(final UnaryDenotation keys)
 	{
 		return new BinaryDenotation<>(pairList.explicitlyFilterOnKey(keys));
 	}
 
 	@Override
-	public BinaryDenotation<ExplicitPairList> explicitlyFilterOnValue(UnaryDenotation values)
+	public BinaryDenotation<ExplicitPairList> explicitlyFilterOnValue(final UnaryDenotation values)
 	{
 		return new BinaryDenotation<>(pairList.explicitlyFilterOnValue(values));
 	}

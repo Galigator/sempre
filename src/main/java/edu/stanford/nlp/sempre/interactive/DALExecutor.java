@@ -1,5 +1,31 @@
 package edu.stanford.nlp.sempre.interactive;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.ObjectArrays;
+import com.google.common.collect.Sets;
+import edu.stanford.nlp.sempre.ActionFormula;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.ArithmeticFormula;
+import edu.stanford.nlp.sempre.BooleanValue;
+import edu.stanford.nlp.sempre.CallFormula;
+import edu.stanford.nlp.sempre.ContextValue;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.Executor;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Formulas;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NotFormula;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.ReverseFormula;
+import edu.stanford.nlp.sempre.StringValue;
+import edu.stanford.nlp.sempre.SuperlativeFormula;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
+import fig.basic.LogInfo;
+import fig.basic.Option;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -8,14 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.ObjectArrays;
-import com.google.common.collect.Sets;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.LogInfo;
-import fig.basic.Option;
 
 /**
  * Handles action lambda DCS where the world has a flat structure, i.e. a list of allitems all supporting the same operations supports ActionFormula here, and
@@ -52,18 +70,18 @@ public class DALExecutor extends Executor
 	public static Options opts = new Options();
 
 	@Override
-	public Response execute(Formula formula, ContextValue context)
+	public Response execute(Formula formula, final ContextValue context)
 	{
 		// We can do beta reduction here since macro substitution preserves the
 		// denotation (unlike for lambda DCS).
-		World world = World.fromContext(opts.worldType, context);
+		final World world = World.fromContext(opts.worldType, context);
 		formula = Formulas.betaReduction(formula);
 		try
 		{
 			performActions((ActionFormula) formula, world);
 			return new Response(new StringValue(world.toJSON()));
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			// Comment this out if we expect lots of innocuous type checking failures
 			if (opts.printStackTrace)
@@ -76,29 +94,25 @@ public class DALExecutor extends Executor
 	}
 
 	@SuppressWarnings("rawtypes")
-	private void performActions(ActionFormula f, World world)
+	private void performActions(final ActionFormula f, final World world)
 	{
 		if (f.mode == ActionFormula.Mode.primitive)
 		{
 			// use reflection to call primitive stuff
-			Value method = ((ValueFormula) f.args.get(0)).value;
-			String id = ((NameValue) method).id;
+			final Value method = ((ValueFormula) f.args.get(0)).value;
+			final String id = ((NameValue) method).id;
 			// all actions takes a fixed set as argument
 			invoke(id, world, f.args.subList(1, f.args.size()).stream().map(x -> processSetFormula(x, world)).toArray());
 			world.merge();
 		}
 		else
 			if (f.mode == ActionFormula.Mode.sequential)
-			{
-				for (Formula child : f.args)
-				{
+				for (final Formula child : f.args)
 					performActions((ActionFormula) child, world);
-				}
-			}
 			else
 				if (f.mode == ActionFormula.Mode.repeat)
 				{
-					Set<Object> arg = toSet(processSetFormula(f.args.get(0), world));
+					final Set<Object> arg = toSet(processSetFormula(f.args.get(0), world));
 					if (arg.size() > 1)
 						throw new RuntimeException("repeat has to take a single number");
 					int times;
@@ -114,7 +128,7 @@ public class DALExecutor extends Executor
 					if (f.mode == ActionFormula.Mode.conditional)
 					{
 						// using the empty set to represent false
-						boolean cond = toSet(processSetFormula(f.args.get(0), world)).iterator().hasNext();
+						final boolean cond = toSet(processSetFormula(f.args.get(0), world)).iterator().hasNext();
 						if (cond)
 							performActions((ActionFormula) f.args.get(1), world);
 					}
@@ -136,8 +150,8 @@ public class DALExecutor extends Executor
 							if (f.mode == ActionFormula.Mode.forset)
 							{
 								// mostly deprecated
-								Set<Object> selected = toSet(processSetFormula(f.args.get(0), world));
-								Set<Item> prevSelected = world.selected;
+								final Set<Object> selected = toSet(processSetFormula(f.args.get(0), world));
+								final Set<Item> prevSelected = world.selected;
 
 								world.selected = toItemSet(selected);
 								performActions((ActionFormula) f.args.get(1), world);
@@ -148,14 +162,14 @@ public class DALExecutor extends Executor
 							else
 								if (f.mode == ActionFormula.Mode.foreach)
 								{
-									Set<Item> selected = toItemSet(toSet(processSetFormula(f.args.get(0), world)));
-									Set<Item> prevSelected = world.selected;
+									final Set<Item> selected = toItemSet(toSet(processSetFormula(f.args.get(0), world)));
+									final Set<Item> prevSelected = world.selected;
 									// CopyOnWriteArraySet<Object> fixedset =
 									// Sets.newCopyOnWriteArraySet(selected);
-									Iterator<Item> iterator = selected.iterator();
+									final Iterator<Item> iterator = selected.iterator();
 									while (iterator.hasNext())
 									{
-										world.selected = (toItemSet(toSet(iterator.next())));
+										world.selected = toItemSet(toSet(iterator.next()));
 										performActions((ActionFormula) f.args.get(1), world);
 									}
 									world.selected = prevSelected;
@@ -165,7 +179,7 @@ public class DALExecutor extends Executor
 								else
 									if (f.mode == ActionFormula.Mode.isolate)
 									{
-										Set<Item> prevAll = world.allItems;
+										final Set<Item> prevAll = world.allItems;
 										// Set<Item> prevSelected = world.selected;
 										// Set<Item> prevPrevious = world.previous;
 										if (f.args.size() > 1)
@@ -186,14 +200,12 @@ public class DALExecutor extends Executor
 										if (f.mode == ActionFormula.Mode.block || f.mode == ActionFormula.Mode.blockr)
 										{
 											// we should never mutate selected in actions
-											Set<Item> prevSelected = world.selected;
-											Set<Item> prevPrevious = world.previous;
+											final Set<Item> prevSelected = world.selected;
+											final Set<Item> prevPrevious = world.previous;
 											world.previous = world.selected;
 
-											for (Formula child : f.args)
-											{
+											for (final Formula child : f.args)
 												performActions((ActionFormula) child, world);
-											}
 
 											// restore on default blocks
 											if (f.mode == ActionFormula.Mode.block)
@@ -229,7 +241,7 @@ public class DALExecutor extends Executor
 	}
 
 	@SuppressWarnings("unchecked")
-	private Set<Object> toSet(Object maybeSet)
+	private Set<Object> toSet(final Object maybeSet)
 	{
 		if (maybeSet instanceof Set)
 			return (Set<Object>) maybeSet;
@@ -237,15 +249,16 @@ public class DALExecutor extends Executor
 			return Sets.newHashSet(maybeSet);
 	}
 
-	private Object toElement(Set<Object> set)
+	private Object toElement(final Set<Object> set)
 	{
-		if (set.size() == 1) { return set.iterator().next(); }
+		if (set.size() == 1)
+			return set.iterator().next();
 		return set;
 	}
 
-	private Set<Item> toItemSet(Set<Object> maybeItems)
+	private Set<Item> toItemSet(final Set<Object> maybeItems)
 	{
-		Set<Item> itemset = maybeItems.stream().map(i -> (Item) i).collect(Collectors.toSet());
+		final Set<Item> itemset = maybeItems.stream().map(i -> (Item) i).collect(Collectors.toSet());
 		return itemset;
 	}
 
@@ -263,15 +276,15 @@ public class DALExecutor extends Executor
 	// if this gets any more complicated, you should consider the
 	// LambdaDCSExecutor
 	@SuppressWarnings("unchecked")
-	private Object processSetFormula(Formula formula, final World world)
+	private Object processSetFormula(final Formula formula, final World world)
 	{
 		if (formula instanceof ValueFormula<?>)
 		{
-			Value v = ((ValueFormula<?>) formula).value;
+			final Value v = ((ValueFormula<?>) formula).value;
 			// special unary
 			if (v instanceof NameValue)
 			{
-				String id = ((NameValue) v).id;
+				final String id = ((NameValue) v).id;
 				// LogInfo.logs("%s : this %s, all: %s", id,
 				// world.selected().toString(), world.allitems.toString());
 				if (id.equals(SpecialSets.All))
@@ -290,33 +303,31 @@ public class DALExecutor extends Executor
 
 		if (formula instanceof JoinFormula)
 		{
-			JoinFormula joinFormula = (JoinFormula) formula;
+			final JoinFormula joinFormula = (JoinFormula) formula;
 			if (joinFormula.relation instanceof ValueFormula)
 			{
-				String rel = ((ValueFormula<NameValue>) joinFormula.relation).value.id;
-				Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
+				final String rel = ((ValueFormula<NameValue>) joinFormula.relation).value.id;
+				final Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
 				return world.has(rel, unary);
 			}
 			else
 				if (joinFormula.relation instanceof ReverseFormula)
 				{
-					ReverseFormula reverse = (ReverseFormula) joinFormula.relation;
-					String rel = ((ValueFormula<NameValue>) reverse.child).value.id;
-					Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
+					final ReverseFormula reverse = (ReverseFormula) joinFormula.relation;
+					final String rel = ((ValueFormula<NameValue>) reverse.child).value.id;
+					final Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
 					return world.get(rel, toItemSet(unary));
 				}
 				else
-				{
 					throw new RuntimeException("relation can either be a value, or its reverse");
-				}
 		}
 
 		if (formula instanceof MergeFormula)
 		{
-			MergeFormula mergeFormula = (MergeFormula) formula;
-			MergeFormula.Mode mode = mergeFormula.mode;
-			Set<Object> set1 = toSet(processSetFormula(mergeFormula.child1, world));
-			Set<Object> set2 = toSet(processSetFormula(mergeFormula.child2, world));
+			final MergeFormula mergeFormula = (MergeFormula) formula;
+			final MergeFormula.Mode mode = mergeFormula.mode;
+			final Set<Object> set1 = toSet(processSetFormula(mergeFormula.child1, world));
+			final Set<Object> set2 = toSet(processSetFormula(mergeFormula.child2, world));
 
 			if (mode == MergeFormula.Mode.or)
 				return Sets.union(set1, set2);
@@ -327,16 +338,16 @@ public class DALExecutor extends Executor
 
 		if (formula instanceof NotFormula)
 		{
-			NotFormula notFormula = (NotFormula) formula;
-			Set<Item> set1 = toItemSet(toSet(processSetFormula(notFormula.child, world)));
+			final NotFormula notFormula = (NotFormula) formula;
+			final Set<Item> set1 = toItemSet(toSet(processSetFormula(notFormula.child, world)));
 			return Sets.difference(world.allItems, set1);
 		}
 
 		if (formula instanceof AggregateFormula)
 		{
-			AggregateFormula aggregateFormula = (AggregateFormula) formula;
-			Set<Object> set = toSet(processSetFormula(aggregateFormula.child, world));
-			AggregateFormula.Mode mode = aggregateFormula.mode;
+			final AggregateFormula aggregateFormula = (AggregateFormula) formula;
+			final Set<Object> set = toSet(processSetFormula(aggregateFormula.child, world));
+			final AggregateFormula.Mode mode = aggregateFormula.mode;
 			if (mode == AggregateFormula.Mode.count)
 				return Sets.newHashSet(set.size());
 			if (mode == AggregateFormula.Mode.max)
@@ -347,10 +358,10 @@ public class DALExecutor extends Executor
 
 		if (formula instanceof ArithmeticFormula)
 		{
-			ArithmeticFormula arithmeticFormula = (ArithmeticFormula) formula;
-			Integer arg1 = (Integer) processSetFormula(arithmeticFormula.child1, world);
-			Integer arg2 = (Integer) processSetFormula(arithmeticFormula.child2, world);
-			ArithmeticFormula.Mode mode = arithmeticFormula.mode;
+			final ArithmeticFormula arithmeticFormula = (ArithmeticFormula) formula;
+			final Integer arg1 = (Integer) processSetFormula(arithmeticFormula.child1, world);
+			final Integer arg2 = (Integer) processSetFormula(arithmeticFormula.child2, world);
+			final ArithmeticFormula.Mode mode = arithmeticFormula.mode;
 			if (mode == ArithmeticFormula.Mode.add)
 				return arg1 + arg2;
 			if (mode == ArithmeticFormula.Mode.sub)
@@ -363,38 +374,40 @@ public class DALExecutor extends Executor
 
 		if (formula instanceof CallFormula)
 		{
-			CallFormula callFormula = (CallFormula) formula;
+			final CallFormula callFormula = (CallFormula) formula;
 			@SuppressWarnings("rawtypes")
-			Value method = ((ValueFormula) callFormula.func).value;
-			String id = ((NameValue) method).id;
+			final Value method = ((ValueFormula) callFormula.func).value;
+			final String id = ((NameValue) method).id;
 			// all actions takes a fixed set as argument
 			return invoke(id, world, callFormula.args.stream().map(x -> processSetFormula(x, world)).toArray());
 		}
-		if (formula instanceof SuperlativeFormula) { throw new RuntimeException("SuperlativeFormula is not implemented"); }
+		if (formula instanceof SuperlativeFormula)
+			throw new RuntimeException("SuperlativeFormula is not implemented");
 		throw new RuntimeException("ActionExecutor does not handle this formula type: " + formula.getClass());
 	}
 
 	// Example: id = "Math.cos". similar to JavaExecutor's invoke,
 	// but matches arg by building singleton set as needed
-	private Object invoke(String id, World thisObj, Object... args)
+	private Object invoke(final String id, final World thisObj, Object... args)
 	{
 		Method[] methods;
 		Class<?> cls;
 		String methodName;
-		boolean isStatic = thisObj == null;
+		final boolean isStatic = thisObj == null;
 
 		if (isStatic)
 		{ // Static methods
-			int i = id.lastIndexOf('.');
-			if (i == -1) { throw new RuntimeException("Expected <class>.<method>, but got: " + id); }
-			String className = id.substring(0, i);
+			final int i = id.lastIndexOf('.');
+			if (i == -1)
+				throw new RuntimeException("Expected <class>.<method>, but got: " + id);
+			final String className = id.substring(0, i);
 			methodName = id.substring(i + 1);
 
 			try
 			{
 				cls = Class.forName(className);
 			}
-			catch (ClassNotFoundException e)
+			catch (final ClassNotFoundException e)
 			{
 				throw new RuntimeException(e);
 			}
@@ -408,10 +421,10 @@ public class DALExecutor extends Executor
 		}
 
 		// Find a suitable method
-		List<Method> nameMatches = Lists.newArrayList();
+		final List<Method> nameMatches = Lists.newArrayList();
 		Method bestMethod = null;
 		int bestCost = INVALID_TYPE_COST;
-		for (Method m : methods)
+		for (final Method m : methods)
 		{
 			if (!m.getName().equals(methodName))
 				continue;
@@ -436,27 +449,25 @@ public class DALExecutor extends Executor
 		}
 
 		if (bestMethod != null)
-		{
 			try
 			{
 				return bestMethod.invoke(thisObj, args);
 			}
-			catch (InvocationTargetException e)
+			catch (final InvocationTargetException e)
 			{
 				throw new RuntimeException(e.getCause());
 			}
-			catch (IllegalAccessException e)
+			catch (final IllegalAccessException e)
 			{
 				throw new RuntimeException(e);
 			}
-		}
-		List<String> types = Lists.newArrayList();
-		for (Object arg : args)
+		final List<String> types = Lists.newArrayList();
+		for (final Object arg : args)
 			types.add(arg.getClass().toString());
 		throw new RuntimeException("Method " + methodName + " not found in class " + cls + " with arguments " + Arrays.asList(args) + " having types " + types + "; candidates: " + nameMatches);
 	}
 
-	private int typeCastCost(Class[] types, Object[] args)
+	private int typeCastCost(final Class[] types, final Object[] args)
 	{
 		if (types.length != args.length)
 			return INVALID_TYPE_COST;
@@ -468,9 +479,7 @@ public class DALExecutor extends Executor
 			if (types[i] == Set.class)
 				args[i] = toSet(args[i]);
 			if (types[i] != Set.class && args[i].getClass() == Set.class)
-			{
 				args[i] = toElement((Set<Object>) args[i]);
-			}
 
 			cost += typeCastCost(types[i], args[i]);
 			if (cost >= INVALID_TYPE_COST)
@@ -482,13 +491,13 @@ public class DALExecutor extends Executor
 		return cost;
 	}
 
-	private static Object toObject(Value value)
+	private static Object toObject(final Value value)
 	{
 		if (value instanceof NumberValue && opts.convertNumberValues)
 		{
 			// Unfortunately, NumberValues don't make a distinction between ints and
 			// doubles, so this is a hack.
-			double x = ((NumberValue) value).value;
+			final double x = ((NumberValue) value).value;
 			if (x == (int) x)
 				return new Integer((int) x);
 			return new Double(x);
@@ -496,31 +505,25 @@ public class DALExecutor extends Executor
 		else
 			if (value instanceof NameValue && opts.convertNameValues)
 			{
-				String id = ((NameValue) value).id;
+				final String id = ((NameValue) value).id;
 				return id;
 			}
 			else
 				if (value instanceof BooleanValue)
-				{
 					return ((BooleanValue) value).value;
-				}
 				else
 					if (value instanceof StringValue)
-					{
 						return ((StringValue) value).value;
-					}
 					else
 						if (value instanceof ListValue)
 						{
-							List<Object> list = Lists.newArrayList();
-							for (Value elem : ((ListValue) value).values)
+							final List<Object> list = Lists.newArrayList();
+							for (final Value elem : ((ListValue) value).values)
 								list.add(toObject(elem));
 							return list;
 						}
 						else
-						{
 							return value; // Preserve the Value (which can be an object)
-						}
 	}
 
 	// Return whether the object |arg| is compatible with |type|.
@@ -528,7 +531,7 @@ public class DALExecutor extends Executor
 	// 1: don't match, but don't lose anything
 	// 2: don't match, and can lose something
 	// INVALID_TYPE_COST: impossible
-	private int typeCastCost(Class<?> type, Object arg)
+	private int typeCastCost(final Class<?> type, final Object arg)
 	{
 		if (arg == null)
 			return !type.isPrimitive() ? 0 : INVALID_TYPE_COST;

@@ -1,10 +1,11 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
 import com.google.common.collect.Sets;
-
-import fig.basic.*;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Extracts indicator features that count how many times semantic functions and LHSs have been used in the derivation For now we count how many times MergeFn
@@ -31,7 +32,7 @@ public class DerivOpCountFeatureComputer implements FeatureComputer
 	public static Set<String> featureNames = Sets.newHashSet(entityCat, unaryCat, binaryCat, joinFn, mergeFn, bridgeFn);
 
 	@Override
-	public void extractLocal(Example ex, Derivation deriv)
+	public void extractLocal(final Example ex, final Derivation deriv)
 	{
 		if (!FeatureExtractor.containsDomain("opCount"))
 			return;
@@ -39,12 +40,12 @@ public class DerivOpCountFeatureComputer implements FeatureComputer
 			return;
 
 		// extract the operation count
-		Map<String, Integer> opCounter = new HashMap<>();
+		final Map<String, Integer> opCounter = new HashMap<>();
 		extractOperationsRecurse(deriv, opCounter);
 		addFeatures(deriv, opCounter);
 	}
 
-	private void extractOperationsRecurse(Derivation deriv, Map<String, Integer> opCounter)
+	private void extractOperationsRecurse(final Derivation deriv, final Map<String, Integer> opCounter)
 	{
 		// Basic case: no rule
 		if (deriv.children.isEmpty())
@@ -53,13 +54,13 @@ public class DerivOpCountFeatureComputer implements FeatureComputer
 		MapUtils.incr(opCounter, deriv.rule.lhs);
 		MapUtils.incr(opCounter, deriv.rule.sem.getClass().getSimpleName());
 		// recursive call
-		for (Derivation child : deriv.children)
+		for (final Derivation child : deriv.children)
 			extractOperationsRecurse(child, opCounter);
 	}
 
-	private void addFeatures(Derivation deriv, Map<String, Integer> opCounter)
+	private void addFeatures(final Derivation deriv, final Map<String, Integer> opCounter)
 	{
-		for (String feature : (opts.countBasicOnly ? featureNames : opCounter.keySet()))
+		for (final String feature : opts.countBasicOnly ? featureNames : opCounter.keySet())
 			deriv.addFeature("opCount", "count(" + feature + ")=" + MapUtils.get(opCounter, feature, 0));
 	}
 }

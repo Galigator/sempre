@@ -1,7 +1,10 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-import fig.basic.*;
+import fig.basic.LispTree;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Produces predicates (like LexiconFn) but do it from the logical forms in the context (inspects the ContextValue of the example). Takes depth, restrictType,
@@ -25,32 +28,24 @@ public class ContextFn extends SemanticFn
 	// then you would say specify (forbidden (-> type.something type.any))
 	// and all subtypes of (-> type.any type.any) would be permissible
 	// except the forbidden one(s).
-	private Set<SemType> forbiddenTypes = new HashSet<SemType>();
+	private final Set<SemType> forbiddenTypes = new HashSet<>();
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			LispTree arg = tree.child(i);
+			final LispTree arg = tree.child(i);
 			if ("type".equals(arg.child(0).value))
-			{
 				restrictType = SemType.fromLispTree(arg.child(1));
-			}
 			else
 				if ("depth".equals(arg.child(0).value))
-				{
 					depth = Integer.parseInt(arg.child(1).value);
-				}
 				else
 					if ("forbidden".equals(arg.child(0).value))
-					{
 						forbiddenTypes.add(SemType.fromLispTree(arg.child(1)));
-					}
 					else
-					{
 						throw new RuntimeException("Unknown argument: " + arg);
-					}
 		}
 	}
 
@@ -68,25 +63,23 @@ public class ContextFn extends SemanticFn
 
 				if (formulas == null)
 				{
-					formulas = new ArrayList<Formula>();
+					formulas = new ArrayList<>();
 					for (int i = ex.context.exchanges.size() - 1; i >= 0; i--)
 					{
-						ContextValue.Exchange e = ex.context.exchanges.get(i);
+						final ContextValue.Exchange e = ex.context.exchanges.get(i);
 						extractFormulas(e.formula.toLispTree());
 					}
 				}
 				if (index >= formulas.size())
 					return null;
-				Formula formula = formulas.get(index++);
-				for (SemType forbiddenType : forbiddenTypes)
-				{
+				final Formula formula = formulas.get(index++);
+				for (final SemType forbiddenType : forbiddenTypes)
 					if (TypeInference.inferType(formula).meet(forbiddenType).isValid())
 						return null;
-				}
 				return new Derivation.Builder().withCallable(c).formula(formula).type(TypeInference.inferType(formula)).createDerivation();
 			}
 
-			private void addFormula(Formula formula)
+			private void addFormula(final Formula formula)
 			{
 				if (formulas.contains(formula))
 					return;
@@ -94,36 +87,32 @@ public class ContextFn extends SemanticFn
 			}
 
 			// Extract from the logical form.
-			private void extractFormulas(LispTree formula)
+			private void extractFormulas(final LispTree formula)
 			{
 				if (correctDepth(formula, 0) && typeCheck(formula))
-				{
 					addFormula(Formulas.fromLispTree(formula));
-				}
 				if (formula.isLeaf())
 					return;
-				for (LispTree child : formula.children)
+				for (final LispTree child : formula.children)
 					extractFormulas(child);
 			}
 
-			private boolean correctDepth(LispTree formula, int currentLevel)
+			private boolean correctDepth(final LispTree formula, final int currentLevel)
 			{
 				if (formula.isLeaf())
-				{
 					return currentLevel == depth;
-				}
 				else
 				{
 					boolean isCorrect = true;
-					for (LispTree child : formula.children)
+					for (final LispTree child : formula.children)
 						isCorrect = isCorrect && correctDepth(child, currentLevel + 1);
 					return isCorrect;
 				}
 			}
 
-			private boolean typeCheck(LispTree treeFormula)
+			private boolean typeCheck(final LispTree treeFormula)
 			{
-				Formula formula = Formulas.fromLispTree(treeFormula);
+				final Formula formula = Formulas.fromLispTree(treeFormula);
 				SemType type = TypeInference.inferType(formula);
 				type = restrictType.meet(type);
 				return type.isValid();

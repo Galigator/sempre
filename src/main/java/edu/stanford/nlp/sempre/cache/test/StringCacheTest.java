@@ -1,25 +1,23 @@
 package edu.stanford.nlp.sempre.cache.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import edu.stanford.nlp.sempre.cache.FileStringCache;
 import fig.basic.IOUtils;
 import fig.basic.MemUsage;
-
-import org.testng.annotations.Test;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * @author Roy Frostig
  */
 public class StringCacheTest
 {
-	private int numLines(BufferedReader in) throws IOException
+	private int numLines(final BufferedReader in) throws IOException
 	{
 		int n = 0;
 		while (in.readLine() != null)
@@ -45,18 +43,18 @@ public class StringCacheTest
 		final Path fsPath = FileSystems.getDefault().getPath(fs);
 
 		Files.deleteIfExists(fsPath);
-		FileStringCache cache = new FileStringCache();
+		final FileStringCache cache = new FileStringCache();
 		cache.init(fs);
 
 		for (int i = 0; i <= 100; i++)
 		{
-			String key = "key:" + i;
-			String val = "val:" + i;
+			final String key = "key:" + i;
+			final String val = "val:" + i;
 			cache.put(key, val);
 			assertEquals(cache.getNumTouches(), i + 1);
 			if (i > 0 && i % 10 == 0)
 			{
-				int lines = numLines(IOUtils.openInHard(fs));
+				final int lines = numLines(IOUtils.openInHard(fs));
 				System.out.println("!!! " + lines + " = " + i);
 				assertEquals(lines, i + 1);
 			}
@@ -81,7 +79,7 @@ public class StringCacheTest
 		final Path fsPath = FileSystems.getDefault().getPath(fs);
 
 		Files.deleteIfExists(fsPath);
-		FileStringCache cache = new FileStringCache();
+		final FileStringCache cache = new FileStringCache();
 		cache.init(fs);
 
 		// Make ~20 MB of string data

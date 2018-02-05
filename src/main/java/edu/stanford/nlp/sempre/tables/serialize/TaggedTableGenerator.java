@@ -1,17 +1,27 @@
 package edu.stanford.nlp.sempre.tables.serialize;
 
-import java.io.*;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.tables.*;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.LanguageInfo;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.tables.TableCell;
+import edu.stanford.nlp.sempre.tables.TableColumn;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
+import edu.stanford.nlp.sempre.tables.TableTypeSystem;
 import fig.basic.IOUtils;
 import fig.basic.LogInfo;
 import fig.exec.Execution;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Generate TSV files containing CoreNLP tags of the tables. Mandatory fields: - row: row index (-1 is the header row) - col: column index - id: unique ID of
@@ -27,7 +37,7 @@ import fig.exec.Execution;
 public class TaggedTableGenerator extends TSVGenerator implements Runnable
 {
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "TaggedTableGeneratorMain", new TaggedTableGenerator(), Master.getOptionsParser());
 	}
@@ -40,21 +50,21 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 	{
 		// Get the list of all tables
 		analyzer = LanguageAnalyzer.getSingleton();
-		Path baseDir = Paths.get(TableKnowledgeGraph.opts.baseCSVDir);
+		final Path baseDir = Paths.get(TableKnowledgeGraph.opts.baseCSVDir);
 		try
 		{
 			Files.walkFileTree(baseDir, new SimpleFileVisitor<Path>()
 			{
 				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+				public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
 				{
-					Matcher matcher = FILENAME_PATTERN.matcher(file.toString());
+					final Matcher matcher = FILENAME_PATTERN.matcher(file.toString());
 					if (matcher.matches())
 					{
 						LogInfo.begin_track("Processing %s", file);
-						int batchIndex = Integer.parseInt(matcher.group(1)), dataIndex = Integer.parseInt(matcher.group(2));
-						TableKnowledgeGraph table = TableKnowledgeGraph.fromFilename(baseDir.relativize(file).toString());
-						String outDir = Execution.getFile("tagged/" + batchIndex + "-tagged/"), outFilename = new File(outDir, dataIndex + ".tagged").getPath();
+						final int batchIndex = Integer.parseInt(matcher.group(1)), dataIndex = Integer.parseInt(matcher.group(2));
+						final TableKnowledgeGraph table = TableKnowledgeGraph.fromFilename(baseDir.relativize(file).toString());
+						final String outDir = Execution.getFile("tagged/" + batchIndex + "-tagged/"), outFilename = new File(outDir, dataIndex + ".tagged").getPath();
 						new File(outDir).mkdirs();
 						out = IOUtils.openOutHard(outFilename);
 						dumpTable(table);
@@ -65,7 +75,7 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 				}
 			});
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			e.printStackTrace();
 			LogInfo.fails("%s", e);
@@ -75,38 +85,32 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 	private static final String[] FIELDS = new String[] { "row", "col", "id", "content", "tokens", "lemmaTokens", "posTags", "nerTags", "nerValues", "number", "date", "num2", "list", "listId", };
 
 	@Override
-	protected void dump(String... stuff)
+	protected void dump(final String... stuff)
 	{
 		assert stuff.length == FIELDS.length;
 		super.dump(stuff);
 	}
 
-	private void dumpTable(TableKnowledgeGraph table)
+	private void dumpTable(final TableKnowledgeGraph table)
 	{
 		dump(FIELDS);
 		// header row
 		for (int j = 0; j < table.columns.size(); j++)
-		{
 			dumpColumnHeader(j, table.columns.get(j));
-		}
 		// other rows
 		for (int i = 0; i < table.rows.size(); i++)
-		{
 			for (int j = 0; j < table.columns.size(); j++)
-			{
 				dumpCell(i, j, table.rows.get(i).children.get(j));
-			}
-		}
 	}
 
-	private void dumpColumnHeader(int j, TableColumn column)
+	private void dumpColumnHeader(final int j, final TableColumn column)
 	{
-		String[] fields = new String[FIELDS.length];
+		final String[] fields = new String[FIELDS.length];
 		fields[0] = "-1";
 		fields[1] = "" + j;
 		fields[2] = serialize(column.relationNameValue.id);
 		fields[3] = serialize(column.originalString);
-		LanguageInfo info = analyzer.analyze(column.originalString);
+		final LanguageInfo info = analyzer.analyze(column.originalString);
 		fields[4] = serialize(info.tokens);
 		fields[5] = serialize(info.lemmaTokens);
 		fields[6] = serialize(info.posTags);
@@ -116,14 +120,14 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 		dump(fields);
 	}
 
-	private void dumpCell(int i, int j, TableCell cell)
+	private void dumpCell(final int i, final int j, final TableCell cell)
 	{
-		String[] fields = new String[FIELDS.length];
+		final String[] fields = new String[FIELDS.length];
 		fields[0] = "" + i;
 		fields[1] = "" + j;
 		fields[2] = serialize(cell.properties.nameValue.id);
 		fields[3] = serialize(cell.properties.originalString);
-		LanguageInfo info = analyzer.analyze(cell.properties.originalString);
+		final LanguageInfo info = analyzer.analyze(cell.properties.originalString);
 		fields[4] = serialize(info.tokens);
 		fields[5] = serialize(info.lemmaTokens);
 		fields[6] = serialize(info.posTags);
@@ -132,7 +136,7 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 		fields[9] = serialize(new ListValue(new ArrayList<>(cell.properties.metadata.get(TableTypeSystem.CELL_NUMBER_VALUE))));
 		fields[10] = serialize(new ListValue(new ArrayList<>(cell.properties.metadata.get(TableTypeSystem.CELL_DATE_VALUE))));
 		fields[11] = serialize(new ListValue(new ArrayList<>(cell.properties.metadata.get(TableTypeSystem.CELL_NUM2_VALUE))));
-		ListValue parts = new ListValue(new ArrayList<>(cell.properties.metadata.get(TableTypeSystem.CELL_PART_VALUE)));
+		final ListValue parts = new ListValue(new ArrayList<>(cell.properties.metadata.get(TableTypeSystem.CELL_PART_VALUE)));
 		fields[12] = serialize(parts);
 		fields[13] = serializeId(parts);
 		dump(fields);

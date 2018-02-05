@@ -1,8 +1,14 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
-import fig.basic.*;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * Given the maximum formula size in a floating grammar, compute the maximum size that each floating grammar category can have. For example, if the grammar
@@ -24,12 +30,12 @@ public class CatSizeBound
 	private final int maxFormulaSize;
 	private final Map<String, Integer> bound = new HashMap<>();
 
-	public CatSizeBound(int maxFormulaSize, Grammar grammar)
+	public CatSizeBound(final int maxFormulaSize, final Grammar grammar)
 	{
 		this(maxFormulaSize, grammar.getRules());
 	}
 
-	public CatSizeBound(int maxFormulaSize, List<Rule> rules)
+	public CatSizeBound(final int maxFormulaSize, final List<Rule> rules)
 	{
 		this.maxFormulaSize = maxFormulaSize;
 		if (!FloatingParser.opts.useSizeInsteadOfDepth)
@@ -38,27 +44,25 @@ public class CatSizeBound
 			return;
 		}
 		// Construct graph
-		Map<String, Set<String>> graph = new HashMap<>();
-		for (Rule rule : rules)
+		final Map<String, Set<String>> graph = new HashMap<>();
+		for (final Rule rule : rules)
 		{
 			if (!Rule.isCat(rule.lhs))
 				throw new RuntimeException("Non-cat found in LHS of rule " + rule);
-			for (String rhsCat : rule.rhs)
-			{
+			for (final String rhsCat : rule.rhs)
 				if (Rule.isCat(rhsCat))
 					MapUtils.addToSet(graph, rule.lhs, rhsCat);
-			}
 		}
 		// Breadth first search
 		bound.put(Rule.rootCat, maxFormulaSize);
-		Queue<String> queue = new ArrayDeque<>();
+		final Queue<String> queue = new ArrayDeque<>();
 		queue.add(Rule.rootCat);
 		while (!queue.isEmpty())
 		{
-			String cat = queue.remove();
+			final String cat = queue.remove();
 			if (!graph.containsKey(cat))
 				continue;
-			for (String rhsCat : graph.get(cat))
+			for (final String rhsCat : graph.get(cat))
 			{
 				if (bound.containsKey(rhsCat))
 					continue;
@@ -69,13 +73,13 @@ public class CatSizeBound
 		if (opts.verbose >= 1)
 		{
 			LogInfo.begin_track("CatSizeBound: distances");
-			for (Map.Entry<String, Integer> entry : bound.entrySet())
+			for (final Map.Entry<String, Integer> entry : bound.entrySet())
 				LogInfo.logs("%25s : %2d", entry.getKey(), entry.getValue());
 			LogInfo.end_track();
 		}
 	}
 
-	public int getBound(String cat)
+	public int getBound(final String cat)
 	{
 		return bound.getOrDefault(cat, maxFormulaSize);
 	}

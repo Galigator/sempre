@@ -9,12 +9,10 @@ public final class FormatConverter
 	public static final String FULL_FB_PREFIX = "http://rdf.freebase.com/ns/";
 	public static final String SHORT_FB_PREFIX = "fb:";
 
-	public static String fromDotToSlash(String dotString)
+	public static String fromDotToSlash(final String dotString)
 	{
 		if (dotString.startsWith("http"))
-		{
 			return dotString.substring(dotString.lastIndexOf('/')).replace('.', '/');
-		}
 		else
 		{
 			if (dotString.startsWith("/"))
@@ -23,12 +21,12 @@ public final class FormatConverter
 		}
 	}
 
-	public static String toShortPrefix(String str)
+	public static String toShortPrefix(final String str)
 	{
 		return str.replace(FULL_FB_PREFIX, SHORT_FB_PREFIX);
 	}
 
-	public static String fromNoPrefixMidToDot(String mid)
+	public static String fromNoPrefixMidToDot(final String mid)
 	{
 
 		if (mid.startsWith("fb:m") || mid.startsWith("/m/"))
@@ -38,18 +36,14 @@ public final class FormatConverter
 	}
 
 	/** converts from slash notation to dot notation */
-	public static String fromSlashToDot(String slashString, boolean strict)
+	public static String fromSlashToDot(final String slashString, final boolean strict)
 	{
 
 		if (!(slashString.charAt(0) == '/'))
-		{
 			if (strict)
-			{
 				throw new IllegalArgumentException("Not a legal slash string: " + slashString);
-			}
 			else
 				return slashString;
-		}
 
 		return SHORT_FB_PREFIX + slashString.substring(1).replace('/', '.');
 	}
@@ -69,31 +63,25 @@ public final class FormatConverter
 		}
 		// strip brackets
 		str = str.substring(1, str.length() - 1);
-		String[] tokens = str.split(",");
+		final String[] tokens = str.split(",");
 		if (tokens.length == 1)
-		{
 			return reversed ? "!" + fromSlashToDot(tokens[0].trim(), false) : fromSlashToDot(tokens[0].trim(), false);
-		}
 		else
 		{
-			String property1 = fromSlashToDot(tokens[0].trim(), false);
-			String property2 = fromSlashToDot(tokens[1].trim(), false);
+			final String property1 = fromSlashToDot(tokens[0].trim(), false);
+			final String property2 = fromSlashToDot(tokens[1].trim(), false);
 			return propertiesToCompositeLispTree(property1, property2, reversed);
 		}
 	}
 
-	public static String propertiesToCompositeLispTree(String property1, String property2, boolean reversed)
+	public static String propertiesToCompositeLispTree(final String property1, final String property2, final boolean reversed)
 	{
 
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		if (reversed)
-		{
 			sb.append("(lambda x (!" + property2 + " (!" + property1 + " (var x))))");
-		}
 		else
-		{
 			sb.append("(lambda x (" + property1 + " (" + property2 + " (var x))))");
-		}
 		return sb.toString();
 	}
 

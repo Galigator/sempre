@@ -1,12 +1,17 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
 import edu.stanford.nlp.sempre.AggregateFormula.Mode;
+import edu.stanford.nlp.sempre.PairListValue;
+import edu.stanford.nlp.sempre.Value;
 import fig.basic.LispTree;
 import fig.basic.MapUtils;
 import fig.basic.Pair;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ExplicitPairList implements PairList
 {
@@ -27,54 +32,52 @@ public class ExplicitPairList implements PairList
 		reverseMapping = Collections.emptyMap();
 	}
 
-	public ExplicitPairList(Value key, Value value)
+	public ExplicitPairList(final Value key, final Value value)
 	{
 		pairs = Collections.singletonList(new Pair<>(value, key));
 		mapping = Collections.singletonMap(key, new ExplicitUnaryDenotation(value));
 		reverseMapping = Collections.singletonMap(value, new ExplicitUnaryDenotation(key));
 	}
 
-	public ExplicitPairList(Pair<Value, Value> pair)
+	public ExplicitPairList(final Pair<Value, Value> pair)
 	{
 		pairs = Collections.singletonList(pair);
 		mapping = Collections.singletonMap(pair.getSecond(), new ExplicitUnaryDenotation(pair.getFirst()));
 		reverseMapping = Collections.singletonMap(pair.getFirst(), new ExplicitUnaryDenotation(pair.getSecond()));
 	}
 
-	public ExplicitPairList(List<Pair<Value, Value>> pairs)
+	public ExplicitPairList(final List<Pair<Value, Value>> pairs)
 	{
 		this.pairs = pairs;
-		Map<Value, List<Value>> mappingBuilder = new HashMap<>(), reverseMappingBuilder = new HashMap<>();
-		for (Pair<Value, Value> pair : pairs)
+		final Map<Value, List<Value>> mappingBuilder = new HashMap<>(), reverseMappingBuilder = new HashMap<>();
+		for (final Pair<Value, Value> pair : pairs)
 		{
 			MapUtils.addToList(mappingBuilder, pair.getSecond(), pair.getFirst());
 			MapUtils.addToList(reverseMappingBuilder, pair.getFirst(), pair.getSecond());
 		}
 		mapping = new HashMap<>();
-		for (Map.Entry<Value, List<Value>> entry : mappingBuilder.entrySet())
+		for (final Map.Entry<Value, List<Value>> entry : mappingBuilder.entrySet())
 			mapping.put(entry.getKey(), new ExplicitUnaryDenotation(entry.getValue()));
 		reverseMapping = new HashMap<>();
-		for (Map.Entry<Value, List<Value>> entry : reverseMappingBuilder.entrySet())
+		for (final Map.Entry<Value, List<Value>> entry : reverseMappingBuilder.entrySet())
 			reverseMapping.put(entry.getKey(), new ExplicitUnaryDenotation(entry.getValue()));
 	}
 
-	public <T extends Collection<Value>> ExplicitPairList(Map<Value, T> keyToValues)
+	public <T extends Collection<Value>> ExplicitPairList(final Map<Value, T> keyToValues)
 	{
 		pairs = new ArrayList<>();
-		Map<Value, List<Value>> reverseMappingBuilder = new HashMap<>();
-		for (Map.Entry<Value, T> entry : keyToValues.entrySet())
-		{
-			for (Value value : entry.getValue())
+		final Map<Value, List<Value>> reverseMappingBuilder = new HashMap<>();
+		for (final Map.Entry<Value, T> entry : keyToValues.entrySet())
+			for (final Value value : entry.getValue())
 			{
 				pairs.add(new Pair<>(value, entry.getKey()));
 				MapUtils.addToList(reverseMappingBuilder, value, entry.getKey());
 			}
-		}
 		mapping = new HashMap<>();
-		for (Map.Entry<Value, T> entry : keyToValues.entrySet())
+		for (final Map.Entry<Value, T> entry : keyToValues.entrySet())
 			mapping.put(entry.getKey(), new ExplicitUnaryDenotation(entry.getValue()));
 		reverseMapping = new HashMap<>();
-		for (Map.Entry<Value, List<Value>> entry : reverseMappingBuilder.entrySet())
+		for (final Map.Entry<Value, List<Value>> entry : reverseMappingBuilder.entrySet())
 			reverseMapping.put(entry.getKey(), new ExplicitUnaryDenotation(entry.getValue()));
 	}
 
@@ -93,10 +96,10 @@ public class ExplicitPairList implements PairList
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
-		for (Pair<Value, Value> pair : pairs)
+		final LispTree tree = LispTree.proto.newList();
+		for (final Pair<Value, Value> pair : pairs)
 		{
-			Value first = pair.getFirst(), second = pair.getSecond();
+			final Value first = pair.getFirst(), second = pair.getSecond();
 			tree.addChild(LispTree.proto.newList(first == null ? NULL_LEAF : first.toLispTree(), second == null ? NULL_LEAF : second.toLispTree()));
 		}
 		return tree;
@@ -128,7 +131,7 @@ public class ExplicitPairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation get(Value key)
+	public UnaryDenotation get(final Value key)
 	{
 		UnaryDenotation values = mapping.get(key);
 		if (values == null)
@@ -137,9 +140,9 @@ public class ExplicitPairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation inverseGet(Value value)
+	public UnaryDenotation inverseGet(final Value value)
 	{
-		UnaryDenotation keys = reverseMapping.get(value);
+		final UnaryDenotation keys = reverseMapping.get(value);
 		return keys == null ? UnaryDenotation.EMPTY : keys;
 	}
 
@@ -148,20 +151,18 @@ public class ExplicitPairList implements PairList
 	// ============================================================
 
 	@Override
-	public PairList aggregate(Mode mode)
+	public PairList aggregate(final Mode mode)
 	{
-		Map<Value, UnaryDenotation> aggregated = new HashMap<>();
-		for (Map.Entry<Value, UnaryDenotation> entry : mapping.entrySet())
-		{
+		final Map<Value, UnaryDenotation> aggregated = new HashMap<>();
+		for (final Map.Entry<Value, UnaryDenotation> entry : mapping.entrySet())
 			aggregated.put(entry.getKey(), entry.getValue().aggregate(mode));
-		}
 		if (mode == Mode.count && !aggregated.containsKey(null))
 			aggregated.put(null, UnaryDenotation.ZERO);
 		return new ExplicitPairList(aggregated);
 	}
 
 	@Override
-	public PairList filter(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public PairList filter(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		return explicitlyFilter(upperBound, domainUpperBound);
 	}
@@ -169,70 +170,58 @@ public class ExplicitPairList implements PairList
 	@Override
 	public ExplicitPairList reverse()
 	{
-		List<Pair<Value, Value>> reversed = new ArrayList<>();
-		for (Pair<Value, Value> pair : pairs)
-		{
+		final List<Pair<Value, Value>> reversed = new ArrayList<>();
+		for (final Pair<Value, Value> pair : pairs)
 			reversed.add(new Pair<>(pair.getSecond(), pair.getFirst()));
-		}
 		return new ExplicitPairList(reversed);
 	}
 
 	@Override
-	public UnaryDenotation joinOnKey(UnaryDenotation keys)
+	public UnaryDenotation joinOnKey(final UnaryDenotation keys)
 	{
-		List<Value> values = new ArrayList<>();
-		for (Map.Entry<Value, UnaryDenotation> entry : mapping.entrySet())
-		{
+		final List<Value> values = new ArrayList<>();
+		for (final Map.Entry<Value, UnaryDenotation> entry : mapping.entrySet())
 			if (keys.contains(entry.getKey()))
 				values.addAll(entry.getValue());
-		}
 		return new ExplicitUnaryDenotation(values);
 	}
 
 	@Override
-	public UnaryDenotation joinOnValue(UnaryDenotation values)
+	public UnaryDenotation joinOnValue(final UnaryDenotation values)
 	{
-		List<Value> keys = new ArrayList<>();
-		for (Map.Entry<Value, UnaryDenotation> entry : reverseMapping.entrySet())
-		{
+		final List<Value> keys = new ArrayList<>();
+		for (final Map.Entry<Value, UnaryDenotation> entry : reverseMapping.entrySet())
 			if (values.contains(entry.getKey()))
 				keys.addAll(entry.getValue());
-		}
 		return new ExplicitUnaryDenotation(keys);
 	}
 
 	@Override
-	public ExplicitPairList explicitlyFilterOnKey(UnaryDenotation keys)
+	public ExplicitPairList explicitlyFilterOnKey(final UnaryDenotation keys)
 	{
-		List<Pair<Value, Value>> filtered = new ArrayList<>();
-		for (Pair<Value, Value> pair : pairs)
-		{
+		final List<Pair<Value, Value>> filtered = new ArrayList<>();
+		for (final Pair<Value, Value> pair : pairs)
 			if (keys.contains(pair.getSecond()))
 				filtered.add(pair);
-		}
 		return new ExplicitPairList(filtered);
 	}
 
 	@Override
-	public ExplicitPairList explicitlyFilterOnValue(UnaryDenotation values)
+	public ExplicitPairList explicitlyFilterOnValue(final UnaryDenotation values)
 	{
-		List<Pair<Value, Value>> filtered = new ArrayList<>();
-		for (Pair<Value, Value> pair : pairs)
-		{
+		final List<Pair<Value, Value>> filtered = new ArrayList<>();
+		for (final Pair<Value, Value> pair : pairs)
 			if (values.contains(pair.getFirst()))
 				filtered.add(pair);
-		}
 		return new ExplicitPairList(filtered);
 	}
 
-	public ExplicitPairList explicitlyFilter(UnaryDenotation values, UnaryDenotation keys)
+	public ExplicitPairList explicitlyFilter(final UnaryDenotation values, final UnaryDenotation keys)
 	{
-		List<Pair<Value, Value>> filtered = new ArrayList<>();
-		for (Pair<Value, Value> pair : pairs)
-		{
+		final List<Pair<Value, Value>> filtered = new ArrayList<>();
+		for (final Pair<Value, Value> pair : pairs)
 			if (values.contains(pair.getFirst()) && keys.contains(pair.getSecond()))
 				filtered.add(pair);
-		}
 		return new ExplicitPairList(filtered);
 	}
 

@@ -1,6 +1,9 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class Subset
 {
@@ -8,7 +11,7 @@ public class Subset
 	public final List<Integer> indices;
 	public final double score;
 
-	public Subset(String id, List<Integer> indices, double score)
+	public Subset(final String id, final List<Integer> indices, final double score)
 	{
 		this.id = id;
 		this.indices = indices;
@@ -16,32 +19,32 @@ public class Subset
 	}
 
 	// Subset {0, 1, 2, ..., k}
-	public Subset(String id, int k, double score)
+	public Subset(final String id, final int k, final double score)
 	{
 		this.id = id;
-		this.indices = new ArrayList<>(k + 1);
+		indices = new ArrayList<>(k + 1);
 		for (int i = 0; i <= k; i++)
-			this.indices.add(i);
+			indices.add(i);
 		this.score = score;
 	}
 
 	// NULL subset with very negative score
-	public Subset(String id)
+	public Subset(final String id)
 	{
 		this.id = id;
-		this.indices = new ArrayList<>();
-		this.score = Double.NEGATIVE_INFINITY;
+		indices = new ArrayList<>();
+		score = Double.NEGATIVE_INFINITY;
 	}
 
 	// Format: ID <tab> score <tab> space-separated tables
-	public static Subset fromString(String line)
+	public static Subset fromString(final String line)
 	{
-		String[] tokens = line.trim().split("\t");
+		final String[] tokens = line.trim().split("\t");
 		if (tokens.length != 3)
 			throw new RuntimeException("Expected 3 fields; got " + tokens.length);
-		String[] indicesString = tokens[2].split(" ");
-		List<Integer> indices = new ArrayList<>(indicesString.length);
-		for (String x : indicesString)
+		final String[] indicesString = tokens[2].split(" ");
+		final List<Integer> indices = new ArrayList<>(indicesString.length);
+		for (final String x : indicesString)
 			indices.add(Integer.parseInt(x));
 		return new Subset(tokens[0], indices, Double.parseDouble(tokens[1]));
 	}
@@ -49,17 +52,15 @@ public class Subset
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder().append(id).append("\t").append(score).append("\t");
-		for (int graphIndex : indices)
-		{
+		final StringBuilder sb = new StringBuilder().append(id).append("\t").append(score).append("\t");
+		for (final int graphIndex : indices)
 			sb.append(graphIndex).append(" ");
-		}
 		return sb.toString().trim();
 	}
 
-	public static boolean areDisjoint(Collection<Integer> x1, Collection<Integer> x2)
+	public static boolean areDisjoint(final Collection<Integer> x1, final Collection<Integer> x2)
 	{
-		for (int x : x1)
+		for (final int x : x1)
 			if (x2.contains(x))
 				return false;
 		return true;
@@ -73,7 +74,7 @@ public class Subset
 
 		List<Integer> next = new ArrayList<>(), last = new ArrayList<>();
 
-		public SubsetSizeKIterator(int numAlteredTables, int numRetainedTables)
+		public SubsetSizeKIterator(final int numAlteredTables, final int numRetainedTables)
 		{
 			for (int i = 1; i <= numRetainedTables; i++)
 			{
@@ -91,15 +92,13 @@ public class Subset
 		@Override
 		public List<Integer> next()
 		{
-			List<Integer> newNext = new ArrayList<>(), current = next;
+			final List<Integer> newNext = new ArrayList<>(), current = next;
 			int changeIndex, changeValue;
 			for (changeIndex = next.size() - 1; changeIndex >= 0; changeIndex--)
 				if (next.get(changeIndex) != last.get(changeIndex))
 					break;
 			if (changeIndex < 0)
-			{
 				next = null;
-			}
 			else
 			{
 				changeValue = next.get(changeIndex) + 1;
@@ -123,12 +122,12 @@ public class Subset
 		int numAlteredTables, numRetainedTables, currentK;
 		SubsetSizeKIterator sizeKIterator;
 
-		public SubsetSizeAtMostKIterator(int numAlteredTables, int numRetainedTables)
+		public SubsetSizeAtMostKIterator(final int numAlteredTables, final int numRetainedTables)
 		{
 			this.numAlteredTables = numAlteredTables;
 			this.numRetainedTables = numRetainedTables;
-			this.currentK = 1;
-			this.sizeKIterator = new SubsetSizeKIterator(numAlteredTables, currentK);
+			currentK = 1;
+			sizeKIterator = new SubsetSizeKIterator(numAlteredTables, currentK);
 		}
 
 		@Override

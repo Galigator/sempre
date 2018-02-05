@@ -10,7 +10,7 @@ public class FuncSemType extends SemType
 	public final SemType argType;
 	public final SemType retType;
 
-	public FuncSemType(SemType argType, SemType retType)
+	public FuncSemType(final SemType argType, final SemType retType)
 	{
 		if (argType == null)
 			throw new RuntimeException("Null argType");
@@ -20,7 +20,7 @@ public class FuncSemType extends SemType
 		this.retType = retType;
 	}
 
-	public FuncSemType(String argType, String retType)
+	public FuncSemType(final String argType, final String retType)
 	{
 		this(new AtomicSemType(argType), new AtomicSemType(retType));
 	}
@@ -30,24 +30,24 @@ public class FuncSemType extends SemType
 		return true;
 	}
 
-	public SemType meet(SemType that)
+	public SemType meet(final SemType that)
 	{
 		if (that instanceof TopSemType)
 			return this;
 		if (!(that instanceof FuncSemType))
 			return SemType.bottomType;
 		// Perform the meet elementwise (remember, treat this as a pair type).
-		FuncSemType thatFunc = (FuncSemType) that;
-		SemType newArgType = argType.meet(thatFunc.argType);
+		final FuncSemType thatFunc = (FuncSemType) that;
+		final SemType newArgType = argType.meet(thatFunc.argType);
 		if (!newArgType.isValid())
 			return SemType.bottomType;
-		SemType newRetType = retType.meet(thatFunc.retType);
+		final SemType newRetType = retType.meet(thatFunc.retType);
 		if (!newRetType.isValid())
 			return SemType.bottomType;
 		return new FuncSemType(newArgType, newRetType);
 	}
 
-	public SemType apply(SemType that)
+	public SemType apply(final SemType that)
 	{
 		if (argType.meet(that).isValid())
 			return retType;
@@ -61,7 +61,7 @@ public class FuncSemType extends SemType
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("->");
 		tree.addChild(argType.toLispTree());
 		tree.addChild(retType.toLispTree());

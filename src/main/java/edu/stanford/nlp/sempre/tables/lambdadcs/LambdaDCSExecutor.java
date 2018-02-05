@@ -302,7 +302,7 @@ class LambdaDCSCoreLogic
 						}
 						catch (final LambdaDCSException e2)
 						{
-							final Type errorType = (e1.type == e2.type) ? e1.type : Type.unknown;
+							final Type errorType = e1.type == e2.type ? e1.type : Type.unknown;
 							throw new LambdaDCSException(errorType, "Cannot join | %s | %s", e1, e2);
 						}
 					}
@@ -331,7 +331,7 @@ class LambdaDCSCoreLogic
 							}
 							catch (final LambdaDCSException e2)
 							{
-								final Type errorType = (e1.type == e2.type) ? e1.type : Type.unknown;
+								final Type errorType = e1.type == e2.type ? e1.type : Type.unknown;
 								throw new LambdaDCSException(errorType, "Cannot merge | %s | %s", e1, e2);
 							}
 						}

@@ -1,10 +1,10 @@
 package edu.stanford.nlp.sempre.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import edu.stanford.nlp.sempre.Formula;
 import edu.stanford.nlp.sempre.Formulas;
 import org.testng.annotations.Test;
-
-import static org.testng.AssertJUnit.assertEquals;
 
 /**
  * Test Formulas.
@@ -13,7 +13,7 @@ import static org.testng.AssertJUnit.assertEquals;
  */
 public class FormulaTest
 {
-	private static Formula F(String s)
+	private static Formula F(final String s)
 	{
 		return Formula.fromString(s);
 	}

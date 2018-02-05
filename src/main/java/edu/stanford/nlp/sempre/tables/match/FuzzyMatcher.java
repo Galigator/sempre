@@ -1,11 +1,26 @@
 package edu.stanford.nlp.sempre.tables.match;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.Formula;
 import edu.stanford.nlp.sempre.FuzzyMatchFn.FuzzyMatchFnMode;
-import edu.stanford.nlp.sempre.tables.*;
-import fig.basic.*;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.LambdaFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.SempreUtils;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueFormula;
+import edu.stanford.nlp.sempre.VariableFormula;
+import edu.stanford.nlp.sempre.tables.StringNormalizationUtils;
+import edu.stanford.nlp.sempre.tables.TableCell;
+import edu.stanford.nlp.sempre.tables.TableCellProperties;
+import edu.stanford.nlp.sempre.tables.TableColumn;
+import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
+import edu.stanford.nlp.sempre.tables.TableTypeSystem;
+import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Perform fuzzy matching on the table knowledge graph.
@@ -28,19 +43,19 @@ public abstract class FuzzyMatcher
 	/**
 	 * Get a fuzzy matcher of the default class.
 	 */
-	public static FuzzyMatcher getFuzzyMatcher(TableKnowledgeGraph graph)
+	public static FuzzyMatcher getFuzzyMatcher(final TableKnowledgeGraph graph)
 	{
 		return getFuzzyMatcher(opts.fuzzyMatcher, graph);
 	}
 
-	public static FuzzyMatcher getFuzzyMatcher(String className, TableKnowledgeGraph graph)
+	public static FuzzyMatcher getFuzzyMatcher(final String className, final TableKnowledgeGraph graph)
 	{
 		try
 		{
-			Class<?> classObject = Class.forName(SempreUtils.resolveClassName(className));
+			final Class<?> classObject = Class.forName(SempreUtils.resolveClassName(className));
 			return (FuzzyMatcher) classObject.getConstructor(TableKnowledgeGraph.class).newInstance(graph);
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			e.printStackTrace();
 			e.getCause().printStackTrace();
@@ -54,7 +69,7 @@ public abstract class FuzzyMatcher
 
 	public final TableKnowledgeGraph graph;
 
-	public FuzzyMatcher(TableKnowledgeGraph graph)
+	public FuzzyMatcher(final TableKnowledgeGraph graph)
 	{
 		this.graph = graph;
 	}
@@ -66,9 +81,9 @@ public abstract class FuzzyMatcher
 	/**
 	 * Check if the first or the last token is a punctuation (no alphanumeric character).
 	 */
-	public boolean checkPunctuationBoundaries(String term)
+	public boolean checkPunctuationBoundaries(final String term)
 	{
-		String[] tokens = term.trim().split("\\s+");
+		final String[] tokens = term.trim().split("\\s+");
 		if (tokens.length == 0)
 			return false;
 		if (StringNormalizationUtils.collapseNormalize(tokens[0]).isEmpty())
@@ -84,10 +99,10 @@ public abstract class FuzzyMatcher
 	 * If needed, compute the fuzzy matched predicates for all substrings of sentence and cache the result. Then, return all formulas of the specified mode that
 	 * match the phrase formed by sentence[startIndex:endIndex].
 	 */
-	public Collection<Formula> getFuzzyMatchedFormulas(List<String> sentence, int startIndex, int endIndex, FuzzyMatchFnMode mode)
+	public Collection<Formula> getFuzzyMatchedFormulas(final List<String> sentence, final int startIndex, final int endIndex, final FuzzyMatchFnMode mode)
 	{
-		FuzzyMatchCache cache = cacheSentence(sentence, mode);
-		Collection<Formula> formulas = cache.get(startIndex, endIndex);
+		final FuzzyMatchCache cache = cacheSentence(sentence, mode);
+		final Collection<Formula> formulas = cache.get(startIndex, endIndex);
 		return formulas == null ? Collections.emptySet() : formulas;
 	}
 
@@ -96,20 +111,20 @@ public abstract class FuzzyMatcher
 	/**
 	 * Return all formulas of the specified mode that match the phrase. Do not use any cached results.
 	 */
-	public Collection<Formula> getFuzzyMatchedFormulas(String term, FuzzyMatchFnMode mode)
+	public Collection<Formula> getFuzzyMatchedFormulas(final String term, final FuzzyMatchFnMode mode)
 	{
 		if (opts.ignorePunctuationBoundedQueries && !checkPunctuationBoundaries(term))
 			return Collections.emptySet();
-		Collection<Formula> formulas = getFuzzyMatchedFormulasInternal(term, mode);
+		final Collection<Formula> formulas = getFuzzyMatchedFormulasInternal(term, mode);
 		return formulas == null ? Collections.emptySet() : formulas;
 	}
 
 	abstract protected Collection<Formula> getFuzzyMatchedFormulasInternal(String term, FuzzyMatchFnMode mode);
 
 	/** Return all formulas of the specified mode. */
-	public Collection<Formula> getAllFormulas(FuzzyMatchFnMode mode)
+	public Collection<Formula> getAllFormulas(final FuzzyMatchFnMode mode)
 	{
-		Collection<Formula> formulas = getAllFormulasInternal(mode);
+		final Collection<Formula> formulas = getAllFormulasInternal(mode);
 		return formulas == null ? Collections.emptySet() : formulas;
 	}
 
@@ -124,43 +139,41 @@ public abstract class FuzzyMatcher
 	 *  BINARY --> fb:row.row.___
 	 */
 
-	static Formula getEntityFormula(NameValue nameValue)
+	static Formula getEntityFormula(final NameValue nameValue)
 	{
 		return new ValueFormula<>(nameValue);
 	}
 
-	static Formula getEntityFormula(TableCell cell)
+	static Formula getEntityFormula(final TableCell cell)
 	{
 		return new ValueFormula<>(cell.properties.nameValue);
 	}
 
-	static Formula getEntityFormula(TableCellProperties properties)
+	static Formula getEntityFormula(final TableCellProperties properties)
 	{
 		return new ValueFormula<>(properties.nameValue);
 	}
 
-	static Formula getUnaryFormula(TableColumn column)
+	static Formula getUnaryFormula(final TableColumn column)
 	{
 		return new JoinFormula(new ValueFormula<>(CanonicalNames.reverseProperty(column.relationNameValue)), new JoinFormula(new ValueFormula<>(new NameValue(CanonicalNames.TYPE)), new ValueFormula<>(new NameValue(TableTypeSystem.ROW_TYPE))));
 	}
 
-	static Formula getBinaryFormula(TableColumn column)
+	static Formula getBinaryFormula(final TableColumn column)
 	{
 		return new ValueFormula<>(column.relationNameValue);
 	}
 
-	static Formula getConsecutiveBinaryFormula(TableColumn column)
+	static Formula getConsecutiveBinaryFormula(final TableColumn column)
 	{
 		return new ValueFormula<>(column.relationConsecutiveNameValue);
 	}
 
-	static List<Formula> getNormalizedBinaryFormulas(TableColumn column)
+	static List<Formula> getNormalizedBinaryFormulas(final TableColumn column)
 	{
-		List<Formula> formulas = new ArrayList<>();
-		for (Value normalization : column.getAllNormalization())
-		{
+		final List<Formula> formulas = new ArrayList<>();
+		for (final Value normalization : column.getAllNormalization())
 			formulas.add(new LambdaFormula("x", new JoinFormula(new ValueFormula<>(column.relationNameValue), new JoinFormula(new ValueFormula<>(normalization), new VariableFormula("x")))));
-		}
 		return formulas;
 	}
 }

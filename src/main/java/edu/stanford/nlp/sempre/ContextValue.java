@@ -3,7 +3,8 @@ package edu.stanford.nlp.sempre;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import fig.basic.LispTree;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents the discourse context (time, place, history of exchanges). This is part of an Example and used by ContextFn.
@@ -20,14 +21,14 @@ public class ContextValue extends Value
 		public final Formula formula;
 		public final Value value;
 
-		public Exchange(String utterance, Formula formula, Value value)
+		public Exchange(final String utterance, final Formula formula, final Value value)
 		{
 			this.utterance = utterance;
 			this.formula = formula;
 			this.value = value;
 		}
 
-		public Exchange(LispTree tree)
+		public Exchange(final LispTree tree)
 		{
 			utterance = tree.child(1).value;
 			formula = Formulas.fromLispTree(tree.child(2));
@@ -36,7 +37,7 @@ public class ContextValue extends Value
 
 		public LispTree toLispTree()
 		{
-			LispTree tree = LispTree.proto.newList();
+			final LispTree tree = LispTree.proto.newList();
 			tree.addChild("exchange");
 			tree.addChild(utterance);
 			tree.addChild(formula.toLispTree());
@@ -56,22 +57,22 @@ public class ContextValue extends Value
 	public final List<Exchange> exchanges; // List of recent exchanges with the user
 	public final KnowledgeGraph graph; // Mini-knowledge graph that captures the context
 
-	public ContextValue withDate(DateValue newDate)
+	public ContextValue withDate(final DateValue newDate)
 	{
 		return new ContextValue(user, newDate, exchanges, graph);
 	}
 
-	public ContextValue withNewExchange(List<Exchange> newExchanges)
+	public ContextValue withNewExchange(final List<Exchange> newExchanges)
 	{
 		return new ContextValue(user, date, newExchanges, graph);
 	}
 
-	public ContextValue withGraph(KnowledgeGraph newGraph)
+	public ContextValue withGraph(final KnowledgeGraph newGraph)
 	{
 		return new ContextValue(user, date, exchanges, newGraph);
 	}
 
-	public ContextValue(String user, DateValue date, List<Exchange> exchanges, KnowledgeGraph graph)
+	public ContextValue(final String user, final DateValue date, final List<Exchange> exchanges, final KnowledgeGraph graph)
 	{
 		this.user = user;
 		this.date = date;
@@ -79,12 +80,12 @@ public class ContextValue extends Value
 		this.graph = graph;
 	}
 
-	public ContextValue(String user, DateValue date, List<Exchange> exchanges)
+	public ContextValue(final String user, final DateValue date, final List<Exchange> exchanges)
 	{
 		this(user, date, exchanges, null);
 	}
 
-	public ContextValue(KnowledgeGraph graph)
+	public ContextValue(final KnowledgeGraph graph)
 	{
 		this(null, null, new ArrayList(), graph);
 	}
@@ -94,38 +95,28 @@ public class ContextValue extends Value
 	//            (date 2014 4 20)
 	//            (exchange "when was chopin born" (!fb:people.person.date_of_birth fb:en.frederic_chopin) (date 1810 2 22))
 	//            (graph NaiveKnowledgeGraph ((string Obama) (string "born in") (string Hawaii)) ...))
-	public ContextValue(LispTree tree)
+	public ContextValue(final LispTree tree)
 	{
 		String user = null;
 		DateValue date = null;
 		KnowledgeGraph graph = null;
-		exchanges = new ArrayList<Exchange>();
+		exchanges = new ArrayList<>();
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			String key = tree.child(i).child(0).value;
+			final String key = tree.child(i).child(0).value;
 			if (key.equals("user"))
-			{
 				user = tree.child(i).child(1).value;
-			}
 			else
 				if (key.equals("date"))
-				{
 					date = new DateValue(tree.child(i));
-				}
 				else
 					if (key.equals("graph"))
-					{
 						graph = KnowledgeGraph.fromLispTree(tree.child(i));
-					}
 					else
 						if (key.equals("exchange"))
-						{
 							exchanges.add(new Exchange(tree.child(i)));
-						}
 						else
-						{
 							throw new RuntimeException("Invalid: " + tree.child(i));
-						}
 		}
 		this.user = user;
 		this.date = date;
@@ -134,7 +125,7 @@ public class ContextValue extends Value
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("context");
 		if (user != null)
 			tree.addChild(LispTree.proto.newList("user", user));
@@ -145,7 +136,7 @@ public class ContextValue extends Value
 		// so this should be fine.
 		if (graph != null)
 			tree.addChild(graph.toShortLispTree());
-		for (Exchange e : exchanges)
+		for (final Exchange e : exchanges)
 			tree.addChild(LispTree.proto.newList("exchange", e.toLispTree()));
 		return tree;
 	}
@@ -162,20 +153,20 @@ public class ContextValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		ContextValue that = (ContextValue) o;
-		if (!this.user.equals(that.user))
+		final ContextValue that = (ContextValue) o;
+		if (!user.equals(that.user))
 			return false;
-		if (!this.date.equals(that.date))
+		if (!date.equals(that.date))
 			return false;
-		if (!this.exchanges.equals(that.exchanges))
+		if (!exchanges.equals(that.exchanges))
 			return false;
-		if (!this.graph.equals(that.graph))
+		if (!graph.equals(that.graph))
 			return false;
 		return true;
 	}
@@ -187,7 +178,7 @@ public class ContextValue extends Value
 	}
 
 	@JsonCreator
-	public static ContextValue fromString(String str)
+	public static ContextValue fromString(final String str)
 	{
 		return new ContextValue(LispTree.proto.parseFromString(str));
 	}

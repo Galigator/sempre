@@ -1,9 +1,13 @@
 package edu.stanford.nlp.sempre.test;
 
-import edu.stanford.nlp.sempre.*;
-import org.testng.annotations.Test;
-
 import static org.testng.AssertJUnit.assertEquals;
+
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.JavaExecutor;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.Values;
+import org.testng.annotations.Test;
 
 /**
  * Test JavaExecutor.
@@ -14,17 +18,17 @@ public class JavaExecutorTest
 {
 	JavaExecutor executor = new JavaExecutor();
 
-	private static Formula F(String s)
+	private static Formula F(final String s)
 	{
 		return Formula.fromString(s);
 	}
 
-	private static Value V(double x)
+	private static Value V(final double x)
 	{
 		return new NumberValue(x);
 	}
 
-	private static Value V(String x)
+	private static Value V(final String x)
 	{
 		return Values.fromString(x);
 	}

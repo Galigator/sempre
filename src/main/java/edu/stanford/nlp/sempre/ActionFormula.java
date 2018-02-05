@@ -1,11 +1,9 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.List;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-
 import fig.basic.LispTree;
+import java.util.List;
 
 /**
  * An ActionFormula represent a compositional action used in the interactive package : is used as a prefix to denote an ActionFormula primitive (: actioname
@@ -37,7 +35,7 @@ public class ActionFormula extends Formula
 
 		private final String value;
 
-		Mode(String value)
+		Mode(final String value)
 		{
 			this.value = value;
 		}
@@ -45,30 +43,28 @@ public class ActionFormula extends Formula
 		@Override
 		public String toString()
 		{
-			return this.value;
+			return value;
 		}
 	};
 
 	public final Mode mode;
 	public final List<Formula> args;
 
-	public ActionFormula(Mode mode, List<Formula> args)
+	public ActionFormula(final Mode mode, final List<Formula> args)
 	{
 		this.mode = mode;
 		this.args = args;
 	}
 
-	public static Mode parseMode(String mode)
+	public static Mode parseMode(final String mode)
 	{
 		if (mode == null)
 			return null;
-		for (Mode m : Mode.values())
-		{
+		for (final Mode m : Mode.values())
 			// LogInfo.logs("mode string %s \t== %s \t!= %s", m.toString(), mode,
 			// m.name());
 			if (m.toString().equals(mode))
 				return m;
-		}
 		if (mode.startsWith(":"))
 			throw new RuntimeException("Unsupported ActionFormula mode");
 		return null;
@@ -77,57 +73,53 @@ public class ActionFormula extends Formula
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
-		tree.addChild(this.mode.toString());
-		for (Formula arg : args)
+		final LispTree tree = LispTree.proto.newList();
+		tree.addChild(mode.toString());
+		for (final Formula arg : args)
 			tree.addChild(arg.toLispTree());
 		return tree;
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
-		{
-			for (Formula arg : args)
+			for (final Formula arg : args)
 				arg.forEach(func);
-		}
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> transform)
+	public Formula map(final Function<Formula, Formula> transform)
 	{
-		Formula result = transform.apply(this);
+		final Formula result = transform.apply(this);
 		if (result != null)
 			return result;
-		List<Formula> newArgs = Lists.newArrayList();
-		for (Formula arg : args)
+		final List<Formula> newArgs = Lists.newArrayList();
+		for (final Formula arg : args)
 			newArgs.add(arg.map(transform));
-		return new ActionFormula(this.mode, newArgs);
+		return new ActionFormula(mode, newArgs);
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> transform, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> transform, final boolean alwaysRecurse)
 	{
-		List<Formula> res = transform.apply(this);
+		final List<Formula> res = transform.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
-		{
-			for (Formula arg : args)
+			for (final Formula arg : args)
 				res.addAll(arg.mapToList(transform, alwaysRecurse));
-		}
 		return res;
 	}
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof ActionFormula))
 			return false;
-		ActionFormula that = (ActionFormula) thatObj;
-		if (!this.mode.equals(that.mode))
+		final ActionFormula that = (ActionFormula) thatObj;
+		if (!mode.equals(that.mode))
 			return false;
-		if (!this.args.equals(that.args))
+		if (!args.equals(that.args))
 			return false;
 		return true;
 	}

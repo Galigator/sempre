@@ -6,19 +6,19 @@ public class BadFormulaException extends RuntimeException
 
 	String message;
 
-	public BadFormulaException(String message)
+	public BadFormulaException(final String message)
 	{
 		this.message = message;
 	}
 
 	// Combine multiple exceptions
-	public BadFormulaException(BadFormulaException... exceptions)
+	public BadFormulaException(final BadFormulaException... exceptions)
 	{
-		StringBuilder builder = new StringBuilder();
-		for (BadFormulaException exception : exceptions)
+		final StringBuilder builder = new StringBuilder();
+		for (final BadFormulaException exception : exceptions)
 			builder.append(" | ").append(exception.message);
 		//builder.append(exception).append("\n");
-		this.message = builder.toString().substring(3);
+		message = builder.toString().substring(3);
 	}
 
 	@Override

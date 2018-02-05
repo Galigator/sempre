@@ -12,7 +12,7 @@ public class ScopedValue extends Value
 {
 	public final Value head, relation;
 
-	public ScopedValue(Value head, Value relation)
+	public ScopedValue(final Value head, final Value relation)
 	{
 		this.head = head;
 		this.relation = relation;
@@ -21,7 +21,7 @@ public class ScopedValue extends Value
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("scoped");
 		tree.addChild(head.toLispTree());
 		tree.addChild(relation.toLispTree());
@@ -29,13 +29,13 @@ public class ScopedValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		ScopedValue that = (ScopedValue) o;
+		final ScopedValue that = (ScopedValue) o;
 		return head.equals(that.head) && relation.equals(that.relation);
 	}
 

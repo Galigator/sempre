@@ -1,10 +1,18 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.DescriptionValue;
+import edu.stanford.nlp.sempre.ErrorValue;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
+import edu.stanford.nlp.sempre.ValueEvaluator;
 import fig.basic.LogInfo;
 import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Return 1 if |pred| and |target| represent the same list and 0 otherwise. This is similar to FreebaseValueEvaluator, but - does not give partial credits -
@@ -30,9 +38,9 @@ public class TableValueEvaluator implements ValueEvaluator
 
 	public static Options opts = new Options();
 
-	public double getCompatibility(Value target, Value pred)
+	public double getCompatibility(final Value target, final Value pred)
 	{
-		List<Value> targetList = ((ListValue) target).values;
+		final List<Value> targetList = ((ListValue) target).values;
 		if (!(pred instanceof ListValue))
 			return 0;
 		List<Value> predList = ((ListValue) pred).values;
@@ -42,17 +50,15 @@ public class TableValueEvaluator implements ValueEvaluator
 		if (targetList.size() != predList.size())
 			return 0;
 
-		for (Value targetValue : targetList)
+		for (final Value targetValue : targetList)
 		{
 			boolean found = false;
-			for (Value predValue : predList)
-			{
+			for (final Value predValue : predList)
 				if (getItemCompatibility(targetValue, predValue))
 				{
 					found = true;
 					break;
 				}
-			}
 			if (!found)
 				return 0;
 		}
@@ -64,7 +70,7 @@ public class TableValueEvaluator implements ValueEvaluator
 	// ============================================================
 
 	// Compare one element of the list.
-	protected boolean getItemCompatibility(Value target, Value pred)
+	protected boolean getItemCompatibility(final Value target, final Value pred)
 	{
 		if (pred instanceof ErrorValue)
 			return false; // Never award points for error
@@ -80,7 +86,7 @@ public class TableValueEvaluator implements ValueEvaluator
 			if (pred instanceof NameValue || pred instanceof DescriptionValue)
 			{
 				// Just has to match the description
-				String predText = (pred instanceof NameValue) ? ((NameValue) pred).description : ((DescriptionValue) pred).value;
+				String predText = pred instanceof NameValue ? ((NameValue) pred).description : ((DescriptionValue) pred).value;
 				if (predText == null)
 					predText = "";
 				if (opts.allowNormalizedStringMatch)
@@ -89,8 +95,8 @@ public class TableValueEvaluator implements ValueEvaluator
 					predText = StringNormalizationUtils.aggressiveNormalize(predText).toLowerCase();
 					if (opts.checkStringNormalization)
 					{
-						String targetTextOfficial = StringNormalizationUtils.officialEvaluatorNormalize(targetText);
-						String predTextOfficial = StringNormalizationUtils.officialEvaluatorNormalize(predText);
+						final String targetTextOfficial = StringNormalizationUtils.officialEvaluatorNormalize(targetText);
+						final String predTextOfficial = StringNormalizationUtils.officialEvaluatorNormalize(predText);
 						if (!targetTextOfficial.equals(targetText) && !(targetTextOfficial + ".").equals(targetText))
 							LogInfo.warnings("Different normalization: [%s][%s]", targetTextOfficial, targetText);
 						if (!predTextOfficial.equals(predText) && !(predTextOfficial + ".").equals(predText))
@@ -101,73 +107,59 @@ public class TableValueEvaluator implements ValueEvaluator
 			}
 			else
 				if (pred instanceof NumberValue)
-				{
 					if (opts.allowMismatchedTypes)
 					{
-						NumberValue targetNumber = StringNormalizationUtils.parseNumberLenient(targetText);
+						final NumberValue targetNumber = StringNormalizationUtils.parseNumberLenient(targetText);
 						return targetNumber != null && targetNumber.equals(pred);
 					}
-				}
 		}
 		else
 			if (target instanceof NumberValue)
 			{
-				NumberValue targetNumber = (NumberValue) target;
+				final NumberValue targetNumber = (NumberValue) target;
 				if (pred instanceof NumberValue)
-				{
 					// Compare number
 					return compareNumberValues(targetNumber, (NumberValue) pred);
-				}
 				else
 					if (pred instanceof DateValue)
 					{
 						// Assume year
-						DateValue date = (DateValue) pred;
+						final DateValue date = (DateValue) pred;
 						return date.year == targetNumber.value && date.month == -1 && date.day == -1;
 					}
 					else
 						if (pred instanceof NameValue || pred instanceof DescriptionValue)
-						{
 							// Try converting NameValue String into NumberValue
 							if (opts.allowMismatchedTypes)
 							{
-								NumberValue predNumber = StringNormalizationUtils.toNumberValue(pred);
+								final NumberValue predNumber = StringNormalizationUtils.toNumberValue(pred);
 								return predNumber != null && compareNumberValues(targetNumber, predNumber);
 							}
-						}
 			}
 			else
 				if (target instanceof DateValue)
 				{
-					DateValue targetDate = (DateValue) target;
+					final DateValue targetDate = (DateValue) target;
 					if (pred instanceof DateValue)
-					{
 						// Compare date and date
 						return compareDateValues(targetDate, (DateValue) pred);
-					}
 				}
 
 		return target.equals(pred);
 	}
 
-	protected boolean compareNumberValues(NumberValue target, NumberValue pred)
+	protected boolean compareNumberValues(final NumberValue target, final NumberValue pred)
 	{
 		if (opts.ignoreNumberValueUnits)
-		{
 			return Math.abs(target.value - pred.value) < 1e-6;
-		}
 		else
-		{
 			return target.equals(pred);
-		}
 	}
 
-	protected boolean compareDateValues(DateValue target, DateValue pred)
+	protected boolean compareDateValues(final DateValue target, final DateValue pred)
 	{
 		if (opts.strictDateEvaluation)
-		{
 			return target.equals(pred);
-		}
 		else
 		{
 			// If a field in target is not blank (-1), pred must match target on that field

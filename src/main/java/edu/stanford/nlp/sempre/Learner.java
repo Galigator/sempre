@@ -130,10 +130,10 @@ public class Learner
 			// Test and train
 			for (final String group : dataset.groups())
 			{
-				final boolean lastIter = (iter == numIters);
+				final boolean lastIter = iter == numIters;
 				final boolean updateWeights = opts.updateWeights && group.equals("train") && !lastIter; // Don't train on last iteration
 				if (opts.skipUnnecessaryGroups)
-					if ((group.equals("train") && lastIter) || (!group.equals("train") && !lastIter))
+					if (group.equals("train") && lastIter || !group.equals("train") && !lastIter)
 						continue;
 				// Allow the parser to change behavior based on current group and iteration
 				parser.onBeginDataGroup(iter, numIters, group);

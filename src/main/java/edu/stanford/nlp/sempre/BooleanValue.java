@@ -11,19 +11,19 @@ public class BooleanValue extends Value
 {
 	public final boolean value;
 
-	public BooleanValue(boolean value)
+	public BooleanValue(final boolean value)
 	{
 		this.value = value;
 	}
 
-	public BooleanValue(LispTree tree)
+	public BooleanValue(final LispTree tree)
 	{
-		this.value = Boolean.parseBoolean(tree.child(1).value);
+		value = Boolean.parseBoolean(tree.child(1).value);
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("boolean");
 		tree.addChild(value + "");
 		return tree;
@@ -48,13 +48,13 @@ public class BooleanValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		BooleanValue that = (BooleanValue) o;
-		return this.value == that.value;
+		final BooleanValue that = (BooleanValue) o;
+		return value == that.value;
 	}
 }

@@ -1,7 +1,6 @@
 package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Strings;
-
 import fig.basic.Option;
 import fig.basic.Utils;
 
@@ -79,7 +78,7 @@ public class Builder
 		}
 	}
 
-	public static Parser buildParser(Parser.Spec spec)
+	public static Parser buildParser(final Parser.Spec spec)
 	{
 		switch (opts.parser)
 		{
@@ -93,14 +92,14 @@ public class Builder
 				// Try instantiating by name
 				try
 				{
-					Class<?> parserClass = Class.forName(SempreUtils.resolveClassName(opts.parser));
+					final Class<?> parserClass = Class.forName(SempreUtils.resolveClassName(opts.parser));
 					return (Parser) parserClass.getConstructor(spec.getClass()).newInstance(spec);
 				}
-				catch (ClassNotFoundException e1)
+				catch (final ClassNotFoundException e1)
 				{
 					throw new RuntimeException("Illegal parser: " + opts.parser);
 				}
-				catch (Exception e)
+				catch (final Exception e)
 				{
 					e.printStackTrace();
 					throw new RuntimeException("Error while instantiating parser: " + opts.parser + "\n" + e);

@@ -2,10 +2,10 @@ package edu.stanford.nlp.sempre.test;
 
 import static org.testng.AssertJUnit.assertEquals;
 
+import edu.stanford.nlp.sempre.SemType;
+import edu.stanford.nlp.sempre.SemTypeHierarchy;
+import fig.basic.LispTree;
 import org.testng.annotations.Test;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
 
 /**
  * Test type system.
@@ -16,22 +16,22 @@ import fig.basic.*;
 public class SemTypeTest
 {
 	// For testing
-	private static SemType T(String str)
+	private static SemType T(final String str)
 	{
 		return SemType.fromLispTree(LispTree.proto.parseFromString(str));
 	}
 
-	private static void verifyEquals(SemType predType, SemType wantedType)
+	private static void verifyEquals(final SemType predType, final SemType wantedType)
 	{
 		assertEquals(wantedType.toString(), predType.toString());
 	}
 
-	private static void verifyMeet(String t1, String t2)
+	private static void verifyMeet(final String t1, final String t2)
 	{
 		verifyMeet(t1, t2, t2);
 	}
 
-	private static void verifyMeet(String t1, String t2, String t)
+	private static void verifyMeet(final String t1, final String t2, final String t)
 	{
 		verifyEquals(T(t1).meet(T(t2)), T(t));
 		verifyEquals(T(t2).meet(T(t1)), T(t));
@@ -71,7 +71,7 @@ public class SemTypeTest
 		verifyMeet("(-> (union city country) person)", "(-> city (union person dog))", "(-> city person)");
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		new SemTypeTest().simpleSemType();
 	}

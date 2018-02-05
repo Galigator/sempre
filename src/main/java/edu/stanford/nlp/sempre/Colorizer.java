@@ -13,7 +13,7 @@ public class Colorizer
 	{
 	}
 
-	public String colorize(String s, String color)
+	public String colorize(final String s, final String color)
 	{
 		String cp = "";
 

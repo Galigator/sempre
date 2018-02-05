@@ -1,5 +1,10 @@
 package edu.stanford.nlp.sempre.interactive;
 
+import edu.stanford.nlp.sempre.Json;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.OptionsParser;
+import fig.exec.Execution;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -25,14 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
-import org.testng.collections.Lists;
-
-import edu.stanford.nlp.sempre.Json;
-import fig.basic.LogInfo;
-import fig.basic.Option;
-import fig.basic.OptionsParser;
-import fig.exec.Execution;
-
 /**
  * utilites for simulating a session through the server
  * 
@@ -47,7 +44,7 @@ class GZIPFiles
 	 * @param path The path to the gzipped file.
 	 * @return stream with lines.
 	 */
-	public static Stream<String> lines(Path path)
+	public static Stream<String> lines(final Path path)
 	{
 		InputStream fileIs = null;
 		BufferedInputStream bufferedIs = null;
@@ -60,30 +57,28 @@ class GZIPFiles
 			bufferedIs = new BufferedInputStream(fileIs, 65535);
 			gzipIs = new GZIPInputStream(bufferedIs);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			closeSafely(gzipIs);
 			closeSafely(bufferedIs);
 			closeSafely(fileIs);
 			throw new UncheckedIOException(e);
 		}
-		BufferedReader reader = new BufferedReader(new InputStreamReader(gzipIs));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(gzipIs));
 		return reader.lines().onClose(() -> closeSafely(reader));
 	}
 
-	private static void closeSafely(Closeable closeable)
+	private static void closeSafely(final Closeable closeable)
 	{
 		if (closeable != null)
-		{
 			try
 			{
 				closeable.close();
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				// Ignore
 			}
-		}
 	}
 }
 
@@ -109,9 +104,9 @@ public class Simulator implements Runnable
 	{
 		// T.printAllRules();
 		// A.assertAll();
-		for (String fileName : logFiles)
+		for (final String fileName : logFiles)
 		{
-			long startTime = System.nanoTime();
+			final long startTime = System.nanoTime();
 			Stream<String> stream;
 			try
 			{
@@ -120,46 +115,44 @@ public class Simulator implements Runnable
 				else
 					stream = Files.lines(Paths.get(fileName));
 
-				List<String> lines = stream.collect(Collectors.toList());
+				final List<String> lines = stream.collect(Collectors.toList());
 				LogInfo.logs("Reading %s (%d lines)", fileName, lines.size());
 				int numLinesRead = 0;
 				// ExecutorService executor = new ThreadPoolExecutor(numThreads,
 				// numThreads,
 				// 15000, TimeUnit.MILLISECONDS,
 				// new LinkedBlockingQueue<Runnable>());
-				ExecutorService executor = Executors.newSingleThreadExecutor();
+				final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-				for (String l : lines)
+				for (final String l : lines)
 				{
 					numLinesRead++;
 					if (numLinesRead > maxQueries)
 						break;
 					LogInfo.logs("Line %d", numLinesRead);
 					if (!useThreads)
-					{
 						executeLine(l);
-					}
 					else
 					{
-						Future<?> future = executor.submit(() -> executeLine(l));
+						final Future<?> future = executor.submit(() -> executeLine(l));
 						try
 						{
 							future.get(10, TimeUnit.MINUTES);
 						}
-						catch (Throwable t)
+						catch (final Throwable t)
 						{
 							t.printStackTrace();
 						}
 						finally
 						{
 							future.cancel(true); // may or may not desire this
-							long endTime = System.nanoTime();
-							LogInfo.logs("Took %d ns or %.4f s", (endTime - startTime), (endTime - startTime) / 1.0e9);
+							final long endTime = System.nanoTime();
+							LogInfo.logs("Took %d ns or %.4f s", endTime - startTime, (endTime - startTime) / 1.0e9);
 						}
 					}
 				}
 			}
-			catch (IOException e)
+			catch (final IOException e)
 			{
 				e.printStackTrace();
 			}
@@ -168,14 +161,14 @@ public class Simulator implements Runnable
 		SimulationAnalyzer.flush();
 	}
 
-	static void executeLine(String l)
+	static void executeLine(final String l)
 	{
 		Map<String, Object> json = null;
 		try
 		{
 			json = Json.readMapHard(l);
 		}
-		catch (RuntimeException e)
+		catch (final RuntimeException e)
 		{
 			LogInfo.logs("Json cannot be read from %s: %s", l, e.toString());
 			return;
@@ -189,36 +182,36 @@ public class Simulator implements Runnable
 
 		try
 		{
-			String response = sempreQuery(command.toString(), sessionId.toString());
+			final String response = sempreQuery(command.toString(), sessionId.toString());
 			SimulationAnalyzer.addStats(json, response);
 		}
-		catch (Throwable t)
+		catch (final Throwable t)
 		{
 			t.printStackTrace();
 		}
 	}
 
-	public static String sempreQuery(String query, String sessionId) throws UnsupportedEncodingException
+	public static String sempreQuery(final String query, final String sessionId) throws UnsupportedEncodingException
 	{
 		String params = "q=" + URLEncoder.encode(query, "UTF-8");
 		params += String.format("&sessionId=%s&%s", sessionId, reqParams);
 		// params = URLEncoder.encode(params);
-		String url = String.format("%s/sempre?", serverURL);
+		final String url = String.format("%s/sempre?", serverURL);
 		// LogInfo.log(params);
 		// LogInfo.log(query);
-		String response = executePost(url + params, "");
+		final String response = executePost(url + params, "");
 		// LogInfo.log(response);
 		return response;
 	}
 
-	public static String executePost(String targetURL, String urlParameters)
+	public static String executePost(final String targetURL, final String urlParameters)
 	{
 		HttpURLConnection connection = null;
 
 		try
 		{
 			// Create connection
-			URL url = new URL(targetURL);
+			final URL url = new URL(targetURL);
 			connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("POST");
 			connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -230,15 +223,15 @@ public class Simulator implements Runnable
 			connection.setDoOutput(true);
 
 			// Send request
-			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+			final DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
 			wr.writeBytes(urlParameters);
 			wr.close();
 
 			// Get Response
-			InputStream is = connection.getInputStream();
-			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-			StringBuilder response = new StringBuilder(); // or StringBuffer if Java
-															// version 5+
+			final InputStream is = connection.getInputStream();
+			final BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+			final StringBuilder response = new StringBuilder(); // or StringBuffer if Java
+			// version 5+
 			String line;
 			while ((line = rd.readLine()) != null)
 			{
@@ -248,7 +241,7 @@ public class Simulator implements Runnable
 			rd.close();
 			return response.toString();
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			e.printStackTrace();
 			return null;
@@ -256,16 +249,14 @@ public class Simulator implements Runnable
 		finally
 		{
 			if (connection != null)
-			{
 				connection.disconnect();
-			}
 		}
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
-		OptionsParser parser = new OptionsParser();
-		Simulator simulator = new Simulator();
+		final OptionsParser parser = new OptionsParser();
+		final Simulator simulator = new Simulator();
 		// parser.register("", opts);
 		Execution.run(args, "Simulator", simulator, parser);
 	}

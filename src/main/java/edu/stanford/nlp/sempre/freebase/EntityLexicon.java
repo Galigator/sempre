@@ -1,7 +1,9 @@
 package edu.stanford.nlp.sempre.freebase;
 
 import edu.stanford.nlp.io.IOUtils;
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.ValueFormula;
 import edu.stanford.nlp.sempre.cache.StringCache;
 import edu.stanford.nlp.sempre.cache.StringCacheUtils;
 import edu.stanford.nlp.sempre.freebase.index.FbEntitySearcher;
@@ -16,11 +18,17 @@ import edu.stanford.nlp.util.ArrayUtils;
 import edu.stanford.nlp.util.StringUtils;
 import fig.basic.MapUtils;
 import fig.basic.Option;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
-
-import java.io.IOException;
-import java.util.*;
 
 public final class EntityLexicon
 {
@@ -70,7 +78,7 @@ public final class EntityLexicon
 		loadEntityPopularity();
 	}
 
-	public List<EntityLexicalEntry> lookupEntries(String query, SearchStrategy strategy) throws ParseException, IOException
+	public List<EntityLexicalEntry> lookupEntries(final String query, final SearchStrategy strategy) throws ParseException, IOException
 	{
 		if (strategy == null)
 			throw new RuntimeException("No entity search strategy specified");
@@ -100,89 +108,86 @@ public final class EntityLexicon
 		entityPopularityMap = new HashMap<>();
 		if (opts.entityPopularityPath == null)
 			return;
-		for (String line : IOUtils.readLines(opts.entityPopularityPath))
+		for (final String line : IOUtils.readLines(opts.entityPopularityPath))
 		{
-			String[] tokens = line.split("\t");
+			final String[] tokens = line.split("\t");
 			entityPopularityMap.put(tokens[0], Double.parseDouble(tokens[1]));
 		}
 	}
 
-	public List<EntityLexicalEntry> lookupFreebaseSearchEntities(String query)
+	public List<EntityLexicalEntry> lookupFreebaseSearchEntities(final String query)
 	{
-		FreebaseSearch.ServerResponse response = freebaseSearch.lookup(query);
-		List<EntityLexicalEntry> entities = new ArrayList<>();
-		if (response.error != null) { throw new RuntimeException(response.error.toString()); }
+		final FreebaseSearch.ServerResponse response = freebaseSearch.lookup(query);
+		final List<EntityLexicalEntry> entities = new ArrayList<>();
+		if (response.error != null)
+			throw new RuntimeException(response.error.toString());
 		// num of words in query
-		int numOfQueryWords = query.split("\\s+").length;
-		for (FreebaseSearch.Entry e : response.entries)
+		final int numOfQueryWords = query.split("\\s+").length;
+		for (final FreebaseSearch.Entry e : response.entries)
 		{
 			if (entities.size() >= opts.maxEntries)
 				break;
 			// Note: e.id might not be the same one we're using (e.g., fb:en.john_f_kennedy_airport versus fb:en.john_f_kennedy_international_airport),
 			// so get the one from our canonical mid2idCache
-			String id = mid2idCache.get(e.mid);
+			final String id = mid2idCache.get(e.mid);
 			if (id == null)
 				continue; // Skip if no ID (probably not worth referencing)
 			// skip if it is a long phrase that is not an exact match
 			if (numOfQueryWords >= 4 && !query.toLowerCase().equals(e.name.toLowerCase()))
-			{
 				continue;
-			}
 
-			int distance = editDistance(query.toLowerCase(), e.name.toLowerCase()); // Is this actually useful?
-			Counter<String> entityFeatures = TokenLevelMatchFeatures.extractFeatures(query, e.name);
-			double popularity = MapUtils.get(entityPopularityMap, id, 0d);
+			final int distance = editDistance(query.toLowerCase(), e.name.toLowerCase()); // Is this actually useful?
+			final Counter<String> entityFeatures = TokenLevelMatchFeatures.extractFeatures(query, e.name);
+			final double popularity = MapUtils.get(entityPopularityMap, id, 0d);
 			entityFeatures.incrementCount("text_popularity", Math.log(popularity + 1));
 			entities.add(new EntityLexicalEntry(query, query, Collections.singleton(e.name), new ValueFormula<>(new NameValue(id, e.name)), EntrySource.FBSEARCH, e.score, distance, new FreebaseTypeLookup().getEntityTypes(id), entityFeatures));
 		}
 		return entities;
 	}
 
-	public List<EntityLexicalEntry> lookupEntries(FbEntitySearcher searcher, String textDesc) throws ParseException, IOException
+	public List<EntityLexicalEntry> lookupEntries(final FbEntitySearcher searcher, String textDesc) throws ParseException, IOException
 	{
 
-		List<EntityLexicalEntry> res = new ArrayList<>();
+		final List<EntityLexicalEntry> res = new ArrayList<>();
 		textDesc = textDesc.replaceAll("\\?", "\\\\?").toLowerCase();
-		List<Document> docs = searcher.searchDocs(textDesc);
-		for (Document doc : docs)
+		final List<Document> docs = searcher.searchDocs(textDesc);
+		for (final Document doc : docs)
 		{
 
-			Formula formula = Formula.fromString(doc.get(FbIndexField.ID.fieldName()));
-			String[] fbDescriptions = new String[] { doc.get(FbIndexField.TEXT.fieldName()) };
-			String typesDesc = doc.get(FbIndexField.TYPES.fieldName());
+			final Formula formula = Formula.fromString(doc.get(FbIndexField.ID.fieldName()));
+			final String[] fbDescriptions = new String[] { doc.get(FbIndexField.TEXT.fieldName()) };
+			final String typesDesc = doc.get(FbIndexField.TYPES.fieldName());
 
-			Set<String> types = new HashSet<>();
+			final Set<String> types = new HashSet<>();
 			if (typesDesc != null)
 			{
-				String[] tokens = typesDesc.split(",");
+				final String[] tokens = typesDesc.split(",");
 				Collections.addAll(types, tokens);
 			}
 
-			double popularity = Double.parseDouble(doc.get(FbIndexField.POPULARITY.fieldName()));
-			int distance = editDistance(textDesc.toLowerCase(), fbDescriptions[0].toLowerCase());
-			Counter<String> tokenEditDistanceFeatures = TokenLevelMatchFeatures.extractFeatures(textDesc, fbDescriptions[0]);
+			final double popularity = Double.parseDouble(doc.get(FbIndexField.POPULARITY.fieldName()));
+			final int distance = editDistance(textDesc.toLowerCase(), fbDescriptions[0].toLowerCase());
+			final Counter<String> tokenEditDistanceFeatures = TokenLevelMatchFeatures.extractFeatures(textDesc, fbDescriptions[0]);
 
 			if ((popularity > 0 || distance == 0) && TokenLevelMatchFeatures.diffSetSize(textDesc, fbDescriptions[0]) < 4)
-			{
 				res.add(new EntityLexicalEntry(textDesc, textDesc, ArrayUtils.asSet(fbDescriptions), formula, EntrySource.LUCENE, popularity, distance, types, tokenEditDistanceFeatures));
-			}
 		}
 		Collections.sort(res, new LexicalEntryComparator());
 		return res.subList(0, Math.min(res.size(), opts.maxEntries));
 	}
 
-	private int editDistance(String query, String name)
+	private int editDistance(final String query, final String name)
 	{
 
-		String[] queryTokens = FileUtils.omitPunct(query).split("\\s+");
-		String[] nameTokens = FileUtils.omitPunct(name).split("\\s+");
+		final String[] queryTokens = FileUtils.omitPunct(query).split("\\s+");
+		final String[] nameTokens = FileUtils.omitPunct(name).split("\\s+");
 
-		StringBuilder querySb = new StringBuilder();
-		for (String queryToken : queryTokens)
+		final StringBuilder querySb = new StringBuilder();
+		for (final String queryToken : queryTokens)
 			querySb.append(queryToken).append(" ");
 
-		StringBuilder nameSb = new StringBuilder();
-		for (String nameToken : nameTokens)
+		final StringBuilder nameSb = new StringBuilder();
+		for (final String nameToken : nameTokens)
 			nameSb.append(nameToken).append(" ");
 
 		return StringUtils.editDistance(querySb.toString().trim(), nameSb.toString().trim());
@@ -191,7 +196,7 @@ public final class EntityLexicon
 	public static class LexicalEntryComparator implements Comparator<LexicalEntry>
 	{
 		@Override
-		public int compare(LexicalEntry arg0, LexicalEntry arg1)
+		public int compare(final LexicalEntry arg0, final LexicalEntry arg1)
 		{
 
 			if (arg0.popularity > arg1.popularity)

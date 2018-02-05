@@ -7,14 +7,14 @@ public class Color
 		Red(0), Orange(1), Yellow(2), Green(3), Blue(4), White(6), Black(7), Pink(8), Brown(9), Gray(10), Fake(11), None(-5);
 		private final int value;
 
-		BasicColor(int value)
+		BasicColor(final int value)
 		{
 			this.value = value;
 		}
 
-		public BasicColor fromString(String color)
+		public BasicColor fromString(final String color)
 		{
-			for (BasicColor c : BasicColor.values())
+			for (final BasicColor c : BasicColor.values())
 				if (c.name().equalsIgnoreCase(color))
 					return c;
 			return BasicColor.None;
@@ -25,14 +25,14 @@ public class Color
 	String colorName;
 	boolean isCode = false;
 
-	public Color(String name)
+	public Color(final String name)
 	{
 		colorName = name.toLowerCase();
 		if (name.startsWith("0x") || name.startsWith("#"))
 			isCode = true;
 	}
 
-	public static Color fromString(String color)
+	public static Color fromString(final String color)
 	{
 		return new Color(color.toLowerCase());
 	}
@@ -48,12 +48,12 @@ public class Color
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((colorName == null) ? 0 : colorName.hashCode());
+		result = prime * result + (colorName == null ? 0 : colorName.hashCode());
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 			return true;
@@ -61,7 +61,7 @@ public class Color
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Color other = (Color) obj;
+		final Color other = (Color) obj;
 		if (colorName == null)
 		{
 			if (other.colorName != null)

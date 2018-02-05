@@ -3,7 +3,6 @@ package edu.stanford.nlp.sempre.overnight;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.sempre.StringValue;
 import fig.basic.LispTree;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -20,32 +19,32 @@ public final class ConvertTargetValueFromListToString
 	{
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 
 		try
 		{
-			PrintWriter writer = IOUtils.getPrintWriter(args[1]);
-			Iterator<LispTree> trees = LispTree.proto.parseFromFile(args[0]);
+			final PrintWriter writer = IOUtils.getPrintWriter(args[1]);
+			final Iterator<LispTree> trees = LispTree.proto.parseFromFile(args[0]);
 			while (trees.hasNext())
 			{
-				LispTree tree = trees.next();
+				final LispTree tree = trees.next();
 
-				LispTree outTree = LispTree.proto.newList();
+				final LispTree outTree = LispTree.proto.newList();
 				outTree.addChild("example");
 				outTree.addChild(tree.child(1));
 
-				List<String> output = new ArrayList<>();
-				LispTree targetValue = tree.child(3);
+				final List<String> output = new ArrayList<>();
+				final LispTree targetValue = tree.child(3);
 				if (!targetValue.child(0).value.equals("targetValue"))
 					throw new RuntimeException("Expected a target value as second child: " + targetValue);
-				LispTree list = targetValue.child(1);
+				final LispTree list = targetValue.child(1);
 				if (!list.child(0).value.equals("list"))
 					throw new RuntimeException("Expected a list as first child: " + list);
 				for (int i = 1; i < list.children.size(); ++i)
 					output.add(list.child(i).toString());
-				StringValue newTargetValue = new StringValue(output.toString());
-				LispTree newTargetValueTree = LispTree.proto.newList();
+				final StringValue newTargetValue = new StringValue(output.toString());
+				final LispTree newTargetValueTree = LispTree.proto.newList();
 				newTargetValueTree.addChild("targetValue");
 				newTargetValueTree.addChild(newTargetValue.toLispTree());
 				outTree.addChild(newTargetValueTree);
@@ -54,7 +53,7 @@ public final class ConvertTargetValueFromListToString
 			}
 			writer.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			e.printStackTrace();
 			throw new RuntimeException(e);

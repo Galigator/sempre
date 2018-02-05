@@ -1,14 +1,24 @@
 package edu.stanford.nlp.sempre.test;
 
-import edu.stanford.nlp.sempre.*;
-import fig.basic.LispTree;
-import org.testng.annotations.Test;
+import static org.testng.AssertJUnit.assertEquals;
 
+import edu.stanford.nlp.sempre.ConcatFn;
+import edu.stanford.nlp.sempre.ConstantFn;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FilterPosTagFn;
+import edu.stanford.nlp.sempre.FilterSpanLengthFn;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.SemanticFn;
+import edu.stanford.nlp.sempre.SimpleAnalyzer;
+import fig.basic.LispTree;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * Test Formulas.
@@ -17,31 +27,31 @@ import static org.testng.AssertJUnit.assertEquals;
  */
 public class SemanticFnTest
 {
-	private static Formula F(String s)
+	private static Formula F(final String s)
 	{
 		return Formula.fromString(s);
 	}
 
-	void check(Formula target, DerivationStream derivations)
+	void check(final Formula target, final DerivationStream derivations)
 	{
 		if (!derivations.hasNext())
 			throw new RuntimeException("Expected 1 derivation, got " + derivations);
 		assertEquals(target, derivations.next().formula);
 	}
 
-	void check(Formula target, String utterance, SemanticFn fn, List<Derivation> children)
+	void check(final Formula target, final String utterance, final SemanticFn fn, final List<Derivation> children)
 	{
-		Example ex = TestUtils.makeSimpleExample(utterance);
+		final Example ex = TestUtils.makeSimpleExample(utterance);
 		check(target, fn.call(ex, new SemanticFn.CallInfo(null, 0, ex.numTokens(), Rule.nullRule, children)));
 	}
 
-	void check(Formula target, String utterance, SemanticFn fn)
+	void check(final Formula target, final String utterance, final SemanticFn fn)
 	{
-		List<Derivation> empty = Collections.emptyList();
+		final List<Derivation> empty = Collections.emptyList();
 		check(target, utterance, fn, empty);
 	}
 
-	void checkNumDerivations(DerivationStream derivations, int num)
+	void checkNumDerivations(final DerivationStream derivations, final int num)
 	{
 		assertEquals(num, derivations.estimatedSize());
 	}
@@ -53,12 +63,12 @@ public class SemanticFnTest
 		check(F("(number 3)"), "whatever", new ConstantFn(F("(number 3)")));
 	}
 
-	Derivation D(Formula f)
+	Derivation D(final Formula f)
 	{
-		return (new Derivation.Builder()).formula(f).prob(1.0).createDerivation();
+		return new Derivation.Builder().formula(f).prob(1.0).createDerivation();
 	}
 
-	LispTree T(String str)
+	LispTree T(final String str)
 	{
 		return LispTree.proto.parseFromString(str);
 	}
@@ -78,10 +88,10 @@ public class SemanticFnTest
 	public void filterPosTagFn()
 	{
 		LanguageAnalyzer.setSingleton(new SimpleAnalyzer());
-		FilterPosTagFn filter = new FilterPosTagFn();
+		final FilterPosTagFn filter = new FilterPosTagFn();
 		filter.init(T("(FilterPosTagFn token NNP)"));
-		Derivation child = new Derivation.Builder().createDerivation();
-		Example ex = TestUtils.makeSimpleExample("where is Obama");
+		final Derivation child = new Derivation.Builder().createDerivation();
+		final Example ex = TestUtils.makeSimpleExample("where is Obama");
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 0, 1, Rule.nullRule, Collections.singletonList(child))).hasNext(), false);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 1, 2, Rule.nullRule, Collections.singletonList(child))).hasNext(), false);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 2, 3, Rule.nullRule, Collections.singletonList(child))).hasNext(), true);
@@ -93,8 +103,8 @@ public class SemanticFnTest
 		LanguageAnalyzer.setSingleton(new SimpleAnalyzer());
 		FilterSpanLengthFn filter = new FilterSpanLengthFn();
 		filter.init(T("(FilterSpanLengthFn 2)"));
-		Derivation child = new Derivation.Builder().createDerivation();
-		Example ex = TestUtils.makeSimpleExample("This is a sentence with some words");
+		final Derivation child = new Derivation.Builder().createDerivation();
+		final Example ex = TestUtils.makeSimpleExample("This is a sentence with some words");
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 0, 1, Rule.nullRule, Collections.singletonList(child))).hasNext(), false);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 0, 2, Rule.nullRule, Collections.singletonList(child))).hasNext(), true);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 0, 2, Rule.nullRule, Collections.singletonList(child))).hasNext(), true);

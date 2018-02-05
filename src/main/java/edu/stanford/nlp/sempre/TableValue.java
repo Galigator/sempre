@@ -3,7 +3,6 @@ package edu.stanford.nlp.sempre;
 import fig.basic.LispTree;
 import fig.basic.LogInfo;
 import fig.basic.StrUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,25 +27,25 @@ public class TableValue extends Value
 		return header.size();
 	}
 
-	public TableValue(LispTree tree)
+	public TableValue(final LispTree tree)
 	{
-		header = new ArrayList<String>();
-		rows = new ArrayList<List<Value>>();
+		header = new ArrayList<>();
+		rows = new ArrayList<>();
 		// Read header
-		LispTree headerTree = tree.child(1);
-		for (LispTree item : headerTree.children)
+		final LispTree headerTree = tree.child(1);
+		for (final LispTree item : headerTree.children)
 			header.add(item.value);
 		// Read rows
 		for (int i = 2; i < tree.children.size(); i++)
 		{
-			List<Value> row = new ArrayList<Value>();
-			for (LispTree item : tree.child(i).children)
+			final List<Value> row = new ArrayList<>();
+			for (final LispTree item : tree.child(i).children)
 				row.add(Values.fromLispTree(item));
 			rows.add(row);
 		}
 	}
 
-	public TableValue(List<String> header, List<List<Value>> rows)
+	public TableValue(final List<String> header, final List<List<Value>> rows)
 	{
 		this.header = header;
 		this.rows = rows;
@@ -54,16 +53,16 @@ public class TableValue extends Value
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("table");
-		LispTree headerTree = LispTree.proto.newList();
-		for (String item : header)
+		final LispTree headerTree = LispTree.proto.newList();
+		for (final String item : header)
 			headerTree.addChild(item);
 		tree.addChild(headerTree);
-		for (List<Value> row : rows)
+		for (final List<Value> row : rows)
 		{
-			LispTree rowTree = LispTree.proto.newList();
-			for (Value value : row)
+			final LispTree rowTree = LispTree.proto.newList();
+			for (final Value value : row)
 				rowTree.addChild(value == null ? LispTree.proto.newLeaf(null) : value.toLispTree());
 			tree.addChild(rowTree);
 		}
@@ -73,20 +72,20 @@ public class TableValue extends Value
 	public void log()
 	{
 		LogInfo.begin_track("%s", StrUtils.join(header, "\t"));
-		for (List<Value> row : rows)
+		for (final List<Value> row : rows)
 			LogInfo.logs("%s", StrUtils.join(row, "\t"));
 		LogInfo.end_track();
 	}
 
 	// Note: don't compare the headers right now
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		TableValue that = (TableValue) o;
+		final TableValue that = (TableValue) o;
 		if (!rows.equals(that.rows))
 			return false;
 		return true;

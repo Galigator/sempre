@@ -5,7 +5,7 @@ public enum EntrySource
 
 	ALIGNMENT("ALIGNMENT"), STRING_MATCH("STRING_MATCH"), HARD_CODED("HARD"), LUCENE("LUCENE"), GRAPHPROP("GRAPHPROP"), FBSEARCH("FBSEARCH"), FEEDBACK("FEEDBACK");
 
-	EntrySource(String source)
+	EntrySource(final String source)
 	{
 		this.source = source;
 	}
@@ -17,7 +17,7 @@ public enum EntrySource
 		return source;
 	}
 
-	public static EntrySource parseSourceDesc(String desc)
+	public static EntrySource parseSourceDesc(final String desc)
 	{
 
 		if (desc.equals("HARD"))

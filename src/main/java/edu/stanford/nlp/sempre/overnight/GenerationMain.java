@@ -1,8 +1,12 @@
 package edu.stanford.nlp.sempre.overnight;
 
+import edu.stanford.nlp.sempre.Builder;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.FloatingParser;
+import edu.stanford.nlp.sempre.Learner;
+import edu.stanford.nlp.sempre.Master;
 import fig.basic.Option;
 import fig.exec.Execution;
-import edu.stanford.nlp.sempre.*;
 
 /**
  * Created by joberant on 1/27/15. Generating canonical utterances from grammar with various depths
@@ -17,14 +21,14 @@ public class GenerationMain implements Runnable
 	@Override
 	public void run()
 	{
-		Builder builder = new Builder();
+		final Builder builder = new Builder();
 		builder.build();
 
-		Dataset dataset = new Dataset();
+		final Dataset dataset = new Dataset();
 		dataset.read();
 
 		int currDepth = varyMaxDepth ? 1 : FloatingParser.opts.maxDepth;
-		int maxDepth = FloatingParser.opts.maxDepth;
+		final int maxDepth = FloatingParser.opts.maxDepth;
 
 		for (; currDepth < maxDepth + 1; currDepth++)
 		{
@@ -35,18 +39,18 @@ public class GenerationMain implements Runnable
 			//writer.println(String.format("Depth=%s", currDepth));
 			//writer.println(String.format("--------", currDepth));
 			//writer.close();
-			Learner learner = new Learner(builder.parser, builder.params, dataset);
+			final Learner learner = new Learner(builder.parser, builder.params, dataset);
 			learner.learn();
 		}
 
 		if (interactive)
 		{
-			Master master = new Master(builder);
+			final Master master = new Master(builder);
 			master.runInteractivePrompt();
 		}
 	}
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "GenerationMain", new GenerationMain(), Master.getOptionsParser());
 	}

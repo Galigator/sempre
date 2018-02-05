@@ -12,7 +12,7 @@ final class AllFeatureMatcher implements FeatureMatcher
 	}
 
 	@Override
-	public boolean matches(String feature)
+	public boolean matches(final String feature)
 	{
 		return true;
 	}
@@ -22,15 +22,15 @@ final class AllFeatureMatcher implements FeatureMatcher
 
 final class ExactFeatureMatcher implements FeatureMatcher
 {
-	private String match;
+	private final String match;
 
-	public ExactFeatureMatcher(String match)
+	public ExactFeatureMatcher(final String match)
 	{
 		this.match = match;
 	}
 
 	@Override
-	public boolean matches(String feature)
+	public boolean matches(final String feature)
 	{
 		return feature.equals(match);
 	}
@@ -39,7 +39,7 @@ final class ExactFeatureMatcher implements FeatureMatcher
 final class DenotationFeatureMatcher implements FeatureMatcher
 {
 	@Override
-	public boolean matches(String feature)
+	public boolean matches(final String feature)
 	{
 		return feature.startsWith("denotation-size") || feature.startsWith("count-denotation-size");
 	}

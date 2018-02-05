@@ -15,11 +15,11 @@ public abstract class DerivationPruningComputer
 	protected final Parser parser;
 	protected final Example ex;
 
-	public DerivationPruningComputer(DerivationPruner pruner)
+	public DerivationPruningComputer(final DerivationPruner pruner)
 	{
 		this.pruner = pruner;
-		this.parser = pruner.parser;
-		this.ex = pruner.ex;
+		parser = pruner.parser;
+		ex = pruner.ex;
 	}
 
 	/**
@@ -28,7 +28,7 @@ public abstract class DerivationPruningComputer
 	abstract public Collection<String> getAllStrategyNames();
 
 	// Shorthand
-	protected boolean containsStrategy(String name)
+	protected boolean containsStrategy(final String name)
 	{
 		return pruner.containsStrategy(name);
 	}

@@ -1,9 +1,9 @@
 package edu.stanford.nlp.sempre.freebase.test;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import edu.stanford.nlp.sempre.freebase.FreebaseInfo;
 import org.testng.annotations.Test;
-
-import static org.testng.AssertJUnit.assertEquals;
 
 /**
  * Test FreebaseInfo.
@@ -15,7 +15,7 @@ public class FreebaseInfoTest
 	@Test
 	public void units()
 	{
-		FreebaseInfo info = FreebaseInfo.getSingleton();
+		final FreebaseInfo info = FreebaseInfo.getSingleton();
 		assertEquals(FreebaseInfo.ENTITY, info.getUnit1("fb:people.person.place_of_birth"));
 		assertEquals(FreebaseInfo.ENTITY, info.getUnit2("fb:people.person.place_of_birth"));
 

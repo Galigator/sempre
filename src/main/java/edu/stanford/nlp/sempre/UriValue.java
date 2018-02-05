@@ -6,19 +6,19 @@ public class UriValue extends Value
 {
 	public final String value;
 
-	public UriValue(LispTree tree)
+	public UriValue(final LispTree tree)
 	{
-		this.value = tree.child(1).value;
+		value = tree.child(1).value;
 	}
 
-	public UriValue(String value)
+	public UriValue(final String value)
 	{
 		this.value = value;
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("url");
 		tree.addChild(value != null ? value : "");
 		return tree;
@@ -43,13 +43,13 @@ public class UriValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		UriValue that = (UriValue) o;
-		return this.value.equals(that.value);
+		final UriValue that = (UriValue) o;
+		return value.equals(that.value);
 	}
 }

@@ -1,9 +1,10 @@
 package edu.stanford.nlp.sempre;
 
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
 import java.util.ArrayList;
 import java.util.List;
-
-import fig.basic.*;
 
 /**
  * Maps a string to a number (double).
@@ -28,17 +29,17 @@ public class NumberFn extends SemanticFn
 
 	private List<String> requests; // List of types of fields to get (e.g., NUMBER)
 
-	private boolean request(String req)
+	private boolean request(final String req)
 	{
 		return requests == null || requests.contains(req);
 	}
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		if (tree.children.size() > 1)
 		{
-			requests = new ArrayList<String>();
+			requests = new ArrayList<>();
 			for (int i = 1; i < tree.children.size(); i++)
 				requests.add(tree.child(1).value);
 		}
@@ -59,27 +60,25 @@ public class NumberFn extends SemanticFn
 				// Test by converting string to number directly (don't look at NER)
 				if (opts.alsoTestByConversion && request("NUMBER") & c.getEnd() - c.getStart() == 1)
 				{
-					String value = ex.languageInfo.tokens.get(c.getStart());
+					final String value = ex.languageInfo.tokens.get(c.getStart());
 					if (value != null)
-					{
 						try
 						{
-							NumberValue numberValue = new NumberValue(Double.parseDouble(value));
-							SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
+							final NumberValue numberValue = new NumberValue(Double.parseDouble(value));
+							final SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (NumberFormatException e)
+						catch (final NumberFormatException e)
 						{
 							// Don't issue warnings; most spans are not numbers
 						}
-					}
 				}
 
 				// Test by applying NER on just the phrase
 				if (opts.alsoTestByIsolatedNER)
 				{
-					String phrase = ex.phraseString(c.getStart(), c.getEnd());
-					LanguageInfo languageInfo = LanguageAnalyzer.getSingleton().analyze(phrase);
+					final String phrase = ex.phraseString(c.getStart(), c.getEnd());
+					final LanguageInfo languageInfo = LanguageAnalyzer.getSingleton().analyze(phrase);
 					deriv = check(languageInfo, 0, languageInfo.numTokens());
 					if (deriv != null)
 						return deriv;
@@ -88,91 +87,81 @@ public class NumberFn extends SemanticFn
 				return null;
 			}
 
-			public Derivation check(LanguageInfo languageInfo, int start, int end)
+			public Derivation check(final LanguageInfo languageInfo, final int start, final int end)
 			{
 				// Numbers: If it is an integer, set its type to integer.  Otherwise, use float.
 				if (request("NUMBER"))
 				{
-					String value = languageInfo.getNormalizedNerSpan("NUMBER", start, end);
+					final String value = languageInfo.getNormalizedNerSpan("NUMBER", start, end);
 					if (value != null)
-					{
 						try
 						{
-							NumberValue numberValue = new NumberValue(Double.parseDouble(value));
+							final NumberValue numberValue = new NumberValue(Double.parseDouble(value));
 							if (opts.allowedRange != null)
-							{
 								if (numberValue.value < opts.allowedRange.get(0) || numberValue.value > opts.allowedRange.get(1))
 								{
 									LogInfo.warnings("NumberFn: %f is outside of the allowed range %s", numberValue.value, opts.allowedRange);
 									return null;
 								}
-							}
 
-							SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
+							final SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (NumberFormatException e)
+						catch (final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
-					}
 				}
 
 				// Ordinals
 				if (request("ORDINAL"))
 				{
-					String value = languageInfo.getNormalizedNerSpan("ORDINAL", start, end);
+					final String value = languageInfo.getNormalizedNerSpan("ORDINAL", start, end);
 					if (value != null)
-					{
 						try
 						{
-							NumberValue numberValue = (opts.unitless ? new NumberValue(Double.parseDouble(value)) : new NumberValue(Double.parseDouble(value), "fb:en.ordinal_number"));
-							SemType type = SemType.intType;
+							final NumberValue numberValue = opts.unitless ? new NumberValue(Double.parseDouble(value)) : new NumberValue(Double.parseDouble(value), "fb:en.ordinal_number");
+							final SemType type = SemType.intType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (NumberFormatException e)
+						catch (final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
-					}
 				}
 
 				// Percents
 				if (request("PERCENT"))
 				{
-					String value = languageInfo.getNormalizedNerSpan("PERCENT", start, end);
+					final String value = languageInfo.getNormalizedNerSpan("PERCENT", start, end);
 					if (value != null)
-					{
 						try
 						{
-							NumberValue numberValue = (opts.unitless ? new NumberValue(Double.parseDouble(value.substring(1))) : new NumberValue(0.01 * Double.parseDouble(value.substring(1))));
-							SemType type = SemType.floatType;
+							final NumberValue numberValue = opts.unitless ? new NumberValue(Double.parseDouble(value.substring(1))) : new NumberValue(0.01 * Double.parseDouble(value.substring(1)));
+							final SemType type = SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (NumberFormatException e)
+						catch (final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
-					}
 				}
 
 				// Money
 				if (request("MONEY"))
 				{
-					String value = languageInfo.getNormalizedNerSpan("MONEY", start, end);
+					final String value = languageInfo.getNormalizedNerSpan("MONEY", start, end);
 					if (value != null)
-					{
 						try
 						{
-							NumberValue numberValue = (opts.unitless ? new NumberValue(Double.parseDouble(value.substring(1))) : new NumberValue(Double.parseDouble(value.substring(1)), "fb:en.dollar"));
-							SemType type = SemType.floatType;
+							final NumberValue numberValue = opts.unitless ? new NumberValue(Double.parseDouble(value.substring(1))) : new NumberValue(Double.parseDouble(value.substring(1)), "fb:en.dollar");
+							final SemType type = SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (NumberFormatException e)
+						catch (final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
-					}
 				}
 
 				return null;

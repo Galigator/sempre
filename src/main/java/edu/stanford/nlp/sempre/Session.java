@@ -1,12 +1,10 @@
 package edu.stanford.nlp.sempre;
 
+import com.google.common.base.Strings;
+import fig.basic.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.base.Strings;
-
-import fig.basic.Option;
 
 /**
  * A Session contains the information specific to a user. It maintains the context for discourse as well as the last example, so that we can inspect the
@@ -38,7 +36,7 @@ public class Session
 	public static Options opts = new Options();
 
 	// per session parameters
-	public Session(String id)
+	public Session(final String id)
 	{
 		this.id = id;
 		context = new ContextValue(id, DateValue.now(), new ArrayList<ContextValue.Exchange>());
@@ -59,14 +57,14 @@ public class Session
 		context = context.withDate(DateValue.now());
 	}
 
-	public void updateContext(Example ex, int maxExchanges)
+	public void updateContext(final Example ex, final int maxExchanges)
 	{
 		lastEx = ex;
-		List<Derivation> derivations = lastEx.getPredDerivations();
+		final List<Derivation> derivations = lastEx.getPredDerivations();
 		if (derivations.size() > 0)
 		{
-			Derivation deriv = derivations.get(0);
-			List<ContextValue.Exchange> newExchanges = new ArrayList<ContextValue.Exchange>();
+			final Derivation deriv = derivations.get(0);
+			final List<ContextValue.Exchange> newExchanges = new ArrayList<>();
 			newExchanges.addAll(context.exchanges);
 			newExchanges.add(new ContextValue.Exchange(ex.utterance, deriv.formula, deriv.value));
 			while (newExchanges.size() > maxExchanges)
@@ -75,9 +73,9 @@ public class Session
 		}
 	}
 
-	public void updateContextWithNewAnswer(Example ex, Derivation deriv)
+	public void updateContextWithNewAnswer(final Example ex, final Derivation deriv)
 	{
-		List<ContextValue.Exchange> newExchanges = new ArrayList<ContextValue.Exchange>();
+		final List<ContextValue.Exchange> newExchanges = new ArrayList<>();
 		for (int i = 0; i < context.exchanges.size() - 1; i++)
 			newExchanges.add(context.exchanges.get(i));
 		newExchanges.add(new ContextValue.Exchange(ex.utterance, deriv.formula, deriv.value));
@@ -86,18 +84,18 @@ public class Session
 
 	public ContextValue getContextExcludingLast()
 	{
-		List<ContextValue.Exchange> newExchanges = new ArrayList<ContextValue.Exchange>();
+		final List<ContextValue.Exchange> newExchanges = new ArrayList<>();
 		for (int i = 0; i < context.exchanges.size() - 1; i++)
 			newExchanges.add(context.exchanges.get(i));
 		return context.withNewExchange(newExchanges);
 	}
 
-	public void useIndependentLearner(Builder builder)
+	public void useIndependentLearner(final Builder builder)
 	{
-		this.params = new Params();
+		params = new Params();
 		if (!Strings.isNullOrEmpty(opts.inParamsPath))
-			this.params.read(opts.inParamsPath);
-		this.learner = new Learner(builder.parser, this.params, new Dataset());
+			params.read(opts.inParamsPath);
+		learner = new Learner(builder.parser, params, new Dataset());
 	}
 
 	@Override
@@ -132,12 +130,12 @@ public class Session
 		return defaultTrue("stats");
 	}
 
-	private boolean defaultTrue(String key)
+	private boolean defaultTrue(final String key)
 	{
-		if (this.reqParams == null)
+		if (reqParams == null)
 			return true;
-		if (!this.reqParams.containsKey(key))
+		if (!reqParams.containsKey(key))
 			return true;
-		return !this.reqParams.get(key).equals("0");
+		return !reqParams.get(key).equals("0");
 	}
 }

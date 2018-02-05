@@ -2,10 +2,18 @@ package edu.stanford.nlp.sempre;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-
-import fig.basic.*;
-
-import java.util.*;
+import fig.basic.Fmt;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.Pair;
+import fig.basic.ValueComparator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A FeatureVector represents a mapping from feature (string) to value (double). We enforce the convention that each feature is (domain, name), so that the key
@@ -38,82 +46,80 @@ public class FeatureVector
 	{
 	} // constructor that does nothing
 
-	public FeatureVector(int numOfDenseFeatures)
+	public FeatureVector(final int numOfDenseFeatures)
 	{
 		denseFeatures = new double[numOfDenseFeatures];
 		Arrays.fill(denseFeatures, 0d);
 	}
 
-	private static String toFeature(String domain, String name)
+	private static String toFeature(final String domain, final String name)
 	{
 		return domain + " :: " + name;
 	}
 
-	public void add(String domain, String name)
+	public void add(final String domain, final String name)
 	{
 		add(toFeature(domain, name));
 	}
 
-	private void add(String feature)
+	private void add(final String feature)
 	{
 		if (indicatorFeatures == null)
 			indicatorFeatures = new ArrayList<>();
 		indicatorFeatures.add(feature);
 	}
 
-	public void add(String domain, String name, double value)
+	public void add(final String domain, final String name, final double value)
 	{
 		add(toFeature(domain, name), value);
 	}
 
-	private void add(String feature, double value)
+	private void add(final String feature, final double value)
 	{
 		if (generalFeatures == null)
 			generalFeatures = new ArrayList<>();
 		generalFeatures.add(Pair.newPair(feature, value));
 	}
 
-	public void addWithBias(String domain, String name, double value)
+	public void addWithBias(final String domain, final String name, final double value)
 	{
 		add(domain, name, value);
 		add(domain, name + "-bias", 1);
 	}
 
 	// Add histogram features, e.g., domain :: name>=4
-	public void addHistogram(String domain, String name, double value)
+	public void addHistogram(final String domain, final String name, final double value)
 	{
 		addHistogram(domain, name, value, 2, 10, true);
 	}
 
-	public void addHistogram(String domain, String name, double value, int initBinSize, int numBins, boolean exp)
+	public void addHistogram(final String domain, final String name, double value, final int initBinSize, final int numBins, final boolean exp)
 	{
 		double upper = initBinSize;
 		String bin = null;
-		int sign = value > 0 ? +1 : -1;
+		final int sign = value > 0 ? +1 : -1;
 		value = Math.abs(value);
 		for (int i = 0; i < numBins; i++)
 		{
-			double lastUpper = upper;
+			final double lastUpper = upper;
 			if (i > 0)
-			{
 				if (exp)
 					upper *= initBinSize;
 				else
 					upper += initBinSize;
-			}
 			if (value < upper)
 			{
-				bin = (sign > 0) ? lastUpper + ":" + upper : (-upper) + ":" + (-lastUpper);
+				bin = sign > 0 ? lastUpper + ":" + upper : -upper + ":" + -lastUpper;
 				break;
 			}
 		}
 		if (bin == null)
-			bin = (sign > 0) ? ">=" + upper : "<=" + (-upper);
+			bin = sign > 0 ? ">=" + upper : "<=" + -upper;
 
 		add(domain, name + bin);
 	}
 
-	public void addFromString(String feature, double value)
+	public void addFromString(final String feature, final double value)
 	{
 		assert feature.contains(" :: ") : feature;
 		if (value == 1)
@@ -122,190 +128,152 @@ public class FeatureVector
 			add(feature, value);
 	}
 
-	public void addDenseFeature(int index, double value)
+	public void addDenseFeature(final int index, final double value)
 	{
 		denseFeatures[index] += value;
 	}
 
-	public void add(FeatureVector that)
+	public void add(final FeatureVector that)
 	{
 		add(that, AllFeatureMatcher.matcher);
 	}
 
-	public void add(double scale, FeatureVector that)
+	public void add(final double scale, final FeatureVector that)
 	{
 		add(scale, that, AllFeatureMatcher.matcher);
 	}
 
-	public void add(FeatureVector that, FeatureMatcher matcher)
+	public void add(final FeatureVector that, final FeatureMatcher matcher)
 	{
 		add(1, that, matcher);
 	}
 
-	public void add(double scale, FeatureVector that, FeatureMatcher matcher)
+	public void add(final double scale, final FeatureVector that, final FeatureMatcher matcher)
 	{
 		if (that.indicatorFeatures != null)
-		{
-			for (String f : that.indicatorFeatures)
+			for (final String f : that.indicatorFeatures)
 				if (matcher.matches(f))
-				{
 					if (scale == 1)
 						add(f);
 					else
 						add(f, scale);
-				}
-		}
 		if (that.generalFeatures != null)
-		{
-			for (Pair<String, Double> pair : that.generalFeatures)
+			for (final Pair<String, Double> pair : that.generalFeatures)
 				if (matcher.matches(pair.getFirst()))
 					add(pair.getFirst(), scale * pair.getSecond());
-		}
 		// dense features are always added
 		if (that.denseFeatures != null)
-		{
 			for (int i = 0; i < denseFeatures.length; ++i)
 				denseFeatures[i] += scale * that.denseFeatures[i];
-		}
 	}
 
 	// Return the dot product between this feature vector and the weight vector (parameters).
-	public double dotProduct(Params params)
+	public double dotProduct(final Params params)
 	{
 		double sum = 0;
 		if (indicatorFeatures != null)
-		{
-			for (String f : indicatorFeatures)
+			for (final String f : indicatorFeatures)
 				sum += params.getWeight(f);
-		}
 		if (generalFeatures != null)
-		{
-			for (Pair<String, Double> pair : generalFeatures)
+			for (final Pair<String, Double> pair : generalFeatures)
 				sum += params.getWeight(pair.getFirst()) * pair.getSecond();
-		}
 		if (denseFeatures != null)
-		{
 			for (int i = 0; i < denseFeatures.length; ++i)
 				sum += params.getWeight(DENSE_NAME + "_" + i) * denseFeatures[i];
-		}
 		return sum;
 	}
 
 	// Increment |map| by a factor times this feature vector.
 	// converts the dense features to a non-dense representation
-	public void increment(double factor, Map<String, Double> map)
+	public void increment(final double factor, final Map<String, Double> map)
 	{
 		increment(factor, map, AllFeatureMatcher.matcher);
 	}
 
-	public void increment(double factor, Map<String, Double> map, FeatureMatcher matcher)
+	public void increment(final double factor, final Map<String, Double> map, final FeatureMatcher matcher)
 	{
 		if (indicatorFeatures != null)
-		{
-			for (String feature : indicatorFeatures)
+			for (final String feature : indicatorFeatures)
 				if (matcher.matches(feature))
 					MapUtils.incr(map, feature, factor);
-		}
 		if (generalFeatures != null)
-		{
-			for (Pair<String, Double> pair : generalFeatures)
+			for (final Pair<String, Double> pair : generalFeatures)
 				if (matcher.matches(pair.getFirst()))
 					MapUtils.incr(map, pair.getFirst(), factor * pair.getSecond());
-		}
 		if (denseFeatures != null)
-		{
 			for (int i = 0; i < denseFeatures.length; ++i)
 				MapUtils.incr(map, DENSE_NAME + "_" + i, factor * denseFeatures[i]);
-		}
 	}
 
 	// returns a feature vector where all features are prefixed
-	public FeatureVector addPrefix(String prefix)
+	public FeatureVector addPrefix(final String prefix)
 	{
-		FeatureVector res = new FeatureVector();
+		final FeatureVector res = new FeatureVector();
 		if (indicatorFeatures != null)
-		{
-			for (String feature : indicatorFeatures)
+			for (final String feature : indicatorFeatures)
 				res.add(prefix + feature);
-		}
 		if (generalFeatures != null)
-		{
-			for (Pair<String, Double> pair : generalFeatures)
-			{
+			for (final Pair<String, Double> pair : generalFeatures)
 				res.add(prefix + pair.getFirst(), pair.getSecond());
-			}
-		}
 		return res;
 	}
 
 	@JsonValue
 	public Map<String, Double> toMap()
 	{
-		HashMap<String, Double> map = new HashMap<String, Double>();
+		final HashMap<String, Double> map = new HashMap<>();
 		increment(1, map);
 		if (denseFeatures != null)
-		{
 			for (int i = 0; i < denseFeatures.length; ++i)
-			{
 				map.put(DENSE_NAME + "_" + i, denseFeatures[i]);
-			}
-		}
 		return map;
 	}
 
 	@JsonCreator
-	public static FeatureVector fromMap(Map<String, Double> m)
+	public static FeatureVector fromMap(final Map<String, Double> m)
 	{
 		// TODO (rf):
 		// Encoding is lossy.  We guess that value of 1 means indicator, but we
 		// could be wrong.
 		// TODO(joberant) - takes care of dense features in a non efficient way
 		int maxDenseFeaturesIndex = -1;
-		for (Map.Entry<String, Double> entry : m.entrySet())
-		{
+		for (final Map.Entry<String, Double> entry : m.entrySet())
 			if (isDenseFeature(entry.getKey()))
 			{
-				int index = denseFeatureIndex(entry.getKey());
+				final int index = denseFeatureIndex(entry.getKey());
 				if (index > maxDenseFeaturesIndex)
 					maxDenseFeaturesIndex = index;
 			}
-		}
 
-		FeatureVector fv = maxDenseFeaturesIndex == -1 ? new FeatureVector() : new FeatureVector(maxDenseFeaturesIndex + 1);
-		for (Map.Entry<String, Double> entry : m.entrySet())
-		{
+		final FeatureVector fv = maxDenseFeaturesIndex == -1 ? new FeatureVector() : new FeatureVector(maxDenseFeaturesIndex + 1);
+		for (final Map.Entry<String, Double> entry : m.entrySet())
 			if (isDenseFeature(entry.getKey()))
-			{
 				fv.addDenseFeature(denseFeatureIndex(entry.getKey()), entry.getValue());
-			}
 			else
-			{
 				if (entry.getValue() == 1.0d)
 					fv.add(entry.getKey());
 				else
 					fv.add(entry.getKey(), entry.getValue());
-			}
-		}
 		return fv;
 	}
 
-	private static boolean isDenseFeature(String f)
+	private static boolean isDenseFeature(final String f)
 	{
 		return f.startsWith(DENSE_NAME);
 	}
 
-	private static int denseFeatureIndex(String denseFeature)
+	private static int denseFeatureIndex(final String denseFeature)
 	{
 		assert denseFeature.startsWith(DENSE_NAME);
 		return Integer.parseInt(denseFeature.split("_")[1]);
 	}
 
-	public static void logChoices(String prefix, Map<String, Integer> choices)
+	public static void logChoices(final String prefix, final Map<String, Integer> choices)
 	{
 		LogInfo.begin_track("%s choices", prefix);
-		for (Map.Entry<String, Integer> e : choices.entrySet())
+		for (final Map.Entry<String, Integer> e : choices.entrySet())
 		{
-			int value = e.getValue();
+			final int value = e.getValue();
 			if (value == 0)
 				continue;
 			LogInfo.logs("%s %s", value > 0 ? "+" + value : value, e.getKey());
@@ -313,60 +281,56 @@ public class FeatureVector
 		LogInfo.end_track();
 	}
 
-	public static void logFeatureWeights(String prefix, Map<String, Double> features, Params params)
+	public static void logFeatureWeights(final String prefix, final Map<String, Double> features, final Params params)
 	{
-		List<Map.Entry<String, Double>> entries = new ArrayList<Map.Entry<String, Double>>();
+		final List<Map.Entry<String, Double>> entries = new ArrayList<>();
 		double sumValue = 0;
-		for (Map.Entry<String, Double> entry : features.entrySet())
+		for (final Map.Entry<String, Double> entry : features.entrySet())
 		{
-			String feature = entry.getKey();
+			final String feature = entry.getKey();
 			if (entry.getValue() == 0)
 				continue;
-			double value = entry.getValue() * params.getWeight(feature);
+			final double value = entry.getValue() * params.getWeight(feature);
 			if (opts.ignoreZeroWeight && value == 0)
 				continue;
 			sumValue += value;
-			entries.add(new java.util.AbstractMap.SimpleEntry<String, Double>(feature, value));
+			entries.add(new java.util.AbstractMap.SimpleEntry<>(feature, value));
 		}
 		Collections.sort(entries, new ValueComparator<String, Double>(false));
 		LogInfo.begin_track_printAll("%s features [sum = %s] (format is feature value * weight)", prefix, Fmt.D(sumValue));
 		if (entries.size() / 2 > opts.logFeaturesLimit)
 		{
-			for (Map.Entry<String, Double> entry : entries.subList(0, opts.logFeaturesLimit))
+			for (final Map.Entry<String, Double> entry : entries.subList(0, opts.logFeaturesLimit))
 			{
-				String feature = entry.getKey();
-				double value = entry.getValue();
-				double weight = params.getWeight(feature);
+				final String feature = entry.getKey();
+				final double value = entry.getValue();
+				final double weight = params.getWeight(feature);
 				LogInfo.logs("%-50s %6s = %s * %s", "[ " + feature + " ]", Fmt.D(value), Fmt.D(MapUtils.getDouble(features, feature, 0)), Fmt.D(weight));
 			}
 			LogInfo.logs("... (%d more features) ...", entries.size() - 2 * opts.logFeaturesLimit);
-			for (Map.Entry<String, Double> entry : entries.subList(entries.size() - opts.logFeaturesLimit, entries.size()))
+			for (final Map.Entry<String, Double> entry : entries.subList(entries.size() - opts.logFeaturesLimit, entries.size()))
 			{
-				String feature = entry.getKey();
-				double value = entry.getValue();
-				double weight = params.getWeight(feature);
+				final String feature = entry.getKey();
+				final double value = entry.getValue();
+				final double weight = params.getWeight(feature);
 				LogInfo.logs("%-50s %6s = %s * %s", "[ " + feature + " ]", Fmt.D(value), Fmt.D(MapUtils.getDouble(features, feature, 0)), Fmt.D(weight));
 			}
 		}
 		else
-		{
-			for (Map.Entry<String, Double> entry : entries)
+			for (final Map.Entry<String, Double> entry : entries)
 			{
-				String feature = entry.getKey();
-				double value = entry.getValue();
-				double weight = params.getWeight(feature);
+				final String feature = entry.getKey();
+				final double value = entry.getValue();
+				final double weight = params.getWeight(feature);
 				LogInfo.logs("%-50s %6s = %s * %s", "[ " + feature + " ]", Fmt.D(value), Fmt.D(MapUtils.getDouble(features, feature, 0)), Fmt.D(weight));
 			}
-		}
 		LogInfo.end_track();
 	}
 
-	public static void logFeatures(Map<String, Double> features)
+	public static void logFeatures(final Map<String, Double> features)
 	{
-		for (String key : features.keySet())
-		{
+		for (final String key : features.keySet())
 			LogInfo.logs("%s\t%s", key, features.get(key));
-		}
 	}
 
 	public void clear()

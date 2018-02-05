@@ -1,13 +1,20 @@
 package edu.stanford.nlp.sempre.tables.serialize;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import edu.stanford.nlp.sempre.FuzzyMatchFn.FuzzyMatchFnMode;
+import edu.stanford.nlp.sempre.Dataset;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Grammar;
+import edu.stanford.nlp.sempre.Master;
+import edu.stanford.nlp.sempre.Rule;
 import edu.stanford.nlp.sempre.SemanticFn.CallInfo;
-import edu.stanford.nlp.sempre.tables.TableKnowledgeGraph;
-import fig.basic.*;
+import fig.basic.IOUtils;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Pair;
 import fig.exec.Execution;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Generate TSV files containing information about fuzzy matched objects.
@@ -17,12 +24,12 @@ import fig.exec.Execution;
 public class TaggedFuzzyGenerator extends TSVGenerator implements Runnable
 {
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		Execution.run(args, "TaggedFuzzyGeneratorMain", new TaggedFuzzyGenerator(), Master.getOptionsParser());
 	}
 
-	private Grammar grammar = new Grammar();
+	private final Grammar grammar = new Grammar();
 
 	@Override
 	public void run()
@@ -31,24 +38,24 @@ public class TaggedFuzzyGenerator extends TSVGenerator implements Runnable
 		grammar.read(Grammar.opts.inPaths);
 		// Read dataset
 		LogInfo.begin_track("Dataset.read");
-		for (Pair<String, String> pathPair : Dataset.opts.inPaths)
+		for (final Pair<String, String> pathPair : Dataset.opts.inPaths)
 		{
-			String group = pathPair.getFirst();
-			String path = pathPair.getSecond();
+			final String group = pathPair.getFirst();
+			final String path = pathPair.getSecond();
 			// Open output file
-			String filename = Execution.getFile("fuzzy-" + group + ".tsv");
+			final String filename = Execution.getFile("fuzzy-" + group + ".tsv");
 			out = IOUtils.openOutHard(filename);
 			dump(FIELDS);
 			// Read LispTrees
 			LogInfo.begin_track("Reading %s", path);
-			int maxExamples = Dataset.getMaxExamplesForGroup(group);
-			Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
+			final int maxExamples = Dataset.getMaxExamplesForGroup(group);
+			final Iterator<LispTree> trees = LispTree.proto.parseFromFile(path);
 			// Go through the examples
 			int n = 0;
 			while (n < maxExamples)
 			{
 				// Format: (example (id ...) (utterance ...) (targetFormula ...) (targetValue ...))
-				LispTree tree = trees.next();
+				final LispTree tree = trees.next();
 				if (tree == null)
 					break;
 				if (tree.children.size() < 2 || !"example".equals(tree.child(0).value))
@@ -57,7 +64,7 @@ public class TaggedFuzzyGenerator extends TSVGenerator implements Runnable
 						continue;
 					throw new RuntimeException("Invalid example: " + tree);
 				}
-				Example ex = Example.fromLispTree(tree, path + ":" + n);
+				final Example ex = Example.fromLispTree(tree, path + ":" + n);
 				ex.preprocess();
 				LogInfo.begin_track("Example %s (%d): %s => %s", ex.id, n, ex.getTokens(), ex.targetValue);
 				n++;
@@ -74,29 +81,29 @@ public class TaggedFuzzyGenerator extends TSVGenerator implements Runnable
 	private static final String[] FIELDS = new String[] { "id", "type", "start", "end", "phrase", "fragment" };
 
 	@Override
-	protected void dump(String... stuff)
+	protected void dump(final String... stuff)
 	{
 		assert stuff.length == FIELDS.length;
 		super.dump(stuff);
 	}
 
-	private void dumpExample(Example ex, LispTree tree)
+	private void dumpExample(final Example ex, final LispTree tree)
 	{
-		int n = ex.numTokens();
+		final int n = ex.numTokens();
 		for (int i = 0; i < n; i++)
 		{
-			StringBuilder sb = new StringBuilder(ex.token(i));
+			final StringBuilder sb = new StringBuilder(ex.token(i));
 			for (int j = i; j < n; j++)
 			{
-				String term = sb.toString();
+				final String term = sb.toString();
 				Derivation deriv = new Derivation.Builder().cat(Rule.phraseCat).start(i).end(j).rule(Rule.nullRule).children(Derivation.emptyList).withStringFormulaFrom(term).canonicalUtterance(term).createDerivation();
-				List<Derivation> children = new ArrayList<>();
+				final List<Derivation> children = new ArrayList<>();
 				children.add(deriv);
 				// Get the derived derivations
-				for (Rule rule : grammar.getRules())
+				for (final Rule rule : grammar.getRules())
 				{
-					CallInfo c = new CallInfo(rule.lhs, i, j + 1, rule, children);
-					Iterator<Derivation> itr = rule.sem.call(ex, c);
+					final CallInfo c = new CallInfo(rule.lhs, i, j + 1, rule, children);
+					final Iterator<Derivation> itr = rule.sem.call(ex, c);
 					while (itr.hasNext())
 					{
 						deriv = itr.next();

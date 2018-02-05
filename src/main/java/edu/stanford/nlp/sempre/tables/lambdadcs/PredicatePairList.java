@@ -1,12 +1,17 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
 import edu.stanford.nlp.sempre.AggregateFormula.Mode;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.KnowledgeGraph;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.PairListValue;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException.Type;
 import fig.basic.LispTree;
 import fig.basic.Pair;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implicitly represent a pair list using a single predicate: - NORMAL: a relation (fb:people.person.parent) or its reverse - COMPARISON: != < > <= >= - COLON:
@@ -36,25 +41,19 @@ public class PredicatePairList implements PairList
 	// Constructors
 	// ============================================================
 
-	public PredicatePairList(Value predicate, KnowledgeGraph graph)
+	public PredicatePairList(final Value predicate, final KnowledgeGraph graph)
 	{
 		this.predicate = predicate;
-		this.predicateId = (predicate instanceof NameValue) ? ((NameValue) predicate).id : null;
+		predicateId = predicate instanceof NameValue ? ((NameValue) predicate).id : null;
 		this.graph = graph;
 		if ("=".equals(predicateId))
-		{
 			type = PredicateType.EQUAL;
-		}
 		else
 			if (CanonicalNames.COLON.equals(predicateId))
-			{
 				type = PredicateType.COLON;
-			}
 			else
 				if (CanonicalNames.COMPARATORS.contains(predicateId))
-				{
 					type = PredicateType.COMPARISON;
-				}
 				else
 				{
 					type = PredicateType.NORMAL;
@@ -129,7 +128,7 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation get(Value key)
+	public UnaryDenotation get(final Value key)
 	{
 		switch (type)
 		{
@@ -145,7 +144,7 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation inverseGet(Value value)
+	public UnaryDenotation inverseGet(final Value value)
 	{
 		switch (type)
 		{
@@ -165,7 +164,7 @@ public class PredicatePairList implements PairList
 	// ============================================================
 
 	@Override
-	public PairList aggregate(Mode mode)
+	public PairList aggregate(final Mode mode)
 	{
 		switch (type)
 		{
@@ -180,7 +179,7 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public PairList filter(UnaryDenotation upperBound, UnaryDenotation domainUpperBound)
+	public PairList filter(final UnaryDenotation upperBound, final UnaryDenotation domainUpperBound)
 	{
 		return explicitlyFilter(upperBound, domainUpperBound);
 	}
@@ -200,7 +199,7 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation joinOnKey(UnaryDenotation keys)
+	public UnaryDenotation joinOnKey(final UnaryDenotation keys)
 	{
 		switch (type)
 		{
@@ -216,7 +215,7 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public UnaryDenotation joinOnValue(UnaryDenotation values)
+	public UnaryDenotation joinOnValue(final UnaryDenotation values)
 	{
 		switch (type)
 		{
@@ -232,15 +231,15 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public ExplicitPairList explicitlyFilterOnKey(UnaryDenotation keys)
+	public ExplicitPairList explicitlyFilterOnKey(final UnaryDenotation keys)
 	{
 		switch (type)
 		{
 			case EQUAL:
 				if (keys.size() == Integer.MAX_VALUE)
 					throw new LambdaDCSException(Type.infiniteList, "Cannot call explicitlyFilter* on %s", this);
-				List<Pair<Value, Value>> pairs = new ArrayList<>();
-				for (Value x : keys)
+				final List<Pair<Value, Value>> pairs = new ArrayList<>();
+				for (final Value x : keys)
 					pairs.add(new Pair<>(x, x));
 				return new ExplicitPairList(pairs);
 			case COLON:
@@ -252,15 +251,15 @@ public class PredicatePairList implements PairList
 	}
 
 	@Override
-	public ExplicitPairList explicitlyFilterOnValue(UnaryDenotation values)
+	public ExplicitPairList explicitlyFilterOnValue(final UnaryDenotation values)
 	{
 		switch (type)
 		{
 			case EQUAL:
 				if (values.size() == Integer.MAX_VALUE)
 					throw new LambdaDCSException(Type.infiniteList, "Cannot call explicitlyFilter* on %s", this);
-				List<Pair<Value, Value>> pairs = new ArrayList<>();
-				for (Value x : values)
+				final List<Pair<Value, Value>> pairs = new ArrayList<>();
+				for (final Value x : values)
 					pairs.add(new Pair<>(x, x));
 				return new ExplicitPairList(pairs);
 			case COLON:
@@ -271,16 +270,16 @@ public class PredicatePairList implements PairList
 		}
 	}
 
-	public ExplicitPairList explicitlyFilter(UnaryDenotation values, UnaryDenotation keys)
+	public ExplicitPairList explicitlyFilter(final UnaryDenotation values, final UnaryDenotation keys)
 	{
-		List<Pair<Value, Value>> pairs = new ArrayList<>();
+		final List<Pair<Value, Value>> pairs = new ArrayList<>();
 		switch (type)
 		{
 			case EQUAL:
-				UnaryDenotation domain = values.merge(keys, MergeFormula.Mode.and);
+				final UnaryDenotation domain = values.merge(keys, MergeFormula.Mode.and);
 				if (domain.size() == Integer.MAX_VALUE)
 					throw new LambdaDCSException(Type.infiniteList, "Cannot call explicitlyFilter* on %s", this);
-				for (Value x : domain)
+				for (final Value x : domain)
 					pairs.add(new Pair<>(x, x));
 				return new ExplicitPairList(pairs);
 			case COLON:
@@ -289,21 +288,21 @@ public class PredicatePairList implements PairList
 			default:
 				try
 				{
-					for (Pair<Value, Value> pair : graph.filterSecond(predicate, keys))
+					for (final Pair<Value, Value> pair : graph.filterSecond(predicate, keys))
 						if (values.contains(pair.getFirst()))
 							pairs.add(pair);
 					return new ExplicitPairList(pairs);
 				}
-				catch (LambdaDCSException e)
+				catch (final LambdaDCSException e)
 				{
 					try
 					{
-						for (Pair<Value, Value> pair : graph.filterFirst(predicate, values))
+						for (final Pair<Value, Value> pair : graph.filterFirst(predicate, values))
 							if (keys.contains(pair.getSecond()))
 								pairs.add(pair);
 						return new ExplicitPairList(pairs);
 					}
-					catch (LambdaDCSException e2)
+					catch (final LambdaDCSException e2)
 					{
 						throw new LambdaDCSException(Type.infiniteList, "Cannot call explicitlyFilter* on %s", this);
 					}

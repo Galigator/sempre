@@ -45,7 +45,7 @@ public final class FileUtils
 	public static Set<String> loadSet(final String file) throws IOException
 	{
 
-		final Set<String> res = new TreeSet<String>();
+		final Set<String> res = new TreeSet<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		while ((line = reader.readLine()) != null)
@@ -57,7 +57,7 @@ public final class FileUtils
 	public static Map<String, String> loadStringToStringMap(final String file) throws IOException
 	{
 
-		final Map<String, String> res = new HashMap<String, String>();
+		final Map<String, String> res = new HashMap<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		int i = 0;
@@ -76,7 +76,7 @@ public final class FileUtils
 	public static Map<Integer, Double> loadIntToDoubleMap(final String file) throws IOException
 	{
 
-		final Map<Integer, Double> res = new HashMap<Integer, Double>();
+		final Map<Integer, Double> res = new HashMap<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		while ((line = reader.readLine()) != null)
@@ -91,7 +91,7 @@ public final class FileUtils
 	public static Map<String, String> loadStringToStringMap(final String file, final int keyColumn, final int valueColumn) throws IOException
 	{
 
-		final Map<String, String> res = new HashMap<String, String>();
+		final Map<String, String> res = new HashMap<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		int i = 0;
@@ -129,7 +129,7 @@ public final class FileUtils
 	public static Set<String> loadSetFromTabDelimitedFile(final String file, final int column) throws IOException
 	{
 
-		final Set<String> res = new HashSet<String>();
+		final Set<String> res = new HashSet<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		int i = 0;
@@ -184,7 +184,7 @@ public final class FileUtils
 	public static Map<String, Integer> loadString2IntegerMap(final String file) throws IOException
 	{
 
-		final Map<String, Integer> res = new HashMap<String, Integer>();
+		final Map<String, Integer> res = new HashMap<>();
 		final BufferedReader reader = IOUtils.getBufferedFileReader(file);
 		String line;
 		while ((line = reader.readLine()) != null)
@@ -206,7 +206,7 @@ public final class FileUtils
 	public static Counter<String> loadStringCounter(final String filename)
 	{
 
-		final Counter<String> res = new ClassicCounter<String>();
+		final Counter<String> res = new ClassicCounter<>();
 		for (final String line : ObjectBank.getLineIterator(filename))
 		{
 
@@ -231,7 +231,7 @@ public final class FileUtils
 	{
 		final StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < str.length(); ++i)
-			if (!StringUtils.isPunct((new Character(str.charAt(i))).toString()))
+			if (!StringUtils.isPunct(new Character(str.charAt(i)).toString()))
 				sb.append(str.charAt(i));
 		return sb.toString();
 	}

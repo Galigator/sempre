@@ -1,22 +1,21 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.io.PrintWriter;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import edu.stanford.nlp.sempre.Json;
 import fig.basic.Evaluation;
 import fig.basic.IOUtils;
 import fig.basic.LogInfo;
 import fig.exec.Execution;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class SimulationAnalyzer
 {
 	@SuppressWarnings("unchecked")
-	public static Map<String, Object> getStats(String jsonResponse)
+	public static Map<String, Object> getStats(final String jsonResponse)
 	{
-		Map<String, Object> response = Json.readMapHard(jsonResponse);
+		final Map<String, Object> response = Json.readMapHard(jsonResponse);
 		if (response.containsKey("stats"))
 			return (Map<String, Object>) response.get("stats");
 		return null;
@@ -28,10 +27,10 @@ public class SimulationAnalyzer
 	static int queryCount = 0;
 
 	// add stats to the query.
-	public synchronized static void addStats(Map<String, Object> query, String jsonResponse)
+	public synchronized static void addStats(final Map<String, Object> query, final String jsonResponse)
 	{
-		Map<String, Object> stats = getStats(jsonResponse);
-		Map<String, Object> line = new LinkedHashMap<String, Object>(query);
+		final Map<String, Object> stats = getStats(jsonResponse);
+		final Map<String, Object> line = new LinkedHashMap<>(query);
 		LogInfo.logs("stats: %s", stats);
 		if (stats == null)
 		{
@@ -42,12 +41,10 @@ public class SimulationAnalyzer
 		}
 
 		// make sure no key conflict
-		for (Entry<String, Object> entry : stats.entrySet())
-		{
+		for (final Entry<String, Object> entry : stats.entrySet())
 			line.put("stats." + entry.getKey(), entry.getValue());
-		}
 		line.put("queryCount", ++queryCount);
-		PrintWriter infoFile = IOUtils.openOutAppendHard(Execution.getFile("plotInfo.json"));
+		final PrintWriter infoFile = IOUtils.openOutAppendHard(Execution.getFile("plotInfo.json"));
 		infoFile.println(Json.writeValueAsStringHard(line));
 		infoFile.close();
 
@@ -66,8 +63,8 @@ public class SimulationAnalyzer
 
 		if (stats.get("type").equals("q") && !stats.containsKey("error"))
 		{
-			GrammarInducer.ParseStatus status = GrammarInducer.ParseStatus.fromString(stats.get("status").toString());
-			int size = (Integer) stats.get("size");
+			final GrammarInducer.ParseStatus status = GrammarInducer.ParseStatus.fromString(stats.get("status").toString());
+			final int size = (Integer) stats.get("size");
 			qEval.add("q.size", size);
 			qEval.add("q.isCore", status == GrammarInducer.ParseStatus.Core);
 			qEval.add("q.isInduced", status == GrammarInducer.ParseStatus.Induced);
@@ -75,9 +72,9 @@ public class SimulationAnalyzer
 
 		if (stats.get("type").equals("accept") && !stats.containsKey("error"))
 		{
-			GrammarInducer.ParseStatus status = GrammarInducer.ParseStatus.fromString(stats.get("status").toString());
-			int size = (Integer) stats.get("size");
-			int rank = (Integer) stats.get("rank");
+			final GrammarInducer.ParseStatus status = GrammarInducer.ParseStatus.fromString(stats.get("status").toString());
+			final int size = (Integer) stats.get("size");
+			final int rank = (Integer) stats.get("rank");
 			acceptEval.add("size", size);
 			if (rank != -1)
 				acceptEval.add("rank", rank);

@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Function;
 import fig.basic.LispTree;
-
 import java.util.List;
 
 /**
@@ -15,37 +14,37 @@ public class ReverseFormula extends Formula
 {
 	public final Formula child;
 
-	public ReverseFormula(Formula child)
+	public ReverseFormula(final Formula child)
 	{
 		this.child = child;
 	}
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("reverse");
 		tree.addChild(child.toLispTree());
 		return tree;
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
 			child.forEach(func);
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> func)
+	public Formula map(final Function<Formula, Formula> func)
 	{
-		Formula result = func.apply(this);
+		final Formula result = func.apply(this);
 		return result == null ? new ReverseFormula(child.map(func)) : result;
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> func, final boolean alwaysRecurse)
 	{
-		List<Formula> res = func.apply(this);
+		final List<Formula> res = func.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
 			res.addAll(child.mapToList(func, alwaysRecurse));
 		return res;
@@ -53,12 +52,12 @@ public class ReverseFormula extends Formula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof ReverseFormula))
 			return false;
-		ReverseFormula that = (ReverseFormula) thatObj;
-		if (!this.child.equals(that.child))
+		final ReverseFormula that = (ReverseFormula) thatObj;
+		if (!child.equals(that.child))
 			return false;
 		return true;
 	}

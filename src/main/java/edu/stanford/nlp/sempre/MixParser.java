@@ -1,11 +1,13 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-import java.util.regex.Pattern;
-
 import fig.basic.LogInfo;
 import fig.basic.Option;
 import fig.basic.Pair;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * A parser that mixes the derivation lists from other parsers.
@@ -36,29 +38,29 @@ public class MixParser extends Parser
 	int iter, numIters;
 	String group;
 
-	public MixParser(Spec spec)
+	public MixParser(final Spec spec)
 	{
 		super(spec);
 		parsers = new ArrayList<>();
-		for (String parserAndOptions : opts.parsers)
+		for (final String parserAndOptions : opts.parsers)
 		{
 			if (opts.verbose >= 1)
 				LogInfo.logs("Adding parser %s", parserAndOptions);
-			String[] tokens = parserAndOptions.split(":");
+			final String[] tokens = parserAndOptions.split(":");
 			if (tokens.length > 2)
 				throw new RuntimeException("Invalid parser options: " + parserAndOptions);
-			String parserName = tokens[0];
+			final String parserName = tokens[0];
 			Parser parser;
 			try
 			{
-				Class<?> parserClass = Class.forName(SempreUtils.resolveClassName(parserName));
-				parser = ((Parser) parserClass.getConstructor(spec.getClass()).newInstance(spec));
+				final Class<?> parserClass = Class.forName(SempreUtils.resolveClassName(parserName));
+				parser = (Parser) parserClass.getConstructor(spec.getClass()).newInstance(spec);
 			}
-			catch (ClassNotFoundException e1)
+			catch (final ClassNotFoundException e1)
 			{
 				throw new RuntimeException("Illegal parser: " + parserName);
 			}
-			catch (Exception e)
+			catch (final Exception e)
 			{
 				e.printStackTrace();
 				throw new RuntimeException("Error while instantiating parser: " + parserName + "\n" + e);
@@ -78,13 +80,13 @@ public class MixParser extends Parser
 	};
 
 	@Override
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		return new MixParserState(this, params, ex, computeExpectedCounts);
 	}
 
 	@Override
-	public void onBeginDataGroup(int iter, int numIters, String group)
+	public void onBeginDataGroup(final int iter, final int numIters, final String group)
 	{
 		this.iter = iter;
 		this.numIters = numIters;
@@ -96,22 +98,22 @@ class MixParserOption
 {
 	private final MixParser mixParser;
 	private boolean allowedAll = false;
-	private List<Pair<String, String>> allowedGroupsAndIter = new ArrayList<>();
+	private final List<Pair<String, String>> allowedGroupsAndIter = new ArrayList<>();
 
-	public MixParserOption(MixParser mixParser)
+	public MixParserOption(final MixParser mixParser)
 	{
 		this.mixParser = mixParser;
 		// Allow in all groups
 		allowedAll = true;
 	}
 
-	public MixParserOption(MixParser mixParser, String optionString)
+	public MixParserOption(final MixParser mixParser, final String optionString)
 	{
 		this.mixParser = mixParser;
-		String[] tokens = optionString.split(",");
-		for (String option : tokens)
+		final String[] tokens = optionString.split(",");
+		for (final String option : tokens)
 		{
-			String[] subtokens = option.split("-");
+			final String[] subtokens = option.split("-");
 			if (subtokens.length == 1)
 				allowedGroupsAndIter.add(new Pair<>(subtokens[0], "all"));
 			else
@@ -124,11 +126,11 @@ class MixParserOption
 		}
 	}
 
-	public boolean isAllowed(boolean computeExpectedCounts)
+	public boolean isAllowed(final boolean computeExpectedCounts)
 	{
 		if (allowedAll)
 			return true;
-		String xcFlag = computeExpectedCounts ? "xc" : "nxc";
+		final String xcFlag = computeExpectedCounts ? "xc" : "nxc";
 		return allowedGroupsAndIter.contains(new Pair<>(mixParser.group, "all")) || allowedGroupsAndIter.contains(new Pair<>(mixParser.group, "" + mixParser.iter)) || allowedGroupsAndIter.contains(new Pair<>(mixParser.group, xcFlag)) || allowedGroupsAndIter.contains(new Pair<>(mixParser.group, "" + mixParser.iter + xcFlag));
 	}
 }
@@ -136,7 +138,7 @@ class MixParserOption
 class MixParserState extends ParserState
 {
 
-	public MixParserState(Parser parser, Params params, Example ex, boolean computeExpectedCounts)
+	public MixParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 	}
@@ -144,7 +146,7 @@ class MixParserState extends ParserState
 	@Override
 	public void infer()
 	{
-		for (Pair<Parser, MixParserOption> pair : ((MixParser) parser).parsers)
+		for (final Pair<Parser, MixParserOption> pair : ((MixParser) parser).parsers)
 		{
 			if (!pair.getSecond().isAllowed(computeExpectedCounts))
 			{
@@ -154,7 +156,7 @@ class MixParserState extends ParserState
 			}
 			if (MixParser.opts.verbose >= 1)
 				LogInfo.begin_track("Using %s", pair.getFirst().getClass().getSimpleName());
-			ParserState parserState = pair.getFirst().newParserState(params, ex, false);
+			final ParserState parserState = pair.getFirst().newParserState(params, ex, false);
 			parserState.infer();
 			predDerivations.addAll(parserState.predDerivations);
 			if (MixParser.opts.verbose >= 1)

@@ -1,10 +1,22 @@
 package edu.stanford.nlp.sempre.cprune;
 
-import java.io.*;
-import java.util.*;
-
-import fig.basic.*;
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.ValueEvaluator;
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import fig.basic.ValueComparator;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Static class for collaborative pruning.
@@ -73,52 +85,49 @@ public class CollaborativePruner
 		uidToCachedNeighbors = new HashMap<>();
 		try
 		{
-			BufferedReader reader = IOUtils.openIn(opts.neighborFilePath);
+			final BufferedReader reader = IOUtils.openIn(opts.neighborFilePath);
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				String[] tokens = line.split("\t");
-				String uid = tokens[0];
-				String[] nids = tokens[1].split(",");
+				final String[] tokens = line.split("\t");
+				final String uid = tokens[0];
+				final String[] nids = tokens[1].split(",");
 				uidToCachedNeighbors.put(uid, Arrays.asList(nids));
 			}
 			reader.close();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 		LogInfo.end_track();
 	}
 
-	public static void initialize(Example ex, Mode mode)
+	public static void initialize(final Example ex, final Mode mode)
 	{
 		CollaborativePruner.mode = mode;
 		predictedRules = null;
 		predictedPatterns = null;
 		foundConsistentDerivation = false;
 		if (mode == Mode.EXPLOIT)
-		{
 			preprocessExample(ex);
-		}
 	}
 
-	static void preprocessExample(Example ex)
+	static void preprocessExample(final Example ex)
 	{
-		Map<String, FormulaPattern> patternFreqMap = new HashMap<>();
-		List<String> cachedNeighbors = uidToCachedNeighbors.get(ex.id);
+		final Map<String, FormulaPattern> patternFreqMap = new HashMap<>();
+		final List<String> cachedNeighbors = uidToCachedNeighbors.get(ex.id);
 		int total = 0;
 
 		// Gather the neighbors
 		if (opts.maxNumNeighbors > 0)
-		{
-			for (String nid : cachedNeighbors)
+			for (final String nid : cachedNeighbors)
 			{
 				// Only get examples that have been previously processed + found a consistent formula
 				if (!consistentPattern.containsKey(nid))
 					continue;
 
-				String neighborPattern = consistentPattern.get(nid).pattern;
+				final String neighborPattern = consistentPattern.get(nid).pattern;
 				if (!patternFreqMap.containsKey(neighborPattern))
 					patternFreqMap.put(neighborPattern, new FormulaPattern(neighborPattern, 0));
 				patternFreqMap.get(neighborPattern).frequency++;
@@ -126,30 +135,25 @@ public class CollaborativePruner
 				if (total >= opts.maxNumNeighbors)
 					break;
 			}
-		}
 		else
-		{
-			for (String patternString : allConsistentPatterns)
-			{
+			for (final String patternString : allConsistentPatterns)
 				patternFreqMap.put(patternString, new FormulaPattern(patternString, 1));
-			}
-		}
 
 		// Sort by frequency (more frequent = smaller; see FormulaPattern.compareTo)
-		List<Map.Entry<String, FormulaPattern>> patternFreqEntries = new ArrayList<>(patternFreqMap.entrySet());
+		final List<Map.Entry<String, FormulaPattern>> patternFreqEntries = new ArrayList<>(patternFreqMap.entrySet());
 		patternFreqEntries.sort(new ValueComparator<>(false));
 
 		// Gather the patterns
 		LogInfo.begin_track("Predicted patterns");
 		int rank = 0;
-		Set<String> predictedRulesStrings = new HashSet<>();
+		final Set<String> predictedRulesStrings = new HashSet<>();
 		predictedPatterns = new HashMap<>();
-		for (Map.Entry<String, FormulaPattern> entry : patternFreqEntries)
+		for (final Map.Entry<String, FormulaPattern> entry : patternFreqEntries)
 		{
-			FormulaPattern newPattern = entry.getValue();
+			final FormulaPattern newPattern = entry.getValue();
 			predictedPatterns.put(newPattern.pattern, newPattern);
 			predictedRulesStrings.addAll(customRules.get(newPattern.pattern));
-			LogInfo.logs((rank + 1) + ". " + newPattern.pattern + " (" + newPattern.frequency + ")");
+			LogInfo.logs(rank + 1 + ". " + newPattern.pattern + " (" + newPattern.frequency + ")");
 			rank++;
 			if (rank >= opts.maxPredictedPatterns)
 				break;
@@ -159,34 +163,28 @@ public class CollaborativePruner
 		LogInfo.end_track();
 	}
 
-	public static String getPatternString(Derivation deriv)
+	public static String getPatternString(final Derivation deriv)
 	{
 		if (deriv.cat.equals("$TOKEN") || deriv.cat.equals("$PHRASE") || deriv.cat.equals("$LEMMA_TOKEN") || deriv.cat.equals("$LEMMA_PHRASE"))
-		{
 			return deriv.cat;
-		}
 		else
-		{
 			return FormulaPattern.convertToIndexedPattern(deriv);
-		}
 	}
 
-	public static void addRules(String patternString, Derivation deriv, Example ex)
+	public static void addRules(final String patternString, final Derivation deriv, final Example ex)
 	{
 		if (!customRules.containsKey(patternString))
-		{
 			customRules.put(patternString, new HashSet<String>());
-		}
-		Set<String> parsedCustomRules = customGrammar.addCustomRule(deriv, ex);
+		final Set<String> parsedCustomRules = customGrammar.addCustomRule(deriv, ex);
 		customRules.get(patternString).addAll(parsedCustomRules);
 	}
 
 	/**
 	 * Get called when a (consistent) formula is found. Update the consistent patterns.
 	 */
-	public static void updateConsistentPattern(ValueEvaluator evaluator, Example ex, Derivation deriv)
+	public static void updateConsistentPattern(final ValueEvaluator evaluator, final Example ex, final Derivation deriv)
 	{
-		String uid = ex.id;
+		final String uid = ex.id;
 		if (ex.targetValue != null)
 			deriv.compatibility = evaluator.getCompatibility(ex.targetValue, deriv.value);
 
@@ -195,11 +193,11 @@ public class CollaborativePruner
 			foundConsistentDerivation = true;
 			LogInfo.logs("Found consistent deriv: %s", deriv);
 
-			String patternString = getPatternString(deriv);
-			FormulaPattern newConsistentPattern = new FormulaPattern(patternString, 0);
+			final String patternString = getPatternString(deriv);
+			final FormulaPattern newConsistentPattern = new FormulaPattern(patternString, 0);
 			newConsistentPattern.score = deriv.getScore();
 
-			FormulaPattern oldConsistentPattern = consistentPattern.get(uid);
+			final FormulaPattern oldConsistentPattern = consistentPattern.get(uid);
 			if (oldConsistentPattern == null || newConsistentPattern.score > oldConsistentPattern.score)
 			{
 				addRules(patternString, deriv, ex);
@@ -209,7 +207,7 @@ public class CollaborativePruner
 		}
 	}
 
-	public static FormulaPattern getConsistentPattern(Example ex)
+	public static FormulaPattern getConsistentPattern(final Example ex)
 	{
 		return consistentPattern.get(ex.id);
 	}

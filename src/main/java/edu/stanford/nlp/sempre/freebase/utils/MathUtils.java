@@ -3,7 +3,6 @@ package edu.stanford.nlp.sempre.freebase.utils;
 import edu.stanford.nlp.stats.ClassicCounter;
 import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.stats.Counters;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,53 +14,51 @@ public final class MathUtils
 	{
 	}
 
-	public static double jaccard(double intersection, double size1, double size2, double smoothing)
+	public static double jaccard(final double intersection, final double size1, final double size2, final double smoothing)
 	{
 		return intersection / (size1 + size2 + smoothing - intersection);
 	}
 
-	public static <E> double generalizedJensenShannonDivergence(Counter<E> c1, Counter<E> c2)
+	public static <E> double generalizedJensenShannonDivergence(final Counter<E> c1, final Counter<E> c2)
 	{
 
 		double sum = 0.0;
-		Set<E> nonZeroEntries = new HashSet<E>();
-		for (E entry : nonZeroEntries)
+		final Set<E> nonZeroEntries = new HashSet<>();
+		for (final E entry : nonZeroEntries)
 		{
-			double u = c1.getCount(entry);
-			double v = c2.getCount(entry);
+			final double u = c1.getCount(entry);
+			final double v = c2.getCount(entry);
 			sum += coordinateJsDivergence(u, v);
 		}
 		return sum / 2.0;
 	}
 
-	private static double coordinateJsDivergence(double u, double v)
+	private static double coordinateJsDivergence(final double u, final double v)
 	{
 		return u * Math.log(2 * u / (u + v)) + v * Math.log(2 * v / (u + v));
 	}
 
-	public static double coordinateJsDiverDeriv(double x, double y)
+	public static double coordinateJsDiverDeriv(final double x, final double y)
 	{
 		if (x == 0.0)
 			return 0.0;
 		if (y == 0.0)
 			return Math.log(2) / 2.0;
 
-		double xPlusY = x + y;
-		double res = -1 * Math.log(xPlusY) - (y / xPlusY) + x * (1 / x - 1 / xPlusY) + Math.log(x) + Math.log(2);
+		final double xPlusY = x + y;
+		final double res = -1 * Math.log(xPlusY) - y / xPlusY + x * (1 / x - 1 / xPlusY) + Math.log(x) + Math.log(2);
 		return res / 2.0;
 	}
 
-	public static Counter<String> prefixCounterKeys(Counter<String> counter, String prefix)
+	public static Counter<String> prefixCounterKeys(final Counter<String> counter, final String prefix)
 	{
-		Counter<String> res = new ClassicCounter<String>();
-		for (String key : counter.keySet())
-		{
+		final Counter<String> res = new ClassicCounter<>();
+		for (final String key : counter.keySet())
 			res.setCount(prefix + "_" + key, counter.getCount(key));
-		}
 		return res;
 	}
 
-	public static double vectorCosine(List<Double> array1, List<Double> array2)
+	public static double vectorCosine(final List<Double> array1, final List<Double> array2)
 	{
 
 		if (array1.size() != array2.size())
@@ -79,7 +76,7 @@ public final class MathUtils
 		return dotProd / (Math.sqrt(lsq1) * Math.sqrt(lsq2));
 	}
 
-	public static double euclidDistance(List<Double> array1, List<Double> array2)
+	public static double euclidDistance(final List<Double> array1, final List<Double> array2)
 	{
 
 		if (array1.size() != array2.size())
@@ -87,28 +84,26 @@ public final class MathUtils
 
 		double sqDistance = 0.0;
 		for (int i = 0; i < array1.size(); ++i)
-		{
 			sqDistance += Math.pow(array1.get(i) - array2.get(i), 2);
-		}
 		return Math.sqrt(sqDistance);
 	}
 
-	public static <T> double sumDoubleMap(Map<T, DoubleContainer> map)
+	public static <T> double sumDoubleMap(final Map<T, DoubleContainer> map)
 	{
 		double sum = 0.0;
-		for (DoubleContainer d : map.values())
+		for (final DoubleContainer d : map.values())
 			sum += d.value();
 		return sum;
 	}
 
-	public static <T> void normalizeDoubleMap(Map<T, DoubleContainer> map)
+	public static <T> void normalizeDoubleMap(final Map<T, DoubleContainer> map)
 	{
 		double sum = 0.0;
-		for (DoubleContainer d : map.values())
+		for (final DoubleContainer d : map.values())
 			sum += d.value();
-		for (T key : map.keySet())
+		for (final T key : map.keySet())
 		{
-			double normalizedValue = map.get(key).value() / sum;
+			final double normalizedValue = map.get(key).value() / sum;
 			map.get(key).set(normalizedValue);
 		}
 	}
@@ -120,15 +115,15 @@ public final class MathUtils
 	 * @param y
 	 * @return
 	 */
-	public static <T> double jaccard(Set<T> x, Set<T> y)
+	public static <T> double jaccard(final Set<T> x, final Set<T> y)
 	{
 
-		Set<T> intersection = new HashSet<T>(x);
+		final Set<T> intersection = new HashSet<>(x);
 		intersection.retainAll(y);
-		Set<T> union = new HashSet<T>(x);
+		final Set<T> union = new HashSet<>(x);
 		union.addAll(y);
 
-		double res = union.size() == 0 ? 1.0 : (double) intersection.size() / union.size();
+		final double res = union.size() == 0 ? 1.0 : (double) intersection.size() / union.size();
 		return res;
 	}
 
@@ -139,15 +134,15 @@ public final class MathUtils
 	 * @param y
 	 * @return
 	 */
-	public static <T> double jaccard(List<T> x, List<T> y)
+	public static <T> double jaccard(final List<T> x, final List<T> y)
 	{
 
-		Set<T> intersection = new HashSet<T>(x);
+		final Set<T> intersection = new HashSet<>(x);
 		intersection.retainAll(y);
-		Set<T> union = new HashSet<T>(x);
+		final Set<T> union = new HashSet<>(x);
 		union.addAll(y);
 
-		double res = union.size() == 0 ? 1.0 : (double) intersection.size() / union.size();
+		final double res = union.size() == 0 ? 1.0 : (double) intersection.size() / union.size();
 		return res;
 	}
 
@@ -158,15 +153,13 @@ public final class MathUtils
 	 * @param y
 	 * @return
 	 */
-	public static <T> double coverage(List<T> x, List<T> y)
+	public static <T> double coverage(final List<T> x, final List<T> y)
 	{
-		Set<T> yTokens = new HashSet<T>(y);
+		final Set<T> yTokens = new HashSet<>(y);
 		int covered = 0;
-		for (T xItem : x)
-		{
+		for (final T xItem : x)
 			if (yTokens.contains(xItem))
 				covered++;
-		}
 		return (double) covered / x.size();
 	}
 
@@ -178,12 +171,12 @@ public final class MathUtils
 	 * @return
 	 */
 
-	public static double bleu(List<String> test, List<String> ref)
+	public static double bleu(final List<String> test, final List<String> ref)
 	{
 
-		Set<String> refUnigrams = new HashSet<String>();
-		Set<String> refBigrams = new HashSet<String>();
-		Set<String> refTrigrams = new HashSet<String>();
+		final Set<String> refUnigrams = new HashSet<>();
+		final Set<String> refBigrams = new HashSet<>();
+		final Set<String> refTrigrams = new HashSet<>();
 		for (int i = 0; i < ref.size(); ++i)
 		{
 			refUnigrams.add(ref.get(i));
@@ -201,32 +194,32 @@ public final class MathUtils
 				unigramCov++;
 			if (i < test.size() - 1)
 			{
-				String bigram = test.get(i) + " " + test.get(i + 1);
+				final String bigram = test.get(i) + " " + test.get(i + 1);
 				if (refBigrams.contains(bigram))
 					bigramCov++;
 			}
 			if (i < test.size() - 2)
 			{
-				String trigram = test.get(i) + " " + test.get(i + 1) + " " + test.get(i + 2);
+				final String trigram = test.get(i) + " " + test.get(i + 1) + " " + test.get(i + 2);
 				if (refTrigrams.contains(trigram))
 					trigramCov++;
 			}
 		}
-		double unigramPrec = (double) unigramCov / test.size();
-		double bigramPrec = (double) bigramCov / (test.size() - 1);
-		double trigramPrec = (double) trigramCov / (test.size() - 2);
-		double exponent = (double) 1 / 3;
+		final double unigramPrec = (double) unigramCov / test.size();
+		final double bigramPrec = (double) bigramCov / (test.size() - 1);
+		final double trigramPrec = (double) trigramCov / (test.size() - 2);
+		final double exponent = (double) 1 / 3;
 		return Math.pow(unigramPrec * bigramPrec * trigramPrec, exponent);
 	}
 
-	public static double tokensCosine(List<String> x, List<String> y)
+	public static double tokensCosine(final List<String> x, final List<String> y)
 	{
 
-		Counter<String> xCounter = new ClassicCounter<String>();
-		for (String str : x)
+		final Counter<String> xCounter = new ClassicCounter<>();
+		for (final String str : x)
 			xCounter.incrementCount(str);
-		Counter<String> yCounter = new ClassicCounter<String>();
-		for (String str : y)
+		final Counter<String> yCounter = new ClassicCounter<>();
+		for (final String str : y)
 			yCounter.incrementCount(str);
 		return Counters.cosine(xCounter, yCounter);
 	}

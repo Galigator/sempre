@@ -1,7 +1,5 @@
 package edu.stanford.nlp.sempre.interactive;
 
-import java.util.List;
-
 import edu.stanford.nlp.sempre.Derivation;
 import edu.stanford.nlp.sempre.DerivationStream;
 import edu.stanford.nlp.sempre.Example;
@@ -12,6 +10,7 @@ import edu.stanford.nlp.sempre.SemanticFn;
 import edu.stanford.nlp.sempre.SingleDerivationStream;
 import fig.basic.LispTree;
 import fig.basic.Option;
+import java.util.List;
 
 /**
  * Take any number of arguments and apply them to the lambda expression given in this SemanticFn TODO: type inference, some function applications
@@ -31,7 +30,7 @@ public class ApplyFn extends SemanticFn
 	Formula formula;
 
 	@Override
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		formula = Formulas.fromLispTree(tree.child(1));
@@ -46,7 +45,7 @@ public class ApplyFn extends SemanticFn
 	{
 	}
 
-	public ApplyFn(Formula f)
+	public ApplyFn(final Formula f)
 	{
 		formula = f;
 	}
@@ -59,15 +58,15 @@ public class ApplyFn extends SemanticFn
 			@Override
 			public Derivation createDerivation()
 			{
-				List<Derivation> args = c.getChildren();
+				final List<Derivation> args = c.getChildren();
 				Formula f = Formulas.fromLispTree(formula.toLispTree());
-				for (Derivation arg : args)
+				for (final Derivation arg : args)
 				{
 					if (!(f instanceof LambdaFormula))
 						throw new RuntimeException("Expected LambdaFormula, but got " + f + "; initial: " + formula);
 					f = Formulas.lambdaApply((LambdaFormula) f, arg.getFormula());
 				}
-				Derivation res = new Derivation.Builder().withCallable(c).formula(f).createDerivation();
+				final Derivation res = new Derivation.Builder().withCallable(c).formula(f).createDerivation();
 				return res;
 			}
 		};

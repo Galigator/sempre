@@ -1,9 +1,11 @@
 package edu.stanford.nlp.sempre.tables.match;
 
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.CanonicalNames;
+import edu.stanford.nlp.sempre.Formula;
 import edu.stanford.nlp.sempre.FuzzyMatchFn.FuzzyMatchFnMode;
+import edu.stanford.nlp.sempre.JoinFormula;
+import edu.stanford.nlp.sempre.NameValue;
+import edu.stanford.nlp.sempre.ValueFormula;
 import edu.stanford.nlp.sempre.tables.StringNormalizationUtils;
 import edu.stanford.nlp.sempre.tables.TableCell;
 import edu.stanford.nlp.sempre.tables.TableColumn;
@@ -12,6 +14,13 @@ import edu.stanford.nlp.sempre.tables.TableTypeSystem;
 import fig.basic.MapUtils;
 import fig.basic.Option;
 import fig.basic.Pair;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Original matcher used in ACL 2015. Only does exact matches.
@@ -28,23 +37,23 @@ public class OriginalMatcher extends FuzzyMatcher
 
 	public static Options opts = new Options();
 
-	public OriginalMatcher(TableKnowledgeGraph graph)
+	public OriginalMatcher(final TableKnowledgeGraph graph)
 	{
 		super(graph);
 		precomputeForMatching();
 	}
 
-	private static Collection<String> getAllCollapsedForms(String original)
+	private static Collection<String> getAllCollapsedForms(final String original)
 	{
-		Set<String> collapsedForms = new HashSet<>();
+		final Set<String> collapsedForms = new HashSet<>();
 		collapsedForms.add(StringNormalizationUtils.collapseNormalize(original));
-		String normalized = StringNormalizationUtils.aggressiveNormalize(original);
+		final String normalized = StringNormalizationUtils.aggressiveNormalize(original);
 		collapsedForms.add(StringNormalizationUtils.collapseNormalize(normalized));
 		collapsedForms.remove("");
 		return collapsedForms;
 	}
 
-	private static String getCanonicalCollapsedForm(String original)
+	private static String getCanonicalCollapsedForm(final String original)
 	{
 		return StringNormalizationUtils.collapseNormalize(original);
 	}
@@ -64,24 +73,24 @@ public class OriginalMatcher extends FuzzyMatcher
 		phraseToEntityFormulas = new HashMap<>();
 		phraseToUnaryFormulas = new HashMap<>();
 		phraseToBinaryFormulas = new HashMap<>();
-		for (TableColumn column : graph.columns)
+		for (final TableColumn column : graph.columns)
 		{
 			// unary and binary
-			Formula unary = new JoinFormula(new ValueFormula<>(CanonicalNames.reverseProperty(column.relationNameValue)), new JoinFormula(new ValueFormula<>(new NameValue(CanonicalNames.TYPE)), new ValueFormula<>(new NameValue(TableTypeSystem.ROW_TYPE))));
-			Formula binary = new ValueFormula<>(column.relationNameValue);
+			final Formula unary = new JoinFormula(new ValueFormula<>(CanonicalNames.reverseProperty(column.relationNameValue)), new JoinFormula(new ValueFormula<>(new NameValue(CanonicalNames.TYPE)), new ValueFormula<>(new NameValue(TableTypeSystem.ROW_TYPE))));
+			final Formula binary = new ValueFormula<>(column.relationNameValue);
 			allUnaryFormulas.add(unary);
 			allBinaryFormulas.add(binary);
-			for (String s : getAllCollapsedForms(column.originalString))
+			for (final String s : getAllCollapsedForms(column.originalString))
 			{
 				MapUtils.addToSet(phraseToUnaryFormulas, s, unary);
 				MapUtils.addToSet(phraseToBinaryFormulas, s, binary);
 			}
 			// entity
-			for (TableCell cell : column.children)
+			for (final TableCell cell : column.children)
 			{
-				Formula entity = new ValueFormula<>(cell.properties.nameValue);
+				final Formula entity = new ValueFormula<>(cell.properties.nameValue);
 				allEntityFormulas.add(entity);
-				for (String s : getAllCollapsedForms(cell.properties.originalString))
+				for (final String s : getAllCollapsedForms(cell.properties.originalString))
 					MapUtils.addToSet(phraseToEntityFormulas, s, entity);
 			}
 		}
@@ -94,30 +103,28 @@ public class OriginalMatcher extends FuzzyMatcher
 	Map<Pair<String, FuzzyMatchFnMode>, FuzzyMatchCache> cacheMap = new HashMap<>();
 
 	@Override
-	protected FuzzyMatchCache cacheSentence(List<String> sentence, FuzzyMatchFnMode mode)
+	protected FuzzyMatchCache cacheSentence(final List<String> sentence, final FuzzyMatchFnMode mode)
 	{
-		String joined = String.join(" ", sentence);
+		final String joined = String.join(" ", sentence);
 		FuzzyMatchCache cache = cacheMap.get(new Pair<>(joined, mode));
 		if (cache != null)
 			return cache;
 		// Compute a new FuzzyMatchCache
 		cache = new FuzzyMatchCache();
 		for (int i = 0; i < sentence.size(); i++)
-		{
 			for (int j = i + 1; j < sentence.size(); j++)
 			{
-				String term = String.join(" ", sentence.subList(i, j));
+				final String term = String.join(" ", sentence.subList(i, j));
 				cache.addAll(i, j, getFuzzyMatchedFormulasInternal(term, mode));
 			}
-		}
 		cacheMap.put(new Pair<>(joined, mode), cache);
 		return cache;
 	}
 
 	@Override
-	protected Collection<Formula> getFuzzyMatchedFormulasInternal(String term, FuzzyMatchFnMode mode)
+	protected Collection<Formula> getFuzzyMatchedFormulasInternal(final String term, final FuzzyMatchFnMode mode)
 	{
-		String normalized = getCanonicalCollapsedForm(term);
+		final String normalized = getCanonicalCollapsedForm(term);
 		Set<Formula> answer;
 		switch (mode)
 		{
@@ -133,11 +140,11 @@ public class OriginalMatcher extends FuzzyMatcher
 			default:
 				throw new RuntimeException("Unknown FuzzyMatchMode " + mode);
 		}
-		return (answer == null || answer.size() > opts.maxMatchedCandidates) ? Collections.emptySet() : answer;
+		return answer == null || answer.size() > opts.maxMatchedCandidates ? Collections.emptySet() : answer;
 	}
 
 	@Override
-	protected Collection<Formula> getAllFormulasInternal(FuzzyMatchFnMode mode)
+	protected Collection<Formula> getAllFormulasInternal(final FuzzyMatchFnMode mode)
 	{
 		switch (mode)
 		{

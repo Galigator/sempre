@@ -5,9 +5,15 @@ import fig.basic.LogInfo;
 import fig.basic.MapUtils;
 import fig.basic.Pair;
 import fig.basic.StopWatch;
-
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Parser that only has information on what categories can parse what spans Does not hold backpointers for getting full parse, only reachability information
@@ -19,18 +25,18 @@ public class CoarseParser
 {
 
 	public final Grammar grammar;
-	private Map<Pair<String, String>, Set<String>> rhsToLhsMap;
+	private final Map<Pair<String, String>, Set<String>> rhsToLhsMap;
 	ArrayList<Rule> catUnaryRules; // Unary rules with category on RHS
 	Map<String, List<Rule>> terminalsToRulesList = new HashMap<>();
 
-	public CoarseParser(Grammar grammar)
+	public CoarseParser(final Grammar grammar)
 	{
 		this.grammar = grammar;
 		catUnaryRules = new ArrayList<>();
 		rhsToLhsMap = new HashMap<>();
 
-		Map<String, List<Rule>> graph = new HashMap<>(); // Node from LHS to list of rules
-		for (Rule rule : grammar.rules)
+		final Map<String, List<Rule>> graph = new HashMap<>(); // Node from LHS to list of rules
+		for (final Rule rule : grammar.rules)
 		{
 			if (rule.rhs.size() > 2)
 				throw new RuntimeException("We assume that the grammar is binarized, rule: " + rule);
@@ -38,9 +44,7 @@ public class CoarseParser
 				MapUtils.addToList(graph, rule.lhs, rule);
 			else
 				if (rule.rhs.size() == 2)
-				{ // binary grammar
 					MapUtils.addToSet(rhsToLhsMap, Pair.newPair(rule.rhs.get(0), rule.rhs.get(1)), rule.lhs);
-				}
 				else
 				{
 					assert rule.isRhsTerminals();
@@ -48,22 +52,22 @@ public class CoarseParser
 				}
 		}
 		// Topologically sort catUnaryRules so that B->C occurs before A->B
-		Map<String, Boolean> done = new HashMap<>();
-		for (String node : graph.keySet())
+		final Map<String, Boolean> done = new HashMap<>();
+		for (final String node : graph.keySet())
 			traverse(catUnaryRules, node, graph, done);
 		LogInfo.logs("Coarse parser: %d catUnaryRules (sorted), %d nonCatUnaryRules", catUnaryRules.size(), grammar.rules.size() - catUnaryRules.size());
 	}
 
 	/** Helper function for transitive closure of unary rules. */
-	private void traverse(List<Rule> catUnaryRules, String node, Map<String, List<Rule>> graph, Map<String, Boolean> done)
+	private void traverse(final List<Rule> catUnaryRules, final String node, final Map<String, List<Rule>> graph, final Map<String, Boolean> done)
 	{
-		Boolean d = done.get(node);
+		final Boolean d = done.get(node);
 		if (Boolean.TRUE.equals(d))
 			return;
 		if (Boolean.FALSE.equals(d))
 			throw new RuntimeException("Found cycle of unaries involving " + node);
 		done.put(node, false);
-		for (Rule rule : MapUtils.getList(graph, node))
+		for (final Rule rule : MapUtils.getList(graph, node))
 		{
 			traverse(catUnaryRules, rule.rhs.get(0), graph, done);
 			catUnaryRules.add(rule);
@@ -71,9 +75,9 @@ public class CoarseParser
 		done.put(node, true);
 	}
 
-	public CoarseParserState getCoarsePrunedChart(Example ex)
+	public CoarseParserState getCoarsePrunedChart(final Example ex)
 	{
-		CoarseParserState res = new CoarseParserState(ex, this);
+		final CoarseParserState res = new CoarseParserState(ex, this);
 		res.infer();
 		return res;
 	}
@@ -81,26 +85,26 @@ public class CoarseParser
 	class CoarseParserState
 	{
 
-		private Map<String, List<CategorySpan>>[][] chart;
+		private final Map<String, List<CategorySpan>>[][] chart;
 		public final Example example;
 		public final CoarseParser parser;
-		private int numTokens;
+		private final int numTokens;
 		private long time;
-		private String[][] phrases;
+		private final String[][] phrases;
 
 		@SuppressWarnings({ "unchecked" })
-		public CoarseParserState(Example example, CoarseParser parser)
+		public CoarseParserState(final Example example, final CoarseParser parser)
 		{
 			this.example = example;
 			this.parser = parser;
 			numTokens = example.numTokens();
 			// Initialize the chart.
-			this.chart = (HashMap<String, List<CategorySpan>>[][]) Array.newInstance(HashMap.class, numTokens, numTokens + 1);
+			chart = (HashMap<String, List<CategorySpan>>[][]) Array.newInstance(HashMap.class, numTokens, numTokens + 1);
 			phrases = new String[numTokens][numTokens + 1];
 
 			for (int start = 0; start < numTokens; start++)
 			{
-				StringBuilder sb = new StringBuilder();
+				final StringBuilder sb = new StringBuilder();
 				for (int end = start + 1; end <= numTokens; end++)
 				{
 					if (end - start > 1)
@@ -120,7 +124,7 @@ public class CoarseParser
 		public void infer()
 		{
 
-			StopWatch watch = new StopWatch();
+			final StopWatch watch = new StopWatch();
 			watch.start();
 			// parse with rules with tokens or RHS
 			parseTokensAndPhrases();
@@ -134,12 +138,12 @@ public class CoarseParser
 			time = watch.getCurrTimeLong();
 		}
 
-		public boolean coarseAllows(String cat, int start, int end)
+		public boolean coarseAllows(final String cat, final int start, final int end)
 		{
 			return chart[start][end].containsKey(cat);
 		}
 
-		private void build(int start, int end)
+		private void build(final int start, final int end)
 		{
 			handleBinaryRules(start, end);
 			handleUnaryRules(start, end);
@@ -153,30 +157,28 @@ public class CoarseParser
 				addToChart(Rule.lemmaTokenCat, i, i + 1);
 			}
 			for (int i = 0; i < numTokens; i++)
-			{
 				for (int j = i + 1; j <= numTokens; j++)
 				{
 					addToChart(Rule.phraseCat, i, j);
 					addToChart(Rule.lemmaPhraseCat, i, j);
 				}
-			}
 		}
 
-		private void addToChart(String cat, int start, int end)
+		private void addToChart(final String cat, final int start, final int end)
 		{
 			if (Parser.opts.verbose >= 5)
 				LogInfo.logs("Adding to chart %s(%s,%s)", cat, start, end);
 			MapUtils.putIfAbsent(chart[start][end], cat, new ArrayList<CategorySpan>());
 		}
 
-		private void addToChart(String parentCat, String childCat, int start, int end)
+		private void addToChart(final String parentCat, final String childCat, final int start, final int end)
 		{
 			if (Parser.opts.verbose >= 5)
 				LogInfo.logs("Adding to chart %s(%s,%s)-->%s(%s,%s)", parentCat, start, end, childCat, start, end);
 			MapUtils.addToList(chart[start][end], parentCat, new CategorySpan(childCat, start, end));
 		}
 
-		private void addToChart(String parentCat, String leftCat, String rightCat, int start, int i, int end)
+		private void addToChart(final String parentCat, final String leftCat, final String rightCat, final int start, final int i, final int end)
 		{
 			if (Parser.opts.verbose >= 5)
 				LogInfo.logs("Adding to chart %s(%s,%s)-->%s(%s,%s) %s(%s,%s)", parentCat, start, end, leftCat, start, i, rightCat, i, end);
@@ -184,51 +186,41 @@ public class CoarseParser
 			MapUtils.addToList(chart[start][end], parentCat, new CategorySpan(rightCat, i, end));
 		}
 
-		private void handleBinaryRules(int start, int end)
+		private void handleBinaryRules(final int start, final int end)
 		{
 			for (int i = start + 1; i < end; ++i)
 			{
-				List<String> left = new ArrayList<>(chart[start][i].keySet());
-				List<String> right = new ArrayList<>(chart[i][end].keySet());
+				final List<String> left = new ArrayList<>(chart[start][i].keySet());
+				final List<String> right = new ArrayList<>(chart[i][end].keySet());
 				if (i - start == 1)
 					left.add(phrases[start][i]); // handle single terminal
 				if (end - i == 1)
 					right.add(phrases[i][end]); // handle single terminal
 
-				for (String l : left)
-				{
-					for (String r : right)
+				for (final String l : left)
+					for (final String r : right)
 					{
-						Set<String> parentCats = rhsToLhsMap.get(Pair.newPair(l, r));
+						final Set<String> parentCats = rhsToLhsMap.get(Pair.newPair(l, r));
 
 						if (parentCats != null)
-						{
-							for (String parentCat : parentCats)
-							{
+							for (final String parentCat : parentCats)
 								addToChart(parentCat, l, r, start, i, end);
-							}
-						}
 					}
-				}
 			}
 		}
 
-		private void handleUnaryRules(int start, int end)
+		private void handleUnaryRules(final int start, final int end)
 		{
 
 			// terminals on RHS
-			for (Rule rule : MapUtils.get(terminalsToRulesList, phrases[start][end], Collections.<Rule> emptyList()))
-			{
+			for (final Rule rule : MapUtils.get(terminalsToRulesList, phrases[start][end], Collections.<Rule> emptyList()))
 				addToChart(rule.lhs, start, end);
-			}
 			// catUnaryRules
-			for (Rule rule : parser.catUnaryRules)
+			for (final Rule rule : parser.catUnaryRules)
 			{
-				String rhsCat = rule.rhs.get(0);
+				final String rhsCat = rule.rhs.get(0);
 				if (chart[start][end].containsKey(rhsCat))
-				{
 					addToChart(rule.lhs, rhsCat, start, end);
-				}
 			}
 		}
 
@@ -237,47 +229,37 @@ public class CoarseParser
 			if (numTokens == 0)
 				return;
 
-			Set<CategorySpan> reachable = new HashSet<CategorySpan>();
+			final Set<CategorySpan> reachable = new HashSet<>();
 			collectReachable(reachable, new CategorySpan(Rule.rootCat, 0, numTokens));
 
 			// Remove all derivations associated with (cat, start, end) that aren't reachable.
 			for (int start = 0; start < numTokens; start++)
-			{
 				for (int end = start + 1; end <= numTokens; end++)
 				{
-					List<String> toRemoveCats = new LinkedList<String>();
-					for (String cat : chart[start][end].keySet())
-					{
+					final List<String> toRemoveCats = new LinkedList<>();
+					for (final String cat : chart[start][end].keySet())
 						if (!reachable.contains(new CategorySpan(cat, start, end)))
-						{
 							toRemoveCats.add(cat);
-						}
-					}
 					Collections.sort(toRemoveCats);
-					for (String cat : toRemoveCats)
+					for (final String cat : toRemoveCats)
 					{
 						if (Parser.opts.verbose >= 5)
 							LogInfo.logs("Pruning chart %s(%s,%s)", cat, start, end);
 						chart[start][end].remove(cat);
 					}
 				}
-			}
 		}
 
-		private void collectReachable(Set<CategorySpan> reachable, CategorySpan catSpan)
+		private void collectReachable(final Set<CategorySpan> reachable, final CategorySpan catSpan)
 		{
 			if (reachable.contains(catSpan))
 				return;
 			if (!chart[catSpan.start][catSpan.end].containsKey(catSpan.cat))
-			{
 				// This should only happen for the root when there are no parses.
 				return;
-			}
 			reachable.add(catSpan);
-			for (CategorySpan childCatSpan : chart[catSpan.start][catSpan.end].get(catSpan.cat))
-			{
+			for (final CategorySpan childCatSpan : chart[catSpan.start][catSpan.end].get(catSpan.cat))
 				collectReachable(reachable, childCatSpan);
-			}
 		}
 	}
 
@@ -287,7 +269,7 @@ public class CoarseParser
 		public final int start;
 		public final int end;
 
-		public CategorySpan(String cat, int start, int end)
+		public CategorySpan(final String cat, final int start, final int end)
 		{
 			this.cat = cat;
 			this.start = start;
@@ -299,14 +281,14 @@ public class CoarseParser
 		{
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((cat == null) ? 0 : cat.hashCode());
+			result = prime * result + (cat == null ? 0 : cat.hashCode());
 			result = prime * result + end;
 			result = prime * result + start;
 			return result;
 		}
 
 		@Override
-		public boolean equals(Object obj)
+		public boolean equals(final Object obj)
 		{
 			if (this == obj)
 				return true;
@@ -314,7 +296,7 @@ public class CoarseParser
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			CategorySpan other = (CategorySpan) obj;
+			final CategorySpan other = (CategorySpan) obj;
 			if (cat == null)
 			{
 				if (other.cat != null)

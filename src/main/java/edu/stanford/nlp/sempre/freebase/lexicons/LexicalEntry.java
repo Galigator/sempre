@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre.freebase.lexicons;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import edu.stanford.nlp.sempre.Formula;
 import edu.stanford.nlp.sempre.SemType;
 import edu.stanford.nlp.sempre.SemTypeHierarchy;
@@ -10,7 +9,6 @@ import edu.stanford.nlp.stats.ClassicCounter;
 import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.util.StringUtils;
 import fig.basic.LispTree;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +25,7 @@ public class LexicalEntry
 	public final double popularity;
 	public final double distance;
 
-	public LexicalEntry(String textDescription, String normalizedTextDesc, Set<String> fbDescriptions, Formula formula, EntrySource source, double popularity, double distance)
+	public LexicalEntry(final String textDescription, final String normalizedTextDesc, final Set<String> fbDescriptions, final Formula formula, final EntrySource source, final double popularity, final double distance)
 	{
 		this.textDescription = textDescription;
 		this.normalizedTextDesc = normalizedTextDesc;
@@ -58,23 +56,19 @@ public class LexicalEntry
 	public String toString()
 	{
 		if (stringRepn == null)
-		{
 			stringRepn = textDescription + " (" + normalizedTextDesc + ")" + ", FB: " + fbDescriptions + ", formula: " + formula + ", source: " + source + ", popularity: " + popularity + ", distance: " + distance;
-		}
 		return stringRepn;
 	}
 
-	public static int computeEditDistance(String query, Set<String> descriptions)
+	public static int computeEditDistance(final String query, final Set<String> descriptions)
 	{
 
 		int distance = Integer.MAX_VALUE;
-		for (String description : descriptions)
+		for (final String description : descriptions)
 		{
-			int currDistance = StringUtils.editDistance(query, description.toLowerCase());
+			final int currDistance = StringUtils.editDistance(query, description.toLowerCase());
 			if (currDistance < distance)
-			{
 				distance = currDistance;
-			}
 		}
 		return Math.min(15, distance);
 	}
@@ -82,17 +76,13 @@ public class LexicalEntry
 	// Input: set of types coming from the lexicon {fb:common.topic, fb:people.person, ...}
 	// Output: remove any element which is in the transitive closure. {fb:people.person, ...}
 	// TODO(pliang): replace HashSet with something lighter weight.
-	public static SemType setToType(Set<String> types)
+	public static SemType setToType(final Set<String> types)
 	{
-		Set<String> resultTypes = new HashSet<>(types);
-		for (String entityType : types)
-		{
-			for (String supertype : SemTypeHierarchy.singleton.getSupertypes(entityType))
-			{
+		final Set<String> resultTypes = new HashSet<>(types);
+		for (final String entityType : types)
+			for (final String supertype : SemTypeHierarchy.singleton.getSupertypes(entityType))
 				if (!supertype.equals(entityType))
 					resultTypes.remove(supertype);
-			}
-		}
 		return SemType.newUnionSemType(resultTypes);
 	}
 
@@ -106,23 +96,23 @@ public class LexicalEntry
 		public Map<String, Double> alignmentScores;
 		public String fullLexeme; // the lexeme as it is in the alignment without some normalization applied before uploading the lexicon
 
-		public BinaryLexicalEntry(String textDescription, String normalizedTextDesc, Set<String> fbDescriptions, Formula formula, EntrySource source, double popularity, String expectedType1, String expectedType2, String unitId, String unitDesc, Map<String, Double> alignmentScores, String fullLexeme)
+		public BinaryLexicalEntry(final String textDescription, final String normalizedTextDesc, final Set<String> fbDescriptions, final Formula formula, final EntrySource source, final double popularity, final String expectedType1, final String expectedType2, final String unitId, final String unitDesc, final Map<String, Double> alignmentScores, final String fullLexeme)
 		{
 			super(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, computeEditDistance(textDescription, fbDescriptions));
 			this.expectedType1 = expectedType1;
 			this.expectedType2 = expectedType2;
 			this.unitId = unitId;
-			this.unitDescription = unitDesc;
+			unitDescription = unitDesc;
 			this.alignmentScores = alignmentScores;
 			this.fullLexeme = fullLexeme;
-			assert (fullLexeme.contains(normalizedTextDesc));
+			assert fullLexeme.contains(normalizedTextDesc);
 		}
 
-		public boolean identicalFormulaInfo(Object other)
+		public boolean identicalFormulaInfo(final Object other)
 		{
 			if (!(other instanceof BinaryLexicalEntry))
 				return false;
-			BinaryLexicalEntry otherBinary = (BinaryLexicalEntry) other;
+			final BinaryLexicalEntry otherBinary = (BinaryLexicalEntry) other;
 
 			if (!formula.equals(otherBinary.formula))
 				return false;
@@ -165,13 +155,11 @@ public class LexicalEntry
 		{
 			if (stringRepn == null)
 			{
-				StringBuilder sb = new StringBuilder();
+				final StringBuilder sb = new StringBuilder();
 				sb.append(super.toString());
 				sb.append(", " + expectedType1 + " x " + expectedType2);
 				if (unitId != null)
-				{
 					sb.append(", " + unitId + ":" + unitDescription);
-				}
 				if (alignmentScores.size() > 0)
 					sb.append(", " + alignmentScores);
 				stringRepn = sb.toString();
@@ -188,7 +176,7 @@ public class LexicalEntry
 		{
 			if (fullLexeme.startsWith(normalizedTextDesc))
 				return new String[] {};
-			String leftContext = fullLexeme.substring(0, fullLexeme.indexOf(normalizedTextDesc)).trim();
+			final String leftContext = fullLexeme.substring(0, fullLexeme.indexOf(normalizedTextDesc)).trim();
 			return leftContext.split("\\s+");
 		}
 
@@ -196,7 +184,7 @@ public class LexicalEntry
 		{
 			if (fullLexeme.endsWith(normalizedTextDesc))
 				return new String[] {};
-			String rightContext = fullLexeme.substring(fullLexeme.indexOf(normalizedTextDesc) + normalizedTextDesc.length()).trim();
+			final String rightContext = fullLexeme.substring(fullLexeme.indexOf(normalizedTextDesc) + normalizedTextDesc.length()).trim();
 			return rightContext.split("\\s+");
 		}
 	}
@@ -208,11 +196,11 @@ public class LexicalEntry
 		public SemType type;
 		public Counter<String> entityFeatures;
 
-		public EntityLexicalEntry(String textDescription, String normalizedTextDesc, Set<String> fbDescriptions, Formula formula, EntrySource source, double popularity, double distance, Set<String> types, Counter<String> entityFeatures)
+		public EntityLexicalEntry(final String textDescription, final String normalizedTextDesc, final Set<String> fbDescriptions, final Formula formula, final EntrySource source, final double popularity, final double distance, final Set<String> types, final Counter<String> entityFeatures)
 		{
 			super(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, distance);
 			this.types = types;
-			this.type = setToType(types);
+			type = setToType(types);
 			this.entityFeatures = entityFeatures;
 		}
 
@@ -225,15 +213,15 @@ public class LexicalEntry
 	public static class UnaryLexicalEntry extends LexicalEntry
 	{
 
-		public Set<String> types = new HashSet<String>();
+		public Set<String> types = new HashSet<>();
 		public SemType type;
 		public Map<String, Double> alignmentScores;
 
-		public UnaryLexicalEntry(String textDescription, String normalizedTextDesc, Set<String> fbDescriptions, Formula formula, EntrySource source, double popularity, Map<String, Double> alignmentScores, Set<String> types)
+		public UnaryLexicalEntry(final String textDescription, final String normalizedTextDesc, final Set<String> fbDescriptions, final Formula formula, final EntrySource source, final double popularity, final Map<String, Double> alignmentScores, final Set<String> types)
 		{
 			super(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, computeEditDistance(textDescription, fbDescriptions));
 			this.types = types;
-			this.type = setToType(types);
+			type = setToType(types);
 			this.alignmentScores = alignmentScores;
 		}
 
@@ -265,7 +253,7 @@ public class LexicalEntry
 		public Map<String, Double> features;
 
 		@JsonCreator
-		public LexiconValue(@JsonProperty("normLexeme") String lexeme, @JsonProperty("formula") Formula formula, @JsonProperty("source") String source, @JsonProperty("features") Map<String, Double> features)
+		public LexiconValue(@JsonProperty("normLexeme") final String lexeme, @JsonProperty("formula") final Formula formula, @JsonProperty("source") final String source, @JsonProperty("features") final Map<String, Double> features)
 		{
 			this.lexeme = lexeme;
 			this.formula = formula;
@@ -277,137 +265,135 @@ public class LexicalEntry
 	public static class LexicalEntrySerializer
 	{
 		// Utilities that should move into fig later.
-		static Counter<String> counterFromLispTree(LispTree tree)
+		static Counter<String> counterFromLispTree(final LispTree tree)
 		{
-			Counter<String> counter = new ClassicCounter<String>();
+			final Counter<String> counter = new ClassicCounter<>();
 			for (int i = 0; i < tree.children.size(); i++)
 				counter.incrementCount(tree.child(i).child(0).value, Double.parseDouble(tree.child(i).child(1).value));
 			return counter;
 		}
 
-		static LispTree counterToLispTree(Counter<String> counter)
+		static LispTree counterToLispTree(final Counter<String> counter)
 		{
-			LispTree tree = LispTree.proto.newList();
-			for (String feature : counter.keySet())
+			final LispTree tree = LispTree.proto.newList();
+			for (final String feature : counter.keySet())
 				tree.addChild(LispTree.proto.newList(feature, "" + counter.getCount(feature)));
 			return tree;
 		}
 
-		static Map<String, Double> featureMapFromLispTree(LispTree tree)
+		static Map<String, Double> featureMapFromLispTree(final LispTree tree)
 		{
-			Map<String, Double> featureMap = new TreeMap<String, Double>();
+			final Map<String, Double> featureMap = new TreeMap<>();
 			for (int i = 0; i < tree.children.size(); i++)
 				featureMap.put(tree.child(i).child(0).value, Double.parseDouble(tree.child(i).child(1).value));
 			return featureMap;
 		}
 
-		static LispTree featureMapToLispTree(Map<String, Double> featureMap)
+		static LispTree featureMapToLispTree(final Map<String, Double> featureMap)
 		{
-			LispTree tree = LispTree.proto.newList();
-			for (String feature : featureMap.keySet())
+			final LispTree tree = LispTree.proto.newList();
+			for (final String feature : featureMap.keySet())
 				tree.addChild(LispTree.proto.newList(feature, "" + featureMap.get(feature)));
 			return tree;
 		}
 
-		static Set<String> setFromLispTree(LispTree tree)
+		static Set<String> setFromLispTree(final LispTree tree)
 		{
-			Set<String> set = new HashSet<String>();
+			final Set<String> set = new HashSet<>();
 			for (int i = 0; i < tree.children.size(); i++)
 				set.add(tree.child(i).value);
 			return set;
 		}
 
-		static LispTree setToLispTree(Set<String> set)
+		static LispTree setToLispTree(final Set<String> set)
 		{
-			LispTree tree = LispTree.proto.newList();
-			for (String x : set)
+			final LispTree tree = LispTree.proto.newList();
+			for (final String x : set)
 				tree.addChild(x);
 			return tree;
 		}
 
-		static String[] stringArrayFromLispTree(LispTree tree)
+		static String[] stringArrayFromLispTree(final LispTree tree)
 		{
-			String[] result = new String[tree.children.size()];
+			final String[] result = new String[tree.children.size()];
 			for (int i = 0; i < tree.children.size(); i++)
 				result[i] = tree.child(i).value;
 			return result;
 		}
 
-		static LispTree stringArrayToLispTree(String[] array)
+		static LispTree stringArrayToLispTree(final String[] array)
 		{
-			LispTree tree = LispTree.proto.newList();
-			for (String x : array)
+			final LispTree tree = LispTree.proto.newList();
+			for (final String x : array)
 				tree.addChild(x);
 			return tree;
 		}
 
-		public static LexicalEntry entryFromLispTree(LispTree tree)
+		public static LexicalEntry entryFromLispTree(final LispTree tree)
 		{
 			int i = 1;
 			if (tree.child(0).value.equals("entity"))
 			{
 
-				String textDescription = tree.child(i++).value;
-				String normalizedTextDesc = tree.child(i++).value;
-				Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
-				Formula formula = Formula.fromString(tree.child(i++).value);
-				EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
-				double popularity = Double.parseDouble(tree.child(i++).value);
-				double distance = Double.parseDouble(tree.child(i++).value);
-				Set<String> types = setFromLispTree(tree.child(i++));
-				Counter<String> tokenEditDistanceFeatures = counterFromLispTree(tree.child(i++));
+				final String textDescription = tree.child(i++).value;
+				final String normalizedTextDesc = tree.child(i++).value;
+				final Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
+				final Formula formula = Formula.fromString(tree.child(i++).value);
+				final EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
+				final double popularity = Double.parseDouble(tree.child(i++).value);
+				final double distance = Double.parseDouble(tree.child(i++).value);
+				final Set<String> types = setFromLispTree(tree.child(i++));
+				final Counter<String> tokenEditDistanceFeatures = counterFromLispTree(tree.child(i++));
 
 				return new LexicalEntry.EntityLexicalEntry(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, distance, types, tokenEditDistanceFeatures);
 			}
 			else
 				if (tree.child(0).value.equals("unary"))
 				{
-					String textDescription = tree.child(i++).value;
-					String normalizedTextDesc = tree.child(i++).value;
-					Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
-					Formula formula = Formula.fromString(tree.child(i++).value);
-					EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
-					double popularity = Double.parseDouble(tree.child(i++).value);
+					final String textDescription = tree.child(i++).value;
+					final String normalizedTextDesc = tree.child(i++).value;
+					final Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
+					final Formula formula = Formula.fromString(tree.child(i++).value);
+					final EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
+					final double popularity = Double.parseDouble(tree.child(i++).value);
 					Double.parseDouble(tree.child(i++).value);
-					Map<String, Double> alignmentScores = featureMapFromLispTree(tree.child(i++));
-					Set<String> types = setFromLispTree(tree.child(i++));
+					final Map<String, Double> alignmentScores = featureMapFromLispTree(tree.child(i++));
+					final Set<String> types = setFromLispTree(tree.child(i++));
 					return new LexicalEntry.UnaryLexicalEntry(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, alignmentScores, types);
 				}
 				else
 					if (tree.child(0).value.equals("binary"))
 					{
-						String textDescription = tree.child(i++).value;
-						String normalizedTextDesc = tree.child(i++).value;
-						Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
-						Formula formula = Formula.fromString(tree.child(i++).value);
-						EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
-						double popularity = Double.parseDouble(tree.child(i++).value);
+						final String textDescription = tree.child(i++).value;
+						final String normalizedTextDesc = tree.child(i++).value;
+						final Set<String> fbDescriptions = setFromLispTree(tree.child(i++));
+						final Formula formula = Formula.fromString(tree.child(i++).value);
+						final EntrySource source = EntrySource.parseSourceDesc(tree.child(i++).value);
+						final double popularity = Double.parseDouble(tree.child(i++).value);
 						Double.parseDouble(tree.child(i++).value); // this is computed in the constructor so need not save it
-						String expectedType1 = tree.child(i++).value;
-						String expectedType2 = tree.child(i++).value;
-						String unitId = tree.child(i++).value;
-						String unitDescription = tree.child(i++).value;
-						Map<String, Double> alignmentScores = featureMapFromLispTree(tree.child(i++));
-						String fullLexeme = tree.child(i++).value;
+						final String expectedType1 = tree.child(i++).value;
+						final String expectedType2 = tree.child(i++).value;
+						final String unitId = tree.child(i++).value;
+						final String unitDescription = tree.child(i++).value;
+						final Map<String, Double> alignmentScores = featureMapFromLispTree(tree.child(i++));
+						final String fullLexeme = tree.child(i++).value;
 						return new LexicalEntry.BinaryLexicalEntry(textDescription, normalizedTextDesc, fbDescriptions, formula, source, popularity, expectedType1, expectedType2, unitId, unitDescription, alignmentScores, fullLexeme);
 					}
 					else
-					{
 						throw new RuntimeException("Invalid: " + tree);
-					}
 		}
 
-		public static String emptyIfNull(String s)
+		public static String emptyIfNull(final String s)
 		{
 			return s == null ? "" : s;
 		}
 
-		public static LispTree entryToLispTree(LexicalEntry rawEntry)
+		public static LispTree entryToLispTree(final LexicalEntry rawEntry)
 		{
-			LispTree result = LispTree.proto.newList();
+			final LispTree result = LispTree.proto.newList();
 			if (rawEntry instanceof LexicalEntry.EntityLexicalEntry)
 			{
-				LexicalEntry.EntityLexicalEntry entry = (LexicalEntry.EntityLexicalEntry) rawEntry;
+				final LexicalEntry.EntityLexicalEntry entry = (LexicalEntry.EntityLexicalEntry) rawEntry;
 				result.addChild("entity");
 
 				result.addChild(entry.textDescription);
@@ -423,7 +409,7 @@ public class LexicalEntry
 			else
 				if (rawEntry instanceof LexicalEntry.UnaryLexicalEntry)
 				{
-					LexicalEntry.UnaryLexicalEntry entry = (LexicalEntry.UnaryLexicalEntry) rawEntry;
+					final LexicalEntry.UnaryLexicalEntry entry = (LexicalEntry.UnaryLexicalEntry) rawEntry;
 					result.addChild("unary");
 
 					result.addChild(entry.textDescription);
@@ -439,7 +425,7 @@ public class LexicalEntry
 				else
 					if (rawEntry instanceof LexicalEntry.BinaryLexicalEntry)
 					{
-						LexicalEntry.BinaryLexicalEntry entry = (LexicalEntry.BinaryLexicalEntry) rawEntry;
+						final LexicalEntry.BinaryLexicalEntry entry = (LexicalEntry.BinaryLexicalEntry) rawEntry;
 						result.addChild("binary");
 
 						result.addChild(entry.textDescription);

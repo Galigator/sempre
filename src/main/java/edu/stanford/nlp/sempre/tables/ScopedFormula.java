@@ -1,11 +1,9 @@
 package edu.stanford.nlp.sempre.tables;
 
-import java.util.*;
-
 import com.google.common.base.Function;
-
 import edu.stanford.nlp.sempre.Formula;
 import fig.basic.LispTree;
+import java.util.List;
 
 /**
  * Represent a binary with a restrict domain (scope).
@@ -17,7 +15,7 @@ public class ScopedFormula extends Formula
 	public final Formula head;
 	public final Formula relation;
 
-	public ScopedFormula(Formula head, Formula relation)
+	public ScopedFormula(final Formula head, final Formula relation)
 	{
 		this.head = head;
 		this.relation = relation;
@@ -26,7 +24,7 @@ public class ScopedFormula extends Formula
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("scoped");
 		tree.addChild(head.toLispTree());
 		tree.addChild(relation.toLispTree());
@@ -34,7 +32,7 @@ public class ScopedFormula extends Formula
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
 		{
@@ -44,16 +42,16 @@ public class ScopedFormula extends Formula
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> func)
+	public Formula map(final Function<Formula, Formula> func)
 	{
-		Formula result = func.apply(this);
+		final Formula result = func.apply(this);
 		return result == null ? new ScopedFormula(head.map(func), relation.map(func)) : result;
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> func, final boolean alwaysRecurse)
 	{
-		List<Formula> res = func.apply(this);
+		final List<Formula> res = func.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
 		{
 			res.addAll(head.mapToList(func, alwaysRecurse));
@@ -64,14 +62,14 @@ public class ScopedFormula extends Formula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof ScopedFormula))
 			return false;
-		ScopedFormula that = (ScopedFormula) thatObj;
-		if (!this.head.equals(that.head))
+		final ScopedFormula that = (ScopedFormula) thatObj;
+		if (!head.equals(that.head))
 			return false;
-		if (!this.relation.equals(that.relation))
+		if (!relation.equals(that.relation))
 			return false;
 		return true;
 	}

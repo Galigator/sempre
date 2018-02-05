@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import com.google.common.base.Function;
 import fig.basic.LispTree;
-
 import java.util.List;
 
 /**
@@ -20,7 +19,7 @@ public class AggregateFormula extends Formula
 	public final Mode mode;
 	public final Formula child;
 
-	public AggregateFormula(Mode mode, Formula child)
+	public AggregateFormula(final Mode mode, final Formula child)
 	{
 		this.mode = mode;
 		this.child = child;
@@ -28,13 +27,13 @@ public class AggregateFormula extends Formula
 
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild(mode.toString());
 		tree.addChild(child.toLispTree());
 		return tree;
 	}
 
-	public static Mode parseMode(String mode)
+	public static Mode parseMode(final String mode)
 	{
 		if ("count".equals(mode))
 			return Mode.count;
@@ -50,23 +49,23 @@ public class AggregateFormula extends Formula
 	}
 
 	@Override
-	public void forEach(Function<Formula, Boolean> func)
+	public void forEach(final Function<Formula, Boolean> func)
 	{
 		if (!func.apply(this))
 			child.forEach(func);
 	}
 
 	@Override
-	public Formula map(Function<Formula, Formula> func)
+	public Formula map(final Function<Formula, Formula> func)
 	{
-		Formula result = func.apply(this);
+		final Formula result = func.apply(this);
 		return result == null ? new AggregateFormula(mode, child.map(func)) : result;
 	}
 
 	@Override
-	public List<Formula> mapToList(Function<Formula, List<Formula>> func, boolean alwaysRecurse)
+	public List<Formula> mapToList(final Function<Formula, List<Formula>> func, final boolean alwaysRecurse)
 	{
-		List<Formula> res = func.apply(this);
+		final List<Formula> res = func.apply(this);
 		if (res.isEmpty() || alwaysRecurse)
 			res.addAll(child.mapToList(func, alwaysRecurse));
 		return res;
@@ -74,14 +73,14 @@ public class AggregateFormula extends Formula
 
 	@SuppressWarnings({ "equalshashcode" })
 	@Override
-	public boolean equals(Object thatObj)
+	public boolean equals(final Object thatObj)
 	{
 		if (!(thatObj instanceof AggregateFormula))
 			return false;
-		AggregateFormula that = (AggregateFormula) thatObj;
-		if (!this.mode.equals(that.mode))
+		final AggregateFormula that = (AggregateFormula) thatObj;
+		if (!mode.equals(that.mode))
 			return false;
-		if (!this.child.equals(that.child))
+		if (!child.equals(that.child))
 			return false;
 		return true;
 	}

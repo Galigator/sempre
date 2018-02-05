@@ -4,7 +4,7 @@ public class IdentityNormalizer implements EntryNormalizer
 {
 
 	@Override
-	public String normalize(String str)
+	public String normalize(final String str)
 	{
 		return str;
 	}

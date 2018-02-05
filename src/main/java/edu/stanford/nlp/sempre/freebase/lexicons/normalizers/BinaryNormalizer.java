@@ -1,7 +1,6 @@
 package edu.stanford.nlp.sempre.freebase.lexicons.normalizers;
 
 import edu.stanford.nlp.util.ArrayUtils;
-
 import java.io.Serializable;
 import java.util.Set;
 
@@ -21,7 +20,7 @@ public class BinaryNormalizer implements EntryNormalizer, Serializable
 	public static Set<String> modals = ArrayUtils.asSet(new String[] { "will " });
 	public static Set<String> be = ArrayUtils.asSet(new String[] { "'m", "am", "'re", "are", "'s", "is", "was", "were", "be", "being" });
 
-	public String normalize(String binary)
+	public String normalize(final String binary)
 	{
 
 		String res = binary.toLowerCase();
@@ -36,22 +35,18 @@ public class BinaryNormalizer implements EntryNormalizer, Serializable
 		return res;
 	}
 
-	private static String stripBe(String res)
+	private static String stripBe(final String res)
 	{
 
-		String[] tokens = res.split("\\s+");
+		final String[] tokens = res.split("\\s+");
 		int i;
 		for (i = 0; i < tokens.length; ++i)
-		{
 			if (!be.contains(tokens[i]))
 				break;
-		}
 
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		for (; i < tokens.length; ++i)
-		{
 			sb.append(tokens[i] + " ");
-		}
 
 		return sb.toString().trim();
 	}
@@ -59,54 +54,46 @@ public class BinaryNormalizer implements EntryNormalizer, Serializable
 	private static String stripModals(String res)
 	{
 
-		for (String modal : modals)
-		{
+		for (final String modal : modals)
 			if (res.startsWith(modal))
 			{
 				res = res.substring(modal.length());
 				return res;
 			}
-		}
 		return res;
 	}
 
 	private static String stripQuasiModals(String res)
 	{
 
-		for (String quasiModal : quasiModals)
-		{
+		for (final String quasiModal : quasiModals)
 			if (res.startsWith(quasiModal))
 			{
 				res = res.substring(quasiModal.length());
 				return res;
 			}
-		}
 		return res;
 	}
 
-	private static String omitAdverbs(String res)
+	private static String omitAdverbs(final String res)
 	{
 
-		String[] tokens = res.split("\\s+");
-		StringBuilder sb = new StringBuilder();
+		final String[] tokens = res.split("\\s+");
+		final StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < tokens.length; ++i)
-		{
 			if (!adverbs.contains(tokens[i]))
 				sb.append(tokens[i] + " ");
-		}
 		return sb.toString().trim();
 	}
 
-	private static String omitDeterminers(String res)
+	private static String omitDeterminers(final String res)
 	{
 
-		String[] tokens = res.split("\\s+");
-		StringBuilder sb = new StringBuilder();
+		final String[] tokens = res.split("\\s+");
+		final StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < tokens.length; ++i)
-		{
 			if (!determiners.contains(tokens[i]))
 				sb.append(tokens[i] + " ");
-		}
 		return sb.toString().trim();
 	}
 

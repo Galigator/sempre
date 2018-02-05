@@ -1,7 +1,6 @@
 package edu.stanford.nlp.sempre;
 
 import fig.basic.LispTree;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,16 +14,14 @@ public class FilterTokenFn extends SemanticFn
 	List<String> acceptableTokens = new ArrayList<>();
 	String mode;
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		mode = tree.child(1).value;
 		if (!mode.equals("token") && !mode.equals("lemma"))
 			throw new RuntimeException("Illegal description for FilterTokenFn: " + mode);
 		for (int j = 2; j < tree.children.size(); j++)
-		{
 			acceptableTokens.add(tree.child(j).value);
-		}
 	}
 
 	public DerivationStream call(final Example ex, final Callable c)
@@ -37,14 +34,12 @@ public class FilterTokenFn extends SemanticFn
 				if (!isValid(ex, c))
 					return null;
 				else
-				{
 					return new Derivation.Builder().withCallable(c).withFormulaFrom(c.child(0)).createDerivation();
-				}
 			}
 		};
 	}
 
-	private boolean isValid(Example ex, Callable c)
+	private boolean isValid(final Example ex, final Callable c)
 	{
 		if (c.getEnd() - c.getStart() != 1)
 			return false;

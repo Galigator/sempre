@@ -1,13 +1,20 @@
 package edu.stanford.nlp.sempre.tables.serialize;
 
-import java.io.File;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.Params;
+import edu.stanford.nlp.sempre.Parser;
+import edu.stanford.nlp.sempre.ParserState;
 import edu.stanford.nlp.sempre.tables.alter.TurkEquivalentClassInfo;
 import fig.basic.LogInfo;
 import fig.basic.Option;
 import fig.basic.Pair;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Parser used when loading serialized data. SerializedParser assumes that all candidate derivations were already computed in the dump file. So the parser skips
@@ -38,7 +45,7 @@ public class SerializedParser extends Parser
 	// Map from ID string to TurkEquivalentClassInfo.
 	protected Map<String, TurkEquivalentClassInfo> idToTurkInfo = null;
 
-	public SerializedParser(Spec spec)
+	public SerializedParser(final Spec spec)
 	{
 		super(spec);
 		if (opts.annotationPath != null)
@@ -58,29 +65,25 @@ public class SerializedParser extends Parser
 		catUnaryRules = Collections.emptyList();
 	};
 
-	protected void readSerializedFile(String annotationPath)
+	protected void readSerializedFile(final String annotationPath)
 	{
 		idToSerializedIndex = new HashMap<>();
-		SerializedDataset dataset = new SerializedDataset();
+		final SerializedDataset dataset = new SerializedDataset();
 		if (new File(annotationPath).isDirectory())
-		{
 			dataset.readDir(annotationPath);
-		}
 		else
-		{
 			dataset.read("annotated", annotationPath);
-		}
-		for (String group : dataset.groups())
+		for (final String group : dataset.groups())
 		{
-			LazyLoadedExampleList examples = dataset.examples(group);
-			List<String> ids = examples.getAllIds();
+			final LazyLoadedExampleList examples = dataset.examples(group);
+			final List<String> ids = examples.getAllIds();
 			for (int i = 0; i < ids.size(); i++)
 				idToSerializedIndex.put(ids.get(i), new Pair<>(examples, i));
 		}
 	}
 
 	@Override
-	public ParserState newParserState(Params params, Example ex, boolean computeExpectedCounts)
+	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		return new SerializedParserState(this, params, ex, computeExpectedCounts);
 	}
@@ -90,7 +93,7 @@ public class SerializedParser extends Parser
 class SerializedParserState extends ParserState
 {
 
-	public SerializedParserState(Parser parser, Params params, Example ex, boolean computeExpectedCounts)
+	public SerializedParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		super(parser, params, ex, computeExpectedCounts);
 	}
@@ -98,10 +101,10 @@ class SerializedParserState extends ParserState
 	@Override
 	public void infer()
 	{
-		SerializedParser parser = (SerializedParser) this.parser;
+		final SerializedParser parser = (SerializedParser) this.parser;
 		if (parser.idToTurkInfo != null)
 		{
-			TurkEquivalentClassInfo info = parser.idToTurkInfo.get(ex.id);
+			final TurkEquivalentClassInfo info = parser.idToTurkInfo.get(ex.id);
 			if (info != null)
 			{
 				if (info.numClassesMatched > SerializedParser.opts.maxNumClassesMatched)
@@ -122,11 +125,11 @@ class SerializedParserState extends ParserState
 		}
 		if (parser.idToSerializedIndex != null)
 		{
-			Pair<LazyLoadedExampleList, Integer> pair = parser.idToSerializedIndex.get(ex.id);
+			final Pair<LazyLoadedExampleList, Integer> pair = parser.idToSerializedIndex.get(ex.id);
 			if (pair != null)
 			{
-				Example annotatedEx = pair.getFirst().get(pair.getSecond());
-				for (Derivation deriv : annotatedEx.predDerivations)
+				final Example annotatedEx = pair.getFirst().get(pair.getSecond());
+				for (final Derivation deriv : annotatedEx.predDerivations)
 				{
 					featurizeAndScoreDerivation(deriv);
 					predDerivations.add(deriv);
@@ -138,7 +141,7 @@ class SerializedParserState extends ParserState
 			// Assume that the example already has all derivations.
 			if (ex.predDerivations == null)
 				ex.predDerivations = new ArrayList<>();
-			for (Derivation deriv : ex.predDerivations)
+			for (final Derivation deriv : ex.predDerivations)
 			{
 				featurizeAndScoreDerivation(deriv);
 				predDerivations.add(deriv);

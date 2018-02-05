@@ -59,7 +59,7 @@ public class CustomExample extends Example
 		super(ex.id, ex.utterance, ex.context, ex.targetFormula, ex.targetValue, ex.languageInfo);
 	}
 
-	static final Set<String> usefulTags = new HashSet<String>(Arrays.asList("id", "utterance", "targetFormula", "targetValue", "targetValues", "context"));
+	static final Set<String> usefulTags = new HashSet<>(Arrays.asList("id", "utterance", "targetFormula", "targetValue", "targetValues", "context"));
 
 	/**
 	 * Convert LispTree to Example with additional tags

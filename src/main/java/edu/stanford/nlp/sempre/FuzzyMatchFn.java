@@ -1,8 +1,10 @@
 package edu.stanford.nlp.sempre;
 
-import java.util.*;
-
-import fig.basic.*;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Similar to LexiconFn, but list all approximate matches from a FuzzyMatchable instance.
@@ -29,38 +31,38 @@ public class FuzzyMatchFn extends SemanticFn
 	// Generate all possible denotations regardless of the phrase
 	private boolean matchAny = false;
 
-	public void init(LispTree tree)
+	public void init(final LispTree tree)
 	{
 		super.init(tree);
 		for (int i = 1; i < tree.children.size(); i++)
 		{
-			String value = tree.child(i).value;
+			final String value = tree.child(i).value;
 			if ("unary".equals(value))
-				this.mode = FuzzyMatchFnMode.UNARY;
+				mode = FuzzyMatchFnMode.UNARY;
 			else
 				if ("binary".equals(value))
-					this.mode = FuzzyMatchFnMode.BINARY;
+					mode = FuzzyMatchFnMode.BINARY;
 				else
 					if ("entity".equals(value))
-						this.mode = FuzzyMatchFnMode.ENTITY;
+						mode = FuzzyMatchFnMode.ENTITY;
 					else
 						if ("any".equals(value))
-							this.matchAny = true;
+							matchAny = true;
 						else
 							if ("before".equals(value))
-								this.mode = FuzzyMatchFnMode.ORDER_BEFORE;
+								mode = FuzzyMatchFnMode.ORDER_BEFORE;
 							else
 								if ("after".equals(value))
-									this.mode = FuzzyMatchFnMode.ORDER_AFTER;
+									mode = FuzzyMatchFnMode.ORDER_AFTER;
 								else
 									if ("next".equals(value))
-										this.mode = FuzzyMatchFnMode.ORDER_NEXT;
+										mode = FuzzyMatchFnMode.ORDER_NEXT;
 									else
 										if ("prev".equals(value))
-											this.mode = FuzzyMatchFnMode.ORDER_PREV;
+											mode = FuzzyMatchFnMode.ORDER_PREV;
 										else
 											if ("adjacent".equals(value))
-												this.mode = FuzzyMatchFnMode.ORDER_ADJACENT;
+												mode = FuzzyMatchFnMode.ORDER_ADJACENT;
 											else
 												throw new RuntimeException("Invalid argument: " + value);
 		}
@@ -77,7 +79,7 @@ public class FuzzyMatchFn extends SemanticFn
 	}
 
 	@Override
-	public DerivationStream call(Example ex, Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new LazyFuzzyMatchFnDerivs(ex, c, mode, matchAny);
 	}
@@ -99,32 +101,26 @@ public class FuzzyMatchFn extends SemanticFn
 		int index = 0;
 		List<Formula> formulas;
 
-		public LazyFuzzyMatchFnDerivs(Example ex, Callable c, FuzzyMatchFnMode mode, boolean matchAny)
+		public LazyFuzzyMatchFnDerivs(final Example ex, final Callable c, final FuzzyMatchFnMode mode, final boolean matchAny)
 		{
 			this.ex = ex;
 			if (ex.context != null && ex.context.graph != null && ex.context.graph instanceof FuzzyMatchable)
-				this.matchable = (FuzzyMatchable) ex.context.graph;
+				matchable = (FuzzyMatchable) ex.context.graph;
 			else
-				this.matchable = null;
+				matchable = null;
 			this.c = c;
-			this.query = (matchAny || c.getChildren().isEmpty()) ? null : c.childStringValue(0);
+			query = matchAny || c.getChildren().isEmpty() ? null : c.childStringValue(0);
 			if (c.getRule().rhs.size() == 1 && Rule.phraseCat.equals(c.getRule().rhs.get(0)))
-			{
 				sentence = ex.getTokens();
-			}
 			else
 				if (c.getRule().rhs.size() == 1 && Rule.lemmaPhraseCat.equals(c.getRule().rhs.get(0)))
-				{
 					sentence = ex.getLemmaTokens();
-				}
 				else
-				{
 					sentence = null;
-				}
 			this.mode = mode;
 			this.matchAny = matchAny;
 			if (opts.verbose >= 2)
-				LogInfo.logs("FuzzyMatchFn[%s]%s.call: %s", this.mode, (this.matchAny ? "[matchAny]" : ""), this.query);
+				LogInfo.logs("FuzzyMatchFn[%s]%s.call: %s", this.mode, this.matchAny ? "[matchAny]" : "", query);
 		}
 
 		@Override
@@ -137,7 +133,6 @@ public class FuzzyMatchFn extends SemanticFn
 
 			// Compute the formulas if not computed yet
 			if (formulas == null)
-			{
 				if (matchAny)
 					formulas = new ArrayList<>(matchable.getAllFormulas(mode));
 				else
@@ -145,15 +140,14 @@ public class FuzzyMatchFn extends SemanticFn
 						formulas = new ArrayList<>(matchable.getFuzzyMatchedFormulas(sentence, c.getStart(), c.getEnd(), mode));
 					else
 						formulas = new ArrayList<>(matchable.getFuzzyMatchedFormulas(query, mode));
-			}
 
 			// Use the next formula to create a derivation
 			if (index >= formulas.size())
 				return null;
-			Formula formula = formulas.get(index++);
-			SemType type = TypeInference.inferType(formula);
+			final Formula formula = formulas.get(index++);
+			final SemType type = TypeInference.inferType(formula);
 
-			FeatureVector features = new FeatureVector();
+			final FeatureVector features = new FeatureVector();
 			if (FeatureExtractor.containsDomain("fuzzyMatch"))
 			{
 				features.add("fuzzyMatch", "mode=" + mode);

@@ -1,13 +1,25 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import java.time.YearMonth;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.DateValue;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.MergeFormula;
+import edu.stanford.nlp.sempre.NumberValue;
+import edu.stanford.nlp.sempre.Value;
 import edu.stanford.nlp.sempre.tables.DenotationTypeInference;
 import edu.stanford.nlp.sempre.tables.InfiniteListValue;
 import edu.stanford.nlp.sempre.tables.lambdadcs.LambdaDCSException.Type;
-import fig.basic.*;
+import fig.basic.LispTree;
+import fig.basic.LogInfo;
+import fig.basic.Option;
+import java.time.YearMonth;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A unary with infinite number of elements such as (>= 4) and * [= anything]
@@ -26,13 +38,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 
 	// Default implementation: calls |contains| on all elements of |c|
 	@Override
-	public boolean containsAll(Collection<?> c)
+	public boolean containsAll(final Collection<?> c)
 	{
-		for (Object o : c)
-		{
+		for (final Object o : c)
 			if (!contains(o))
 				return false;
-		}
 		return true;
 	}
 
@@ -49,7 +59,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public <T> T[] toArray(T[] a)
+	public <T> T[] toArray(final T[] a)
 	{
 		throw new LambdaDCSException(Type.infiniteList, "Cannot convert an infinite unary to array");
 	}
@@ -61,28 +71,26 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 	}
 
 	@Override
-	public UnaryDenotation aggregate(AggregateFormula.Mode mode)
+	public UnaryDenotation aggregate(final AggregateFormula.Mode mode)
 	{
 		throw new LambdaDCSException(Type.infiniteList, "Cannot use aggregate mode %s on %s", mode, this);
 	}
 
 	@Override
-	public UnaryDenotation filter(UnaryDenotation that)
+	public UnaryDenotation filter(final UnaryDenotation that)
 	{
 		return merge(that, MergeFormula.Mode.and);
 	}
 
 	// Create an InfiniteUnaryDenotation based on the specification
-	public static InfiniteUnaryDenotation create(String binary, UnaryDenotation second)
+	public static InfiniteUnaryDenotation create(final String binary, final UnaryDenotation second)
 	{
 		try
 		{
 			if (ComparisonUnaryDenotation.COMPARATORS.contains(binary))
 			{
 				if (second instanceof EverythingUnaryDenotation)
-				{
 					return (EverythingUnaryDenotation) second;
-				}
 				else
 					if (second instanceof GenericDateUnaryDenotation)
 					{
@@ -94,11 +102,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 				return new ComparisonUnaryDenotation(binary, DenotationUtils.getSingleValue(second));
 			}
 		}
-		catch (LambdaDCSException e)
+		catch (final LambdaDCSException e)
 		{
 			throw e;
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 		}
 		throw new LambdaDCSException(Type.invalidFormula, "Cannot create an InfiniteUnaryDenotation: binary = %s, second = %s", binary, second);
@@ -114,7 +122,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		@Override
 		public LispTree toLispTree()
 		{
-			LispTree tree = LispTree.proto.newList();
+			final LispTree tree = LispTree.proto.newList();
 			tree.addChild("unary");
 			tree.addChild("*");
 			return tree;
@@ -127,13 +135,13 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(final Object o)
 		{
 			return true;
 		}
 
 		@Override
-		public UnaryDenotation merge(UnaryDenotation that, MergeFormula.Mode mode)
+		public UnaryDenotation merge(final UnaryDenotation that, final MergeFormula.Mode mode)
 		{
 			switch (mode)
 			{
@@ -162,17 +170,17 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		public final Value value;
 		private final DenotationUtils.TypeProcessor valueProcessor;
 
-		public ComparisonUnaryDenotation(String comparator, Value value)
+		public ComparisonUnaryDenotation(final String comparator, final Value value)
 		{
 			this.comparator = comparator;
 			this.value = value;
-			this.valueProcessor = comparator.equals("!=") ? null : DenotationUtils.getTypeProcessor(value);
+			valueProcessor = comparator.equals("!=") ? null : DenotationUtils.getTypeProcessor(value);
 		}
 
 		@Override
 		public LispTree toLispTree()
 		{
-			LispTree tree = LispTree.proto.newList();
+			final LispTree tree = LispTree.proto.newList();
 			tree.addChild(comparator);
 			tree.addChild(value.toLispTree());
 			return tree;
@@ -185,14 +193,14 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public UnaryDenotation merge(UnaryDenotation that, MergeFormula.Mode mode)
+		public UnaryDenotation merge(final UnaryDenotation that, final MergeFormula.Mode mode)
 		{
 			if (that.size() != Integer.MAX_VALUE)
 			{
 				if (mode == MergeFormula.Mode.and)
 				{
-					Set<Value> filtered = new HashSet<>();
-					for (Value value : that)
+					final Set<Value> filtered = new HashSet<>();
+					for (final Value value : that)
 						if (contains(value))
 							filtered.add(value);
 					return new ExplicitUnaryDenotation(filtered);
@@ -200,13 +208,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 			}
 			else
 				if (that instanceof EverythingUnaryDenotation || that instanceof RangeUnaryDenotation)
-				{
 					return that.merge(this, mode);
-				}
 				else
 					if (mode == MergeFormula.Mode.and && that instanceof InfiniteUnaryDenotation)
 					{
-						UnaryDenotation answer = RangeEnds.andMerge(this, (InfiniteUnaryDenotation) that);
+						final UnaryDenotation answer = RangeEnds.andMerge(this, (InfiniteUnaryDenotation) that);
 						if (answer != null)
 							return answer;
 					}
@@ -214,25 +220,19 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(final Object o)
 		{
 			if (!(o instanceof Value))
 				return false;
-			Value that = ((Value) o);
+			final Value that = (Value) o;
 			if (comparator.equals("!="))
-			{
 				if (InfiniteUnaryDenotation.opts.neqMustTypeCheck)
-				{
 					return !that.equals(value) && DenotationTypeInference.typeCheck(that, value);
-				}
 				else
-				{
 					return !that.equals(value);
-				}
-			}
 			if (!valueProcessor.isCompatible(that))
 				throw new LambdaDCSException(Type.typeMismatch, "Cannot compare %s with %s", value, that);
-			int comparison = valueProcessor.compareValues(that, value);
+			final int comparison = valueProcessor.compareValues(that, value);
 			switch (comparator)
 			{
 				case "<":
@@ -259,7 +259,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		public final String leftComparator, rightComparator;
 		public final Value leftValue, rightValue;
 
-		public RangeEnds(String leftComparator, Value leftValue, String rightComparator, Value rightValue)
+		public RangeEnds(final String leftComparator, final Value leftValue, final String rightComparator, final Value rightValue)
 		{
 			this.leftComparator = leftComparator;
 			this.leftValue = leftValue;
@@ -267,16 +267,14 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 			this.rightValue = rightValue;
 		}
 
-		public static RangeEnds getRangeEnds(InfiniteUnaryDenotation x)
+		public static RangeEnds getRangeEnds(final InfiniteUnaryDenotation x)
 		{
 			if (x instanceof RangeUnaryDenotation)
-			{
 				return ((RangeUnaryDenotation) x).rangeEnds;
-			}
 			else
 				if (x instanceof ComparisonUnaryDenotation)
 				{
-					ComparisonUnaryDenotation comparison = (ComparisonUnaryDenotation) x;
+					final ComparisonUnaryDenotation comparison = (ComparisonUnaryDenotation) x;
 					String leftComparator = ">", rightComparator = "<";
 					Value leftValue = null, rightValue = null;
 					switch (comparison.comparator)
@@ -300,16 +298,16 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		// Helper function for performing AND on ComparisonUnaryDenotation or RangeUnaryDenotation
-		public static UnaryDenotation andMerge(InfiniteUnaryDenotation xDeno, InfiniteUnaryDenotation yDeno)
+		public static UnaryDenotation andMerge(final InfiniteUnaryDenotation xDeno, final InfiniteUnaryDenotation yDeno)
 		{
-			RangeEnds x = getRangeEnds(xDeno), y = getRangeEnds(yDeno);
+			final RangeEnds x = getRangeEnds(xDeno), y = getRangeEnds(yDeno);
 			if (x == null || y == null)
 				return null;
 			String leftComparator, rightComparator;
 			Value leftValue, rightValue;
 			int comparison;
 			// Left
-			comparison = (x.leftValue == null) ? -1 : (y.leftValue == null) ? +1 : DenotationUtils.getTypeProcessor(x.leftValue, y.leftValue).compareValues(x.leftValue, y.leftValue);
+			comparison = x.leftValue == null ? -1 : y.leftValue == null ? +1 : DenotationUtils.getTypeProcessor(x.leftValue, y.leftValue).compareValues(x.leftValue, y.leftValue);
 			if (comparison > 0)
 			{
 				leftValue = x.leftValue;
@@ -324,10 +322,10 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 				else
 				{
 					leftValue = x.leftValue;
-					leftComparator = (">".equals(x.leftComparator) || ">".equals(y.leftComparator)) ? ">" : ">=";
+					leftComparator = ">".equals(x.leftComparator) || ">".equals(y.leftComparator) ? ">" : ">=";
 				}
 			// Right
-			comparison = (x.rightValue == null) ? 1 : (y.rightValue == null) ? -1 : DenotationUtils.getTypeProcessor(x.rightValue, y.rightValue).compareValues(x.rightValue, y.rightValue);
+			comparison = x.rightValue == null ? 1 : y.rightValue == null ? -1 : DenotationUtils.getTypeProcessor(x.rightValue, y.rightValue).compareValues(x.rightValue, y.rightValue);
 			if (comparison < 0)
 			{
 				rightValue = x.rightValue;
@@ -342,7 +340,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 				else
 				{
 					rightValue = x.rightValue;
-					rightComparator = ("<".equals(x.rightComparator) || "<".equals(y.rightComparator)) ? "<" : "<=";
+					rightComparator = "<".equals(x.rightComparator) || "<".equals(y.rightComparator) ? "<" : "<=";
 				}
 			// Return answer
 			if (leftValue == null)
@@ -353,9 +351,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 			}
 			else
 				if (rightValue == null)
-				{
 					return new ComparisonUnaryDenotation(leftComparator, leftValue);
-				}
 				else
 				{
 					comparison = DenotationUtils.getTypeProcessor(leftValue, rightValue).compareValues(leftValue, rightValue);
@@ -375,16 +371,16 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		public final RangeEnds rangeEnds;
 		private final DenotationUtils.TypeProcessor valueProcessor;
 
-		public RangeUnaryDenotation(String leftComparator, Value leftValue, String rightComparator, Value rightValue)
+		public RangeUnaryDenotation(final String leftComparator, final Value leftValue, final String rightComparator, final Value rightValue)
 		{
-			this.rangeEnds = new RangeEnds(leftComparator, leftValue, rightComparator, rightValue);
-			this.valueProcessor = DenotationUtils.getTypeProcessor(leftValue, rightValue);
+			rangeEnds = new RangeEnds(leftComparator, leftValue, rightComparator, rightValue);
+			valueProcessor = DenotationUtils.getTypeProcessor(leftValue, rightValue);
 		}
 
 		@Override
 		public LispTree toLispTree()
 		{
-			LispTree tree = LispTree.proto.newList();
+			final LispTree tree = LispTree.proto.newList();
 			tree.addChild("and");
 			tree.addChild(LispTree.proto.newList(rangeEnds.leftComparator, rangeEnds.leftValue.toLispTree()));
 			tree.addChild(LispTree.proto.newList(rangeEnds.rightComparator, rangeEnds.rightValue.toLispTree()));
@@ -398,14 +394,14 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public UnaryDenotation merge(UnaryDenotation that, MergeFormula.Mode mode)
+		public UnaryDenotation merge(final UnaryDenotation that, final MergeFormula.Mode mode)
 		{
 			if (that.size() != Integer.MAX_VALUE)
 			{
 				if (mode == MergeFormula.Mode.and)
 				{
-					Set<Value> filtered = new HashSet<>();
-					for (Value value : that)
+					final Set<Value> filtered = new HashSet<>();
+					for (final Value value : that)
 						if (contains(value))
 							filtered.add(value);
 					return new ExplicitUnaryDenotation(filtered);
@@ -413,13 +409,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 			}
 			else
 				if (that instanceof EverythingUnaryDenotation)
-				{
 					return that.merge(this, mode);
-				}
 				else
 					if (mode == MergeFormula.Mode.and && that instanceof InfiniteUnaryDenotation)
 					{
-						UnaryDenotation answer = RangeEnds.andMerge(this, (InfiniteUnaryDenotation) that);
+						final UnaryDenotation answer = RangeEnds.andMerge(this, (InfiniteUnaryDenotation) that);
 						if (answer != null)
 							return answer;
 					}
@@ -427,11 +421,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(final Object o)
 		{
 			if (!(o instanceof Value))
 				return false;
-			Value that = ((Value) o);
+			final Value that = (Value) o;
 			if (!valueProcessor.isCompatible(that))
 				throw new LambdaDCSException(Type.typeMismatch, "Cannot compare %s and %s with %s", rangeEnds.leftValue, rangeEnds.rightValue, that);
 			int comparison = valueProcessor.compareValues(that, rangeEnds.leftValue);
@@ -475,7 +469,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 	{
 		DateValue date;
 
-		public GenericDateUnaryDenotation(DateValue date)
+		public GenericDateUnaryDenotation(final DateValue date)
 		{
 			if (date.year == -1 && date.month == -1 && date.day == -1)
 				throw new LambdaDCSException(Type.invalidFormula, "Date cannot be (date -1 -1 -1)");
@@ -495,21 +489,22 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public UnaryDenotation merge(UnaryDenotation that, MergeFormula.Mode mode)
+		public UnaryDenotation merge(final UnaryDenotation that, final MergeFormula.Mode mode)
 		{
 			if (that.size() != Integer.MAX_VALUE)
 			{
 				if (mode == MergeFormula.Mode.and)
 				{
-					Set<Value> filtered = new HashSet<>();
-					for (Value value : that)
+					final Set<Value> filtered = new HashSet<>();
+					for (final Value value : that)
 						if (contains(value))
 							filtered.add(value);
 					return new ExplicitUnaryDenotation(filtered);
 				}
 			}
 			else
-				if (that instanceof EverythingUnaryDenotation) { return that.merge(this, mode); }
+				if (that instanceof EverythingUnaryDenotation)
+					return that.merge(this, mode);
 			throw new LambdaDCSException(Type.infiniteList, "Cannot use merge mode %s on %s and %s", mode, this, that);
 		}
 
@@ -536,11 +531,11 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(final Object o)
 		{
 			if (!(o instanceof DateValue))
 				return false;
-			DateValue that = (DateValue) o;
+			final DateValue that = (DateValue) o;
 			return (date.year == -1 || date.year == that.year) && (date.month == -1 || date.month == that.month) && (date.day == -1 || date.day == that.day);
 		}
 
@@ -548,7 +543,7 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 		 * If the provided value is a full date like (date 2015 10 21), return an ExplicitUnaryDenotation object. If instead it has a placeholder like (date -1
 		 * 10 21), return a GenericDateUnaryDenotation object.
 		 */
-		public static UnaryDenotation get(DateValue value)
+		public static UnaryDenotation get(final DateValue value)
 		{
 			if (value.year != -1 && value.month != -1 && value.day != -1)
 				return new ExplicitUnaryDenotation(value);
@@ -561,15 +556,15 @@ public abstract class InfiniteUnaryDenotation extends UnaryDenotation
 	// Test
 	// ============================================================
 
-	public static void main(String[] args)
+	public static void main(final String[] args)
 	{
 		//UnaryDenotation x = new RangeUnaryDenotation(">", new NumberValue(2), "<=", new NumberValue(4));
-		UnaryDenotation x = new ComparisonUnaryDenotation("<=", new NumberValue(10));
+		final UnaryDenotation x = new ComparisonUnaryDenotation("<=", new NumberValue(10));
 		LogInfo.logs("%s", x);
 		//UnaryDenotation y = new RangeUnaryDenotation(">=", new NumberValue(3), "<=", new NumberValue(5));
-		UnaryDenotation y = new ComparisonUnaryDenotation("<", new NumberValue(4));
+		final UnaryDenotation y = new ComparisonUnaryDenotation("<", new NumberValue(4));
 		LogInfo.logs("%s", y);
-		UnaryDenotation z = x.merge(y, MergeFormula.Mode.and);
+		final UnaryDenotation z = x.merge(y, MergeFormula.Mode.and);
 		LogInfo.logs("%s", z);
 	}
 

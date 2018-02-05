@@ -1,13 +1,22 @@
 package edu.stanford.nlp.sempre.tables;
 
+import edu.stanford.nlp.sempre.DescriptionValue;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.LanguageInfo;
+import edu.stanford.nlp.sempre.ListValue;
+import edu.stanford.nlp.sempre.TargetValuePreprocessor;
+import edu.stanford.nlp.sempre.Value;
+import fig.basic.LogInfo;
+import fig.basic.Option;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
-
-import edu.stanford.nlp.sempre.*;
-import fig.basic.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class TableValuePreprocessor extends TargetValuePreprocessor
 {
@@ -22,38 +31,33 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 	public static Options opts = new Options();
 
 	@Override
-	public Value preprocess(Value value, Example ex)
+	public Value preprocess(final Value value, final Example ex)
 	{
-		if (!opts.taggedFiles.isEmpty() && ex != null) { return getFromTaggedFile(ex.id); }
+		if (!opts.taggedFiles.isEmpty() && ex != null)
+			return getFromTaggedFile(ex.id);
 		if (value instanceof ListValue)
 		{
-			List<Value> values = new ArrayList<>();
-			for (Value entry : ((ListValue) value).values)
-			{
+			final List<Value> values = new ArrayList<>();
+			for (final Value entry : ((ListValue) value).values)
 				values.add(preprocessSingle(entry));
-			}
 			return new ListValue(values);
 		}
 		else
-		{
 			return preprocessSingle(value);
-		}
 	}
 
-	public Value preprocessSingle(Value origTarget)
+	public Value preprocessSingle(final Value origTarget)
 	{
 		if (origTarget instanceof DescriptionValue)
 		{
-			String origString = ((DescriptionValue) origTarget).value;
-			Value canonical = canonicalize(origString);
+			final String origString = ((DescriptionValue) origTarget).value;
+			final Value canonical = canonicalize(origString);
 			if (opts.verbose >= 1)
 				LogInfo.logs("Canonicalize %s --> %s", origString, canonical);
 			return canonical;
 		}
 		else
-		{
 			return origTarget;
-		}
 	}
 
 	/*
@@ -67,10 +71,10 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 	 * - short strings (yes, no, more, less, before, after)
 	 * - string ("Poland", "World Championship")
 	 */
-	protected Value canonicalize(String origString)
+	protected Value canonicalize(final String origString)
 	{
 		Value answer;
-		LanguageInfo languageInfo = LanguageAnalyzer.getSingleton().analyze(origString);
+		final LanguageInfo languageInfo = LanguageAnalyzer.getSingleton().analyze(origString);
 		// Try converting to a number.
 		answer = StringNormalizationUtils.parseNumberStrict(origString);
 		if (answer != null)
@@ -98,7 +102,7 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 
 	Map<String, Value> idToValue = null;
 
-	public Value getFromTaggedFile(String id)
+	public Value getFromTaggedFile(final String id)
 	{
 		if (idToValue == null)
 			readTaggedFiles();
@@ -109,30 +113,26 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 	{
 		LogInfo.begin_track("Reading .tagged files");
 		idToValue = new HashMap<>();
-		for (String path : opts.taggedFiles)
+		for (final String path : opts.taggedFiles)
 		{
-			File file = new File(path);
+			final File file = new File(path);
 			if (file.isDirectory())
-			{
-				for (File subpath : file.listFiles())
+				for (final File subpath : file.listFiles())
 					readTaggedFile(subpath.toString());
-			}
 			else
-			{
 				readTaggedFile(path);
-			}
 		}
 		LogInfo.logs("Read %d entries", idToValue.size());
 		LogInfo.end_track();
 	}
 
-	protected void readTaggedFile(String path)
+	protected void readTaggedFile(final String path)
 	{
 		LogInfo.begin_track("Reading %s", path);
 		try (BufferedReader reader = new BufferedReader(new FileReader(path)))
 		{
 			// Read header
-			String[] header = reader.readLine().split("\t", -1);
+			final String[] header = reader.readLine().split("\t", -1);
 			int exIdIndex = 0, targetCanonIndex = 0;
 			while (!"id".equals(header[exIdIndex]))
 				exIdIndex++;
@@ -142,17 +142,15 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 			String line;
 			while ((line = reader.readLine()) != null)
 			{
-				String[] fields = line.split("\t", -1); // Include trailing spaces
-				String[] rawValues = fields[targetCanonIndex].split("\\|");
-				List<Value> values = new ArrayList<>();
-				for (String rawValue : rawValues)
-				{
+				final String[] fields = line.split("\t", -1); // Include trailing spaces
+				final String[] rawValues = fields[targetCanonIndex].split("\\|");
+				final List<Value> values = new ArrayList<>();
+				for (final String rawValue : rawValues)
 					values.add(simpleCanonicalize(rawValue));
-				}
 				idToValue.put(fields[exIdIndex], new ListValue(values));
 			}
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -163,7 +161,7 @@ public class TableValuePreprocessor extends TargetValuePreprocessor
 	 * Like canonicalize, but assume that the string is already well-formed: - A number should look like a float - A date should be in the ISO format -
 	 * Otherwise, the value is treated as a string.
 	 */
-	protected Value simpleCanonicalize(String origString)
+	protected Value simpleCanonicalize(final String origString)
 	{
 		Value answer;
 		// Try converting to a number.

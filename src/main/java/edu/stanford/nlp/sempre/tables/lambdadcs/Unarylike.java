@@ -1,6 +1,7 @@
 package edu.stanford.nlp.sempre.tables.lambdadcs;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.AggregateFormula;
+import edu.stanford.nlp.sempre.Value;
 import fig.basic.LispTree;
 
 /**

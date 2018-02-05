@@ -1,6 +1,9 @@
 package edu.stanford.nlp.sempre.tables.dpd;
 
-import edu.stanford.nlp.sempre.*;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.Value;
 import fig.basic.LispTree;
 
 /**
@@ -16,7 +19,7 @@ public class DPDErrorValue extends Value
 	public final Formula formula;
 	public final int hashCode;
 
-	public DPDErrorValue(Derivation deriv, Rule rule, Value child1, Value child2)
+	public DPDErrorValue(final Derivation deriv, final Rule rule, final Value child1, final Value child2)
 	{
 		if (child1 == null && child2 != null)
 			throw new RuntimeException("Cannot have child1 == null while child2 == " + child2);
@@ -28,10 +31,10 @@ public class DPDErrorValue extends Value
 			formula = deriv.formula;
 		else
 			formula = null;
-		this.hashCode = rule.hashCode() + (child1 == null ? 0 : child1.hashCode()) * 359 + (child2 == null ? 0 : child2.hashCode()) * 438 + (formula == null ? 0 : formula.hashCode()) * 502;
+		hashCode = rule.hashCode() + (child1 == null ? 0 : child1.hashCode()) * 359 + (child2 == null ? 0 : child2.hashCode()) * 438 + (formula == null ? 0 : formula.hashCode()) * 502;
 	}
 
-	public DPDErrorValue(Derivation deriv, Rule rule, Derivation child1, Derivation child2)
+	public DPDErrorValue(final Derivation deriv, final Rule rule, final Derivation child1, final Derivation child2)
 	{
 		this(deriv, rule, child1 == null ? null : child1.value, child2 == null ? null : child2.value);
 	}
@@ -39,7 +42,7 @@ public class DPDErrorValue extends Value
 	@Override
 	public LispTree toLispTree()
 	{
-		LispTree tree = LispTree.proto.newList();
+		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("dperror");
 		tree.addChild(rule.toLispTree());
 		if (child1 != null)
@@ -52,20 +55,20 @@ public class DPDErrorValue extends Value
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object o)
 	{
 		if (this == o)
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		DPDErrorValue that = (DPDErrorValue) o;
+		final DPDErrorValue that = (DPDErrorValue) o;
 		if (rule != that.rule)
 			return false;
-		if ((child1 == null && that.child1 != null) || (child1 != null && !child1.equals(that.child1)))
+		if (child1 == null && that.child1 != null || child1 != null && !child1.equals(that.child1))
 			return false;
-		if ((child2 == null && that.child2 != null) || (child2 != null && !child2.equals(that.child2)))
+		if (child2 == null && that.child2 != null || child2 != null && !child2.equals(that.child2))
 			return false;
-		if ((formula == null && that.formula != null) || (formula != null && !formula.equals(that.formula)))
+		if (formula == null && that.formula != null || formula != null && !formula.equals(that.formula))
 			return false;
 		return true;
 	}

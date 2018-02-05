@@ -1,15 +1,23 @@
 package edu.stanford.nlp.sempre.corenlp.test;
 
-import edu.stanford.nlp.sempre.*;
+import static org.testng.AssertJUnit.assertEquals;
+
+import edu.stanford.nlp.sempre.DateFn;
+import edu.stanford.nlp.sempre.Derivation;
+import edu.stanford.nlp.sempre.DerivationStream;
+import edu.stanford.nlp.sempre.Example;
+import edu.stanford.nlp.sempre.FilterNerSpanFn;
+import edu.stanford.nlp.sempre.Formula;
+import edu.stanford.nlp.sempre.LanguageAnalyzer;
+import edu.stanford.nlp.sempre.NumberFn;
+import edu.stanford.nlp.sempre.Rule;
+import edu.stanford.nlp.sempre.SemanticFn;
 import edu.stanford.nlp.sempre.corenlp.CoreNLPAnalyzer;
 import edu.stanford.nlp.sempre.test.TestUtils;
 import fig.basic.LispTree;
-import org.testng.annotations.Test;
-
 import java.util.Collections;
 import java.util.List;
-
-import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * Test SemanticFns that depend on CoreNLP (e.g., NumberFn on "one thousand")
@@ -18,41 +26,41 @@ import static org.testng.AssertJUnit.assertEquals;
  */
 public class CoreNLPSemanticFnTest
 {
-	private static Formula F(String s)
+	private static Formula F(final String s)
 	{
 		return Formula.fromString(s);
 	}
 
-	void check(Formula target, DerivationStream derivations)
+	void check(final Formula target, final DerivationStream derivations)
 	{
 		if (!derivations.hasNext())
 			throw new RuntimeException("Expected 1 derivation, got " + derivations);
 		assertEquals(target, derivations.next().formula);
 	}
 
-	void check(Formula target, String utterance, SemanticFn fn, List<Derivation> children)
+	void check(final Formula target, final String utterance, final SemanticFn fn, final List<Derivation> children)
 	{
-		Example ex = TestUtils.makeSimpleExample(utterance);
+		final Example ex = TestUtils.makeSimpleExample(utterance);
 		check(target, fn.call(ex, new SemanticFn.CallInfo(null, 0, ex.numTokens(), Rule.nullRule, children)));
 	}
 
-	void check(Formula target, String utterance, SemanticFn fn)
+	void check(final Formula target, final String utterance, final SemanticFn fn)
 	{
-		List<Derivation> empty = Collections.emptyList();
+		final List<Derivation> empty = Collections.emptyList();
 		check(target, utterance, fn, empty);
 	}
 
-	void checkNumDerivations(DerivationStream derivations, int num)
+	void checkNumDerivations(final DerivationStream derivations, final int num)
 	{
 		assertEquals(num, derivations.estimatedSize());
 	}
 
-	Derivation D(Formula f)
+	Derivation D(final Formula f)
 	{
-		return (new Derivation.Builder()).formula(f).prob(1.0).createDerivation();
+		return new Derivation.Builder().formula(f).prob(1.0).createDerivation();
 	}
 
-	LispTree T(String str)
+	LispTree T(final String str)
 	{
 		return LispTree.proto.parseFromString(str);
 	}
@@ -73,10 +81,10 @@ public class CoreNLPSemanticFnTest
 	public void filterNerTagFn()
 	{
 		LanguageAnalyzer.setSingleton(new CoreNLPAnalyzer());
-		FilterNerSpanFn filter = new FilterNerSpanFn();
+		final FilterNerSpanFn filter = new FilterNerSpanFn();
 		filter.init(T("(FilterNerSpanFn token PERSON)"));
-		Derivation child = new Derivation.Builder().createDerivation();
-		Example ex = TestUtils.makeSimpleExample("where is Obama");
+		final Derivation child = new Derivation.Builder().createDerivation();
+		final Example ex = TestUtils.makeSimpleExample("where is Obama");
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 0, 1, Rule.nullRule, Collections.singletonList(child))).hasNext(), false);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 1, 2, Rule.nullRule, Collections.singletonList(child))).hasNext(), false);
 		assertEquals(filter.call(ex, new SemanticFn.CallInfo(null, 2, 3, Rule.nullRule, Collections.singletonList(child))).hasNext(), true);

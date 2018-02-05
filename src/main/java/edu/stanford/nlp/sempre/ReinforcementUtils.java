@@ -2,7 +2,6 @@ package edu.stanford.nlp.sempre;
 
 import fig.basic.MapUtils;
 import fig.basic.NumUtils;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,66 +19,68 @@ public final class ReinforcementUtils
 	}
 
 	// add to double map after adding prefix to all keys
-	public static void addToDoubleMap(Map<String, Double> mutatedMap, Map<String, Double> addedMap, String prefix)
+	public static void addToDoubleMap(final Map<String, Double> mutatedMap, final Map<String, Double> addedMap, final String prefix)
 	{
-		for (String key : addedMap.keySet())
+		for (final String key : addedMap.keySet())
 			MapUtils.incr(mutatedMap, prefix + key, addedMap.get(key));
 	}
 
-	public static void subtractFromDoubleMap(Map<String, Double> mutatedMap, Map<String, Double> subtractedMap)
+	public static void subtractFromDoubleMap(final Map<String, Double> mutatedMap, final Map<String, Double> subtractedMap)
 	{
-		for (String key : subtractedMap.keySet())
+		for (final String key : subtractedMap.keySet())
 			MapUtils.incr(mutatedMap, key, -1 * subtractedMap.get(key));
 	}
 
 	// subtract from double map after adding prefix to all keys
-	public static void subtractFromDoubleMap(Map<String, Double> mutatedMap, Map<String, Double> subtractedMap, String prefix)
+	public static void subtractFromDoubleMap(final Map<String, Double> mutatedMap, final Map<String, Double> subtractedMap, final String prefix)
 	{
-		for (String key : subtractedMap.keySet())
+		for (final String key : subtractedMap.keySet())
 			MapUtils.incr(mutatedMap, prefix + key, -1 * subtractedMap.get(key));
 	}
 
-	public static Map<String, Double> multiplyDoubleMap(Map<String, Double> map, double factor)
+	public static Map<String, Double> multiplyDoubleMap(final Map<String, Double> map, final double factor)
 	{
-		Map<String, Double> res = new HashMap<>();
-		for (Map.Entry<String, Double> entry : map.entrySet())
+		final Map<String, Double> res = new HashMap<>();
+		for (final Map.Entry<String, Double> entry : map.entrySet())
 			res.put(entry.getKey(), entry.getValue() * factor);
 		return res;
 	}
 
-	public static int sampleIndex(Random rand, List<? extends HasScore> scorables, double denominator)
+	public static int sampleIndex(final Random rand, final List<? extends HasScore> scorables, final double denominator)
 	{
-		double randD = rand.nextDouble();
+		final double randD = rand.nextDouble();
 		double sum = 0;
 
 		for (int i = 0; i < scorables.size(); ++i)
 		{
-			HasScore pds = scorables.get(i);
-			double prob = computeProb(pds, denominator);
+			final HasScore pds = scorables.get(i);
+			final double prob = computeProb(pds, denominator);
 			sum += prob;
-			if (randD < sum) { return i; }
+			if (randD < sum)
+				return i;
 		}
 		throw new RuntimeException(sum + " < " + randD);
 	}
 
-	public static int sampleIndex(Random rand, double[] scores, double denominator)
+	public static int sampleIndex(final Random rand, final double[] scores, final double denominator)
 	{
-		double randD = rand.nextDouble();
+		final double randD = rand.nextDouble();
 		double sum = 0;
 
 		for (int i = 0; i < scores.length; ++i)
 		{
-			double pds = scores[i];
-			double prob = computeProb(pds, denominator);
+			final double pds = scores[i];
+			final double prob = computeProb(pds, denominator);
 			sum += prob;
-			if (randD < sum) { return i; }
+			if (randD < sum)
+				return i;
 		}
 		throw new RuntimeException(sum + " < " + randD);
 	}
 
-	public static int sampleIndex(Random rand, double[] probs)
+	public static int sampleIndex(final Random rand, final double[] probs)
 	{
-		double randD = rand.nextDouble();
+		final double randD = rand.nextDouble();
 		double sum = 0;
 
 		for (int i = 0; i < probs.length; ++i)
@@ -91,39 +92,37 @@ public final class ReinforcementUtils
 		throw new RuntimeException(sum + " < " + randD);
 	}
 
-	public static double computeProb(HasScore deriv, double denominator)
+	public static double computeProb(final HasScore deriv, final double denominator)
 	{
-		double prob = Math.exp(deriv.getScore() - denominator);
+		final double prob = Math.exp(deriv.getScore() - denominator);
 		if (prob < -0.0001 || prob > 1.0001)
 			throw new RuntimeException("Probability is out of range, prob=" + prob + ",score=" + deriv.getScore() + ", denom=" + denominator);
 		return prob;
 	}
 
-	public static double computeProb(double score, double denominator)
+	public static double computeProb(final double score, final double denominator)
 	{
-		double prob = Math.exp(score - denominator);
+		final double prob = Math.exp(score - denominator);
 		if (prob < -0.0001 || prob > 1.0001)
 			throw new RuntimeException("Probability is out of range, prob=" + prob + ",score=" + score + ", denom=" + denominator);
 		return prob;
 	}
 
-	public static double computeLogExpSum(List<? extends HasScore> scorables)
+	public static double computeLogExpSum(final List<? extends HasScore> scorables)
 	{
 		double sum = Double.NEGATIVE_INFINITY;
-		for (HasScore scorable : scorables)
-		{
+		for (final HasScore scorable : scorables)
 			sum = NumUtils.logAdd(sum, scorable.getScore());
-		}
 		return sum;
 	}
 
-	public static double[] expNormalize(List<? extends HasScore> scorables)
+	public static double[] expNormalize(final List<? extends HasScore> scorables)
 	{
 		// Input: log probabilities (unnormalized too)
 		// Output: normalized probabilities
 		// probs actually contains log probabilities; so we can add an arbitrary constant to make
 		// the largest log prob 0 to prevent overflow problems
-		double[] res = new double[scorables.size()];
+		final double[] res = new double[scorables.size()];
 		double max = Double.NEGATIVE_INFINITY;
 		for (int i = 0; i < scorables.size(); i++)
 			max = Math.max(max, scorables.get(i).getScore());
@@ -135,30 +134,30 @@ public final class ReinforcementUtils
 		return res;
 	}
 
-	public static double[] expNormalize(ParserAgenda<? extends HasScore> scorables)
+	public static double[] expNormalize(final ParserAgenda<? extends HasScore> scorables)
 	{
 		// Input: log probabilities (unnormalized too)
 		// Output: normalized probabilities
 		// probs actually contains log probabilities; so we can add an arbitrary constant to make
 		// the largest log prob 0 to prevent overflow problems
-		double[] res = new double[scorables.size()];
+		final double[] res = new double[scorables.size()];
 		double max = Double.NEGATIVE_INFINITY;
 
-		for (HasScore scorable : scorables)
+		for (final HasScore scorable : scorables)
 			max = Math.max(max, scorable.getScore());
 
 		if (Double.isInfinite(max))
 			throw new RuntimeException("Scoreables is probably empty");
 
 		int i = 0;
-		for (HasScore scorable : scorables)
+		for (final HasScore scorable : scorables)
 			res[i++] = Math.exp(scorable.getScore() - max);
 		NumUtils.normalize(res);
 		return res;
 	}
 
 	// Return log(exp(a)-exp(b))
-	public static double logSub(double a, double b)
+	public static double logSub(final double a, final double b)
 	{
 		if (a <= b)
 			throw new RuntimeException("First argument must be strictly greater than second argument");

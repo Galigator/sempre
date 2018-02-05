@@ -1,9 +1,13 @@
 package edu.stanford.nlp.sempre.cache;
 
-import java.io.*;
-import java.net.*;
-
 import fig.basic.LogInfo;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 
 /**
  * Cache backed by a remote service (see StringCacheServer).
@@ -19,34 +23,35 @@ public class RemoteStringCache implements StringCache
 	private BufferedReader in;
 
 	// Cache things locally.
-	private FileStringCache local = new FileStringCache();
+	private final FileStringCache local = new FileStringCache();
 
-	public RemoteStringCache(String path, String host, int port)
+	public RemoteStringCache(final String path, final String host, final int port)
 	{
 		try
 		{
 			LogInfo.begin_track("RemoteStringCache: connecting to %s:%s to access %s", host, port, path);
-			this.socket = new Socket(host, port);
-			this.out = new PrintWriter(socket.getOutputStream(), true);
-			this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			String response = makeRequest("open", path, null);
+			socket = new Socket(host, port);
+			out = new PrintWriter(socket.getOutputStream(), true);
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			final String response = makeRequest("open", path, null);
 			LogInfo.logs("Using cache path=%s, host=%s, port=%s", path, host, port);
-			if (!response.equals("OK")) { throw new RuntimeException(response); }
+			if (!response.equals("OK"))
+				throw new RuntimeException(response);
 			LogInfo.end_track();
 		}
-		catch (UnknownHostException e)
+		catch (final UnknownHostException e)
 		{
 			LogInfo.end_track();
 			throw new RuntimeException(e);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			LogInfo.end_track();
 			throw new RuntimeException(e);
 		}
 	}
 
-	public String makeRequest(String method, String key, String value)
+	public String makeRequest(final String method, final String key, final String value)
 	{
 		try
 		{
@@ -56,7 +61,6 @@ public class RemoteStringCache implements StringCache
 				out.println(method + "\t" + key + "\t" + value);
 			out.flush();
 			for (int i = 0; i < NUM_TRIES; i++)
-			{
 				try
 				{
 					String result = in.readLine();
@@ -64,24 +68,23 @@ public class RemoteStringCache implements StringCache
 						result = null;
 					return result;
 				}
-				catch (NullPointerException e)
+				catch (final NullPointerException e)
 				{
 					LogInfo.logs("RemoteStringCache.makeRequest(%s, %s, %s) failed", method, key, value);
 				}
-			}
 			throw new NullPointerException();
 		}
-		catch (SocketTimeoutException e)
+		catch (final SocketTimeoutException e)
 		{
 			throw new RuntimeException(e);
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 	}
 
-	public String get(String key)
+	public String get(final String key)
 	{
 		// First check the local cache.
 		String value = local.get(key);
@@ -90,7 +93,7 @@ public class RemoteStringCache implements StringCache
 		return value;
 	}
 
-	public void put(String key, String value)
+	public void put(final String key, final String value)
 	{
 		local.put(key, value);
 		makeRequest("put", key, value);

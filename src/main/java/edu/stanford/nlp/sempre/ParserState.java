@@ -47,7 +47,7 @@ public abstract class ParserState
 
 	//// Output
 
-	public final List<Derivation> predDerivations = new ArrayList<Derivation>();
+	public final List<Derivation> predDerivations = new ArrayList<>();
 	public final Evaluation evaluation = new Evaluation();
 
 	// If computeExpectedCounts is true (for learning), then fill this out.
@@ -302,12 +302,12 @@ public abstract class ParserState
 					break;
 				case TOP:
 				case RANDOM:
-					trueScores[i] = (i == goodAndBad[0]) ? 0 : Double.NEGATIVE_INFINITY;
-					predScores[i] = (i == goodAndBad[1]) ? 0 : Double.NEGATIVE_INFINITY;
+					trueScores[i] = i == goodAndBad[0] ? 0 : Double.NEGATIVE_INFINITY;
+					predScores[i] = i == goodAndBad[1] ? 0 : Double.NEGATIVE_INFINITY;
 					break;
 				case TOPALT:
-					trueScores[i] = (i == goodAndBad[0]) ? 0 : Double.NEGATIVE_INFINITY;
-					predScores[i] = (i == goodAndBad[0] || i == goodAndBad[1]) ? deriv.score : Double.NEGATIVE_INFINITY;
+					trueScores[i] = i == goodAndBad[0] ? 0 : Double.NEGATIVE_INFINITY;
+					predScores[i] = i == goodAndBad[0] || i == goodAndBad[1] ? deriv.score : Double.NEGATIVE_INFINITY;
 					break;
 				default:
 					throw new RuntimeException("Unknown customExpectedCounts: " + opts.customExpectedCounts);
@@ -378,6 +378,6 @@ public abstract class ParserState
 					chosenBad = i;
 			}
 		}
-		return (chosenGood == -1 || chosenBad == -1) ? null : new int[] { chosenGood, chosenBad };
+		return chosenGood == -1 || chosenBad == -1 ? null : new int[] { chosenGood, chosenBad };
 	}
 }

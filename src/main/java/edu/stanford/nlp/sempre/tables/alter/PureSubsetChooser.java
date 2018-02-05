@@ -1,6 +1,9 @@
 package edu.stanford.nlp.sempre.tables.alter;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class PureSubsetChooser implements SubsetChooser
 {
@@ -8,7 +11,7 @@ public class PureSubsetChooser implements SubsetChooser
 	private final int numAlteredTables, numRetainedTables;
 	private final boolean alsoTrySmallerSubsets;
 
-	public PureSubsetChooser(int numAlteredTables, int numRetainedTables, boolean alsoTrySmallerSubsets)
+	public PureSubsetChooser(final int numAlteredTables, final int numRetainedTables, final boolean alsoTrySmallerSubsets)
 	{
 		this.numAlteredTables = numAlteredTables;
 		this.numRetainedTables = numRetainedTables;
@@ -16,15 +19,15 @@ public class PureSubsetChooser implements SubsetChooser
 	}
 
 	@Override
-	public Subset chooseSubset(String id, DenotationData denotationData)
+	public Subset chooseSubset(final String id, final DenotationData denotationData)
 	{
 		return chooseSubset(id, denotationData, Collections.emptyList());
 	}
 
 	@Override
-	public Subset chooseSubset(String id, DenotationData denotationData, Collection<Integer> forbiddenTables)
+	public Subset chooseSubset(final String id, final DenotationData denotationData, final Collection<Integer> forbiddenTables)
 	{
-		if (this.numRetainedTables == 0 || !denotationData.isAnnotated())
+		if (numRetainedTables == 0 || !denotationData.isAnnotated())
 			return null;
 		Iterator<List<Integer>> itr;
 		if (alsoTrySmallerSubsets)
@@ -33,21 +36,19 @@ public class PureSubsetChooser implements SubsetChooser
 			itr = new Subset.SubsetSizeKIterator(numAlteredTables, numRetainedTables);
 		while (itr.hasNext())
 		{
-			List<Integer> graphIndices = itr.next();
+			final List<Integer> graphIndices = itr.next();
 			if (!Subset.areDisjoint(graphIndices, forbiddenTables))
 				continue;
 			int numGroupsMixingWithAnnotated = 0;
-			for (int i : denotationData.getRepresentativeIndices())
+			for (final int i : denotationData.getRepresentativeIndices())
 			{
 				boolean match = true;
-				for (int j : graphIndices)
-				{
+				for (final int j : graphIndices)
 					if (!denotationData.getDenotation(i, j).equals(denotationData.getAnnotatedDenotation(j)))
 					{
 						match = false;
 						break;
 					}
-				}
 				if (match)
 					numGroupsMixingWithAnnotated++;
 			}

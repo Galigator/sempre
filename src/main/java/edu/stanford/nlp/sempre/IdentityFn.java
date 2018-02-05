@@ -7,7 +7,7 @@ package edu.stanford.nlp.sempre;
  */
 public class IdentityFn extends SemanticFn
 {
-	public DerivationStream call(Example ex, final Callable c)
+	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{

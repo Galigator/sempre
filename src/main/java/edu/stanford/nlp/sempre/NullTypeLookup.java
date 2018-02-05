@@ -6,13 +6,13 @@ package edu.stanford.nlp.sempre;
 public class NullTypeLookup implements TypeLookup
 {
 	@Override
-	public SemType getEntityType(String entity)
+	public SemType getEntityType(final String entity)
 	{
 		return null;
 	}
 
 	@Override
-	public SemType getPropertyType(String property)
+	public SemType getPropertyType(final String property)
 	{
 		return null;
 	}

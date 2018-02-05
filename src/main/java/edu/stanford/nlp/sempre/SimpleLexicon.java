@@ -1,10 +1,16 @@
 package edu.stanford.nlp.sempre;
 
-import fig.basic.*;
-
+import fig.basic.IOUtils;
+import fig.basic.LogInfo;
+import fig.basic.MapUtils;
+import fig.basic.Option;
+import fig.basic.StringDoubleVec;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A Lexicon maps phrases (e.g., born) to lexical entries, which contain a formula (e.g., fb:people.person.place_of_birth) and a type. This class is meant to be
@@ -19,7 +25,7 @@ public final class SimpleLexicon
 	public static class Entry
 	{
 		// rawPhrase was the original phrase in the Lexicon
-		public Entry(String rawPhrase, Formula formula, SemType type, StringDoubleVec features)
+		public Entry(final String rawPhrase, final Formula formula, final SemType type, final StringDoubleVec features)
 		{
 			this.rawPhrase = rawPhrase;
 			this.formula = formula;
@@ -62,77 +68,75 @@ public final class SimpleLexicon
 	{
 		if (opts.inPaths == null)
 			return;
-		for (String path : opts.inPaths)
+		for (final String path : opts.inPaths)
 			read(path);
 	}
 
 	// Mapping from phrase
-	Map<String, List<Entry>> entries = new HashMap<String, List<Entry>>();
+	Map<String, List<Entry>> entries = new HashMap<>();
 
-	public void read(String path)
+	public void read(final String path)
 	{
 		LogInfo.begin_track("SimpleLexicon.read(%s)", path);
 		try
 		{
-			BufferedReader in = IOUtils.openIn(path);
+			final BufferedReader in = IOUtils.openIn(path);
 			String line;
 			int numLines = 0;
-			int oldNumEntries = entries.size();
+			final int oldNumEntries = entries.size();
 			while ((line = in.readLine()) != null)
 			{
-				Map<String, Object> map = Json.readMapHard(line);
+				final Map<String, Object> map = Json.readMapHard(line);
 				numLines++;
 
-				String rawPhrase = (String) map.get("lexeme");
-				Formula formula = Formula.fromString((String) map.get("formula"));
+				final String rawPhrase = (String) map.get("lexeme");
+				final Formula formula = Formula.fromString((String) map.get("formula"));
 
 				// Type
-				String typeStr = (String) map.get("type");
-				SemType type = typeStr != null ? SemType.fromString(typeStr) : TypeInference.inferType(formula);
+				final String typeStr = (String) map.get("type");
+				final SemType type = typeStr != null ? SemType.fromString(typeStr) : TypeInference.inferType(formula);
 
 				// Features
 				StringDoubleVec features = null;
-				Map<String, Double> featureMap = (Map<String, Double>) map.get("features");
+				final Map<String, Double> featureMap = (Map<String, Double>) map.get("features");
 				if (featureMap != null)
 				{
 					features = new StringDoubleVec();
-					for (Map.Entry<String, Double> e : featureMap.entrySet())
+					for (final Map.Entry<String, Double> e : featureMap.entrySet())
 						features.add(e.getKey(), e.getValue());
 					features.trimToSize();
 				}
 
 				// Add verbatim feature
-				Entry entry = new Entry(rawPhrase, formula, type, features);
-				String phrase = entry.rawPhrase.toLowerCase();
+				final Entry entry = new Entry(rawPhrase, formula, type, features);
+				final String phrase = entry.rawPhrase.toLowerCase();
 				MapUtils.addToList(entries, phrase, entry);
 
 				// For last names
-				String[] parts = phrase.split(" ");
+				final String[] parts = phrase.split(" ");
 				if (opts.matchSuffixTypes != null && opts.matchSuffixTypes.contains(typeStr) && parts.length > 1)
 				{
-					StringDoubleVec newFeatures = new StringDoubleVec();
+					final StringDoubleVec newFeatures = new StringDoubleVec();
 					if (features != null)
-					{ // Copy over features
-						for (StringDoubleVec.Entry e : features)
+						for (final StringDoubleVec.Entry e : features)
 							newFeatures.add(e.getFirst(), e.getSecond());
-					}
 					newFeatures.add("isSuffix", 1);
 					newFeatures.trimToSize();
-					Entry newEntry = new Entry(rawPhrase, formula, type, newFeatures);
+					final Entry newEntry = new Entry(rawPhrase, formula, type, newFeatures);
 					MapUtils.addToList(entries, parts[parts.length - 1], newEntry);
 				}
 				// In the future, add other mechanisms for lemmatization.
 			}
 			LogInfo.logs("Read %s lines, generated %d entries (now %d total)", numLines, entries.size() - oldNumEntries, entries.size());
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			throw new RuntimeException(e);
 		}
 		LogInfo.end_track();
 	}
 
-	public List<Entry> lookup(String phrase)
+	public List<Entry> lookup(final String phrase)
 	{
 		return MapUtils.get(entries, phrase, Collections.EMPTY_LIST);
 	}
