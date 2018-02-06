@@ -7,6 +7,7 @@ package edu.stanford.nlp.sempre;
  */
 public class DateFn extends SemanticFn
 {
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

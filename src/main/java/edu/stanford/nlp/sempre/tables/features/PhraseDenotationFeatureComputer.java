@@ -128,7 +128,7 @@ public class PhraseDenotationFeatureComputer implements FeatureComputer
 					final Value value = list.values.get(0);
 					if (value instanceof NumberValue)
 					{
-						final double number = ((NumberValue) value).value;
+						final double number = ((NumberValue) value)._value;
 						deriv.addFeature("custom-denotation", "number" + (number > 0 ? ">0" : number == 0 ? "=0" : "<0"));
 						deriv.addFeature("custom-denotation", "number" + ((int) number == number ? "-int" : "-frac"));
 					}

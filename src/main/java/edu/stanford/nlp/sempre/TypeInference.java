@@ -201,7 +201,7 @@ public final class TypeInference
 							else
 								if (value instanceof NameValue)
 								{
-									final String id = ((NameValue) value).id;
+									final String id = ((NameValue) value)._id;
 
 									if (CanonicalNames.isUnary(id))
 									{ // Unary
@@ -345,7 +345,7 @@ public final class TypeInference
 														final Value value = ((ValueFormula<?>) call.func).value;
 														if (!(value instanceof NameValue))
 															return SemType.bottomType;
-														final String func = ((NameValue) value).id;
+														final String func = ((NameValue) value)._id;
 
 														final CallTypeInfo info = callTypeInfos.get(func);
 														if (info == null)

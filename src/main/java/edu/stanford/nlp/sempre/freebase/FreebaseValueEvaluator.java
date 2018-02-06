@@ -86,7 +86,7 @@ public class FreebaseValueEvaluator implements ValueEvaluator
 		{
 			// Just has to match the description
 			if (pred instanceof NameValue)
-				return ((DescriptionValue) target).value.equals(((NameValue) pred).description) ? 1 : 0;
+				return ((DescriptionValue) target).value.equals(((NameValue) pred)._description) ? 1 : 0;
 			return 0;
 		}
 

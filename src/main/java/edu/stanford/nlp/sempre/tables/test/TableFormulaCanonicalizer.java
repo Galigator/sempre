@@ -47,7 +47,7 @@ public class TableFormulaCanonicalizer
 			final ValueFormula<?> valueF = (ValueFormula<?>) formula;
 			if (valueF.value instanceof NameValue)
 			{
-				final String id = ((NameValue) valueF.value).id;
+				final String id = ((NameValue) valueF.value)._id;
 				if (id.startsWith("!") && !"!=".equals(id))
 					return new ReverseFormula(new ValueFormula<Value>(new NameValue(id.substring(1))));
 				else

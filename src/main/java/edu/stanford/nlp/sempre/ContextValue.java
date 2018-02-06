@@ -21,11 +21,11 @@ public class ContextValue extends Value
 		public final Formula formula;
 		public final Value value;
 
-		public Exchange(final String utterance, final Formula formula, final Value value)
+		public Exchange(final String utterance_, final Formula formula_, final Value value_)
 		{
-			this.utterance = utterance;
-			this.formula = formula;
-			this.value = value;
+			utterance = utterance_;
+			formula = formula_;
+			value = value_;
 		}
 
 		public Exchange(final LispTree tree)
@@ -72,22 +72,22 @@ public class ContextValue extends Value
 		return new ContextValue(user, date, exchanges, newGraph);
 	}
 
-	public ContextValue(final String user, final DateValue date, final List<Exchange> exchanges, final KnowledgeGraph graph)
+	public ContextValue(final String user_, final DateValue date_, final List<Exchange> exchanges_, final KnowledgeGraph graph_)
 	{
-		this.user = user;
-		this.date = date;
-		this.exchanges = exchanges;
-		this.graph = graph;
+		user = user_;
+		date = date_;
+		exchanges = exchanges_;
+		graph = graph_;
 	}
 
-	public ContextValue(final String user, final DateValue date, final List<Exchange> exchanges)
+	public ContextValue(final String user_, final DateValue date_, final List<Exchange> exchanges_)
 	{
-		this(user, date, exchanges, null);
+		this(user_, date_, exchanges_, null);
 	}
 
-	public ContextValue(final KnowledgeGraph graph)
+	public ContextValue(final KnowledgeGraph graph_)
 	{
-		this(null, null, new ArrayList(), graph);
+		this(null, null, new ArrayList(), graph_);
 	}
 
 	// Example:
@@ -123,6 +123,7 @@ public class ContextValue extends Value
 		this.graph = graph;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -171,6 +172,7 @@ public class ContextValue extends Value
 		return true;
 	}
 
+	@Override
 	@JsonValue
 	public String toString()
 	{

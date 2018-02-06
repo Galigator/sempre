@@ -14,6 +14,7 @@ public class FilterNerSpanFn extends SemanticFn
 	// Accepted NER tags (PERSON, LOCATION, ORGANIZATION, etc)
 	List<String> acceptableNerTags = new ArrayList<>();
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -21,6 +22,7 @@ public class FilterNerSpanFn extends SemanticFn
 			acceptableNerTags.add(tree.child(j).value);
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

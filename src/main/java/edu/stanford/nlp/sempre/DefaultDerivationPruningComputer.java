@@ -22,9 +22,9 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 
 	public static Options opts = new Options();
 
-	public DefaultDerivationPruningComputer(final DerivationPruner pruner)
+	public DefaultDerivationPruningComputer(final DerivationPruner pruner_)
 	{
-		super(pruner);
+		super(pruner_);
 	}
 
 	public static final String atomic = "atomic";
@@ -159,7 +159,7 @@ public class DefaultDerivationPruningComputer extends DerivationPruningComputer
 							return badSummarizerHead;
 					}
 				}
-				catch (final Exception e)
+				catch (@SuppressWarnings("unused") final Exception e)
 				{
 					// TypeInference fails; probably because of free variables. No need to do anything.
 				}

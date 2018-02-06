@@ -48,7 +48,7 @@ public class MixParser extends Parser
 				LogInfo.logs("Adding parser %s", parserAndOptions);
 			final String[] tokens = parserAndOptions.split(":");
 			if (tokens.length > 2)
-				throw new RuntimeException("Invalid parser options: " + parserAndOptions);
+				throw new SempreError("Invalid parser options: " + parserAndOptions);
 			final String parserName = tokens[0];
 			Parser parser;
 			try
@@ -58,12 +58,12 @@ public class MixParser extends Parser
 			}
 			catch (final ClassNotFoundException e1)
 			{
-				throw new RuntimeException("Illegal parser: " + parserName);
+				throw new SempreError("Illegal parser: " + parserName, e1);
 			}
 			catch (final Exception e)
 			{
 				e.printStackTrace();
-				throw new RuntimeException("Error while instantiating parser: " + parserName + "\n" + e);
+				throw new SempreError("Error while instantiating parser: " + parserName + "\n" + e);
 			}
 			if (tokens.length > 1)
 				parsers.add(new Pair<>(parser, new MixParserOption(this, tokens[1])));
@@ -77,7 +77,7 @@ public class MixParser extends Parser
 	protected void computeCatUnaryRules()
 	{
 		catUnaryRules = Collections.emptyList();
-	};
+	}
 
 	@Override
 	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
@@ -86,11 +86,11 @@ public class MixParser extends Parser
 	}
 
 	@Override
-	public void onBeginDataGroup(final int iter, final int numIters, final String group)
+	public void onBeginDataGroup(final int iter_, final int numIters_, final String group_)
 	{
-		this.iter = iter;
-		this.numIters = numIters;
-		this.group = group;
+		iter = iter_;
+		numIters = numIters_;
+		group = group_;
 	}
 }
 
@@ -100,16 +100,15 @@ class MixParserOption
 	private boolean allowedAll = false;
 	private final List<Pair<String, String>> allowedGroupsAndIter = new ArrayList<>();
 
-	public MixParserOption(final MixParser mixParser)
+	public MixParserOption(final MixParser mixParser_)
 	{
-		this.mixParser = mixParser;
-		// Allow in all groups
-		allowedAll = true;
+		mixParser = mixParser_;
+		allowedAll = true; // Allow in all groups
 	}
 
-	public MixParserOption(final MixParser mixParser, final String optionString)
+	public MixParserOption(final MixParser mixParser_, final String optionString)
 	{
-		this.mixParser = mixParser;
+		mixParser = mixParser_;
 		final String[] tokens = optionString.split(",");
 		for (final String option : tokens)
 		{
@@ -138,9 +137,9 @@ class MixParserOption
 class MixParserState extends ParserState
 {
 
-	public MixParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
+	public MixParserState(final Parser parser_, final Params params_, final Example ex_, final boolean computeExpectedCounts_)
 	{
-		super(parser, params, ex, computeExpectedCounts);
+		super(parser_, params_, ex_, computeExpectedCounts_);
 	}
 
 	@Override

@@ -172,7 +172,7 @@ public class TableColumnAnalyzer implements Runnable
 				// Number
 				types.add("num");
 				// Integer
-				final double value = n.value;
+				final double value = n._value;
 				if (Math.abs(value - Math.round(value)) < 1e-9)
 				{
 					types.add("int");

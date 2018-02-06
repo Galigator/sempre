@@ -11,15 +11,15 @@ public abstract class Executor
 {
 	public static class Response
 	{
-		public Response(final Value value)
+		public Response(final Value value_)
 		{
-			this(value, new Evaluation());
+			this(value_, new Evaluation());
 		}
 
-		public Response(final Value value, final Evaluation stats)
+		public Response(final Value value_, final Evaluation stats_)
 		{
-			this.value = value;
-			this.stats = stats;
+			value = value_;
+			stats = stats_;
 		}
 
 		public final Value value;

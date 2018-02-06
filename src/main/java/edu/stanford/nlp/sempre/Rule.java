@@ -45,11 +45,11 @@ public class Rule
 
 	private String semRepn = null;
 
-	public Rule(final String lhs, final List<String> rhs, final SemanticFn sem)
+	public Rule(final String lhs_, final List<String> rhs_, final SemanticFn sem_)
 	{
-		this.lhs = lhs;
-		this.rhs = rhs;
-		this.sem = sem;
+		lhs = lhs_;
+		rhs = rhs_;
+		sem = sem_;
 	}
 
 	@Override

@@ -15,9 +15,9 @@ public abstract class DerivationPruningComputer
 	protected final Parser parser;
 	protected final Example ex;
 
-	public DerivationPruningComputer(final DerivationPruner pruner)
+	public DerivationPruningComputer(final DerivationPruner pruner_)
 	{
-		this.pruner = pruner;
+		pruner = pruner_;
 		parser = pruner.parser;
 		ex = pruner.ex;
 	}

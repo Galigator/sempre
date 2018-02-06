@@ -267,7 +267,7 @@ public final class FileUtils
 					if (predictedTree.child(i).child(0).value.equals("name"))
 					{
 						final NameValue nValue = (NameValue) Value.fromString(predictedTree.child(i).toString());
-						predictedDescriptions.add(nValue.description);
+						predictedDescriptions.add(nValue._description);
 					}
 					else
 						if (predictedTree.child(i).child(0).value.equals("date"))

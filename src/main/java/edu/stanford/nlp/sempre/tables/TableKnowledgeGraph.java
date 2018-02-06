@@ -127,7 +127,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 					final TableColumn column = new TableColumn(entry, columnName, columns.size());
 					columns.add(column);
 					usedColumnNames.add(columnName);
-					relationIdToTableColumn.put(column.relationNameValue.id, column);
+					relationIdToTableColumn.put(column.relationNameValue._id, column);
 				}
 			}
 			else
@@ -137,7 +137,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 					LogInfo.warnings("Table has %d columns but row has %d cells: %s | %s", columns.size(), record.length, columns, Fmt.D(record));
 				final int rowIndex = opts.rowIndexStartsAt1 ? rows.size() + 1 : rows.size();
 				final TableRow currentRow = new TableRow(rowIndex);
-				rowIdToTableRow.put(currentRow.nameValue.id, currentRow);
+				rowIdToTableRow.put(currentRow.nameValue._id, currentRow);
 				rows.add(currentRow);
 				for (int i = 0; i < columns.size(); i++)
 				{
@@ -170,7 +170,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 			{
 				final NameValue partNameValue = (NameValue) part;
 				cellParts.add(partNameValue);
-				partIdToOriginalString.put(partNameValue.id, partNameValue.description);
+				partIdToOriginalString.put(partNameValue._id, partNameValue._description);
 			}
 		// Precompute normalized strings for fuzzy matching
 		fuzzyMatcher = FuzzyMatcher.getFuzzyMatcher(this);
@@ -246,7 +246,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 		{
 			final TableColumn column = new TableColumn(oldColumn);
 			columns.add(column);
-			relationIdToTableColumn.put(column.relationNameValue.id, column);
+			relationIdToTableColumn.put(column.relationNameValue._id, column);
 		}
 		// Sanity check
 		int numRows;
@@ -272,7 +272,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 		{
 			final TableRow currentRow = new TableRow(i);
 			rows.add(currentRow);
-			rowIdToTableRow.put(currentRow.nameValue.id, currentRow);
+			rowIdToTableRow.put(currentRow.nameValue._id, currentRow);
 			for (int j = 0; j < numColumns; j++)
 			{
 				final TableColumn column = columns.get(j);
@@ -436,7 +436,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 						{
 							if (!(value instanceof NameValue))
 								continue;
-							final TableRow row = rowIdToTableRow.get(((NameValue) value).id);
+							final TableRow row = rowIdToTableRow.get(((NameValue) value)._id);
 							if (row == null)
 								continue;
 							final int i = opts.rowIndexStartsAt1 ? row.index - 1 : row.index;
@@ -462,7 +462,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 							{
 								if (!(value instanceof NameValue))
 									continue;
-								final TableRow row = rowIdToTableRow.get(((NameValue) value).id);
+								final TableRow row = rowIdToTableRow.get(((NameValue) value)._id);
 								if (row == null)
 									continue;
 								answer.add(new Pair<>(row.indexValue, row.nameValue));
@@ -487,7 +487,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 								{
 									if (!(value instanceof NameValue))
 										continue;
-									final TableCellProperties properties = cellIdToTableCellProperties.get(((NameValue) value).id);
+									final TableCellProperties properties = cellIdToTableCellProperties.get(((NameValue) value)._id);
 									if (properties == null)
 										continue;
 									for (final Value property : properties.metadata.get(r))
@@ -520,7 +520,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 										{
 											if (!(value instanceof NameValue))
 												continue;
-											final TableRow row = rowIdToTableRow.get(((NameValue) value).id);
+											final TableRow row = rowIdToTableRow.get(((NameValue) value)._id);
 											if (row == null)
 												continue;
 											answer.add(new Pair<>(row.children.get(i).properties.nameValue, row.nameValue));
@@ -581,7 +581,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 						{
 							if (!(value instanceof NameValue))
 								continue;
-							final TableRow row = rowIdToTableRow.get(((NameValue) value).id);
+							final TableRow row = rowIdToTableRow.get(((NameValue) value)._id);
 							if (row == null)
 								continue;
 							final int i = opts.rowIndexStartsAt1 ? row.index - 1 : row.index;
@@ -607,7 +607,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 							{
 								if (!(value instanceof NumberValue))
 									continue;
-								final double x = ((NumberValue) value).value;
+								final double x = ((NumberValue) value)._value;
 								if (Math.abs(x - Math.round(x)) > 1e-6)
 									continue; // Ignore non-integers
 								int i = (int) x;
@@ -734,7 +734,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 
 	public String getOriginalString(final Value value)
 	{
-		return value instanceof NameValue ? getOriginalString(((NameValue) value).id) : null;
+		return value instanceof NameValue ? getOriginalString(((NameValue) value)._id) : null;
 	}
 
 	public String getOriginalString(String nameValueId)
@@ -758,8 +758,8 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 
 	public Value getNameValueWithOriginalString(NameValue value)
 	{
-		if (value.description == null)
-			value = new NameValue(value.id, getOriginalString(value.id));
+		if (value._description == null)
+			value = new NameValue(value._id, getOriginalString(value._id));
 		return value;
 	}
 
@@ -771,8 +771,8 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 			if (value instanceof NameValue)
 			{
 				final NameValue name = (NameValue) value;
-				if (name.description == null)
-					value = new NameValue(name.id, getOriginalString(name.id));
+				if (name._description == null)
+					value = new NameValue(name._id, getOriginalString(name._id));
 			}
 			values.add(value);
 		}
@@ -805,7 +805,7 @@ public class TableKnowledgeGraph extends KnowledgeGraph implements FuzzyMatchabl
 		if (nameValueId.startsWith("!"))
 			nameValueId = nameValueId.substring(1);
 		for (int j = 0; j < columns.size(); j++)
-			if (columns.get(j).relationNameValue.id.equals(nameValueId))
+			if (columns.get(j).relationNameValue._id.equals(nameValueId))
 				return j;
 		return -1;
 	}

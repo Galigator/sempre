@@ -29,7 +29,7 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 		if (predList.size() > 1 && predList.get(0) instanceof NameValue)
 			for (final Value v : predList)
 			{
-				final String id = ((NameValue) v).id;
+				final String id = ((NameValue) v)._id;
 				if (id.equals("fb:country.usa"))
 				{
 					toDelete = v;
@@ -78,7 +78,7 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 			if (pred instanceof NameValue)
 			{
 				// Just has to match the description
-				String predText = ((NameValue) pred).description;
+				String predText = ((NameValue) pred)._description;
 				if (predText == null)
 					predText = "";
 				return targetText.equals(predText);
@@ -97,7 +97,7 @@ public class Geo880ValueEvaluator implements ValueEvaluator
 
 	protected boolean compareNumberValues(final NumberValue target, final NumberValue pred)
 	{
-		return Math.abs(target.value - pred.value) < 1e-6;
+		return Math.abs(target._value - pred._value) < 1e-6;
 	}
 
 }

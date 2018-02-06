@@ -93,10 +93,10 @@ public class CoarseParser
 		private final String[][] phrases;
 
 		@SuppressWarnings({ "unchecked" })
-		public CoarseParserState(final Example example, final CoarseParser parser)
+		public CoarseParserState(final Example example_, final CoarseParser parser_)
 		{
-			this.example = example;
-			this.parser = parser;
+			example = example_;
+			parser = parser_;
 			numTokens = example.numTokens();
 			// Initialize the chart.
 			chart = (HashMap<String, List<CategorySpan>>[][]) Array.newInstance(HashMap.class, numTokens, numTokens + 1);
@@ -269,11 +269,11 @@ public class CoarseParser
 		public final int start;
 		public final int end;
 
-		public CategorySpan(final String cat, final int start, final int end)
+		public CategorySpan(final String cat_, final int start_, final int end_)
 		{
-			this.cat = cat;
-			this.start = start;
-			this.end = end;
+			cat = cat_;
+			start = start_;
+			end = end_;
 		}
 
 		@Override

@@ -168,8 +168,8 @@ public class BatchTableExecutor implements Runnable
 			if (value instanceof NameValue)
 			{
 				final NameValue name = (NameValue) value;
-				if (name.description == null)
-					value = new NameValue(name.id, graph.getOriginalString(((NameValue) value).id));
+				if (name._description == null)
+					value = new NameValue(name._id, graph.getOriginalString(((NameValue) value)._id));
 			}
 			values.add(value);
 		}

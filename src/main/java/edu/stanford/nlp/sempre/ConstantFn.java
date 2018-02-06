@@ -16,11 +16,12 @@ public class ConstantFn extends SemanticFn
 	{
 	}
 
-	public ConstantFn(final Formula formula)
+	public ConstantFn(final Formula formula_)
 	{
-		init(LispTree.proto.newList("ConstantFn", formula.toLispTree()));
+		init(LispTree.proto.newList("ConstantFn", formula_.toLispTree()));
 	}
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -33,6 +34,7 @@ public class ConstantFn extends SemanticFn
 			throw new RuntimeException("ConstantFn: " + formula + " does not type check");
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

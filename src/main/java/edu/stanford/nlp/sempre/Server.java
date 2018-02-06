@@ -236,13 +236,13 @@ public class Server
 			if (value instanceof NameValue)
 			{
 				final NameValue nameValue = (NameValue) value;
-				return H.a().href(id2website(nameValue.id)).child(nameValue.description == null ? nameValue.id : nameValue.description);
+				return H.a().href(id2website(nameValue._id)).child(nameValue._description == null ? nameValue._id : nameValue._description);
 			}
 			else
 				if (value instanceof NumberValue)
 				{
 					final NumberValue numberValue = (NumberValue) value;
-					return H.span().child(Fmt.D(numberValue.value) + (numberValue.unit.equals(NumberValue.unitless) ? "" : " " + numberValue.unit));
+					return H.span().child(Fmt.D(numberValue._value) + (numberValue._unit.equals(NumberValue.unitless) ? "" : " " + numberValue._unit));
 				}
 				else
 					if (value instanceof UriValue)

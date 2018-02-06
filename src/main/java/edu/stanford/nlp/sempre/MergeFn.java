@@ -27,6 +27,7 @@ public class MergeFn extends SemanticFn
 	MergeFormula.Mode mode; // How to merge
 	Formula formula; // Optional: merge with this if exists
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -35,6 +36,7 @@ public class MergeFn extends SemanticFn
 			formula = Formulas.fromLispTree(tree.child(2));
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

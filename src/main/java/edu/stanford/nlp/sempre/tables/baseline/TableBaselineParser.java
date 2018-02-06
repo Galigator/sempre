@@ -72,8 +72,8 @@ class TableBaselineParserState extends ParserState
 	{
 		generateDerivation(f);
 		// Try number and date normalizations as well
-		generateDerivation(new JoinFormula(Formula.fromString("!" + TableTypeSystem.CELL_NUMBER_VALUE.id), f));
-		generateDerivation(new JoinFormula(Formula.fromString("!" + TableTypeSystem.CELL_DATE_VALUE.id), f));
+		generateDerivation(new JoinFormula(Formula.fromString("!" + TableTypeSystem.CELL_NUMBER_VALUE._id), f));
+		generateDerivation(new JoinFormula(Formula.fromString("!" + TableTypeSystem.CELL_DATE_VALUE._id), f));
 	}
 
 	private void generateDerivation(final Formula f)

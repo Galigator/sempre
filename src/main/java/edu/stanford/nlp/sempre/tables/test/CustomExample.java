@@ -137,18 +137,18 @@ public class CustomExample extends Example
 		formulaMacros = new HashMap<>();
 		formulaMacros.put("@type", CanonicalNames.TYPE);
 		formulaMacros.put("@row", TableTypeSystem.ROW_TYPE);
-		formulaMacros.put("@next", TableTypeSystem.ROW_NEXT_VALUE.id);
-		formulaMacros.put("@!next", "!" + TableTypeSystem.ROW_NEXT_VALUE.id);
-		formulaMacros.put("@index", TableTypeSystem.ROW_INDEX_VALUE.id);
-		formulaMacros.put("@!index", "!" + TableTypeSystem.ROW_INDEX_VALUE.id);
-		formulaMacros.put("@p.num", TableTypeSystem.CELL_NUMBER_VALUE.id);
-		formulaMacros.put("@!p.num", "!" + TableTypeSystem.CELL_NUMBER_VALUE.id);
-		formulaMacros.put("@p.date", TableTypeSystem.CELL_DATE_VALUE.id);
-		formulaMacros.put("@!p.date", "!" + TableTypeSystem.CELL_DATE_VALUE.id);
-		formulaMacros.put("@p.num2", TableTypeSystem.CELL_NUM2_VALUE.id);
-		formulaMacros.put("@!p.num2", "!" + TableTypeSystem.CELL_NUM2_VALUE.id);
-		formulaMacros.put("@p.part", TableTypeSystem.CELL_PART_VALUE.id);
-		formulaMacros.put("@!p.part", "!" + TableTypeSystem.CELL_PART_VALUE.id);
+		formulaMacros.put("@next", TableTypeSystem.ROW_NEXT_VALUE._id);
+		formulaMacros.put("@!next", "!" + TableTypeSystem.ROW_NEXT_VALUE._id);
+		formulaMacros.put("@index", TableTypeSystem.ROW_INDEX_VALUE._id);
+		formulaMacros.put("@!index", "!" + TableTypeSystem.ROW_INDEX_VALUE._id);
+		formulaMacros.put("@p.num", TableTypeSystem.CELL_NUMBER_VALUE._id);
+		formulaMacros.put("@!p.num", "!" + TableTypeSystem.CELL_NUMBER_VALUE._id);
+		formulaMacros.put("@p.date", TableTypeSystem.CELL_DATE_VALUE._id);
+		formulaMacros.put("@!p.date", "!" + TableTypeSystem.CELL_DATE_VALUE._id);
+		formulaMacros.put("@p.num2", TableTypeSystem.CELL_NUM2_VALUE._id);
+		formulaMacros.put("@!p.num2", "!" + TableTypeSystem.CELL_NUM2_VALUE._id);
+		formulaMacros.put("@p.part", TableTypeSystem.CELL_PART_VALUE._id);
+		formulaMacros.put("@!p.part", "!" + TableTypeSystem.CELL_PART_VALUE._id);
 	}
 
 	static final Pattern regexProperty = Pattern.compile("r\\.(.*)");

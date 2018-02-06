@@ -50,13 +50,13 @@ public class DerivationPruner
 			}
 			catch (final ClassNotFoundException e1)
 			{
-				throw new RuntimeException("Illegal pruning computer: " + pruningComputer);
+				throw new SempreError("Illegal pruning computer: " + pruningComputer, e1);
 			}
 			catch (final Exception e)
 			{
 				e.printStackTrace();
 				e.getCause().printStackTrace();
-				throw new RuntimeException("Error while instantiating pruning computer: " + pruningComputer);
+				throw new SempreError("Error while instantiating pruning computer: " + pruningComputer);
 			}
 		// Compile the list of all strategies
 		allStrategyNames = new HashSet<>();
@@ -71,9 +71,9 @@ public class DerivationPruner
 	 * Set additional restrictions on the pruning strategies. If customAllowedPruningStrategies is not null, the pruning strategy must be in both
 	 * opts.pruningStrategies and customAllowedPruningStrategies in order to be used. Useful when some pruning strategies can break the parsing mechanism.
 	 */
-	public void setCustomAllowedPruningStrategies(final List<String> customAllowedPruningStrategies)
+	public void setCustomAllowedPruningStrategies(final List<String> customAllowedPruningStrategies_)
 	{
-		this.customAllowedPruningStrategies = customAllowedPruningStrategies;
+		customAllowedPruningStrategies = customAllowedPruningStrategies_;
 	}
 
 	protected boolean containsStrategy(final String name)

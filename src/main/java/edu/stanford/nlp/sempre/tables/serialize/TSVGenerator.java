@@ -65,10 +65,10 @@ public class TSVGenerator
 				return serialize(((DescriptionValue) value).value);
 			else
 				if (value instanceof NameValue)
-					return serialize(((NameValue) value).description);
+					return serialize(((NameValue) value)._description);
 				else
 					if (value instanceof NumberValue)
-						return "" + ((NumberValue) value).value;
+						return "" + ((NumberValue) value)._value;
 					else
 						if (value instanceof DateValue)
 							return ((DateValue) value).isoString();
@@ -87,7 +87,7 @@ public class TSVGenerator
 		}
 		else
 			if (value instanceof NameValue)
-				return serialize(((NameValue) value).id);
+				return serialize(((NameValue) value)._id);
 			else
 				throw new RuntimeException("Unknown value type: " + value);
 	}

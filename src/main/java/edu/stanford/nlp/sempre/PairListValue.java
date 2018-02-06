@@ -14,27 +14,28 @@ import java.util.List;
  */
 public class PairListValue extends Value
 {
-	public final List<Pair<Value, Value>> pairs;
+	public final List<Pair<Value, Value>> _pairs;
 
 	public PairListValue(final LispTree tree)
 	{
-		pairs = new ArrayList<>();
+		_pairs = new ArrayList<>();
 		for (int i = 1; i < tree.children.size(); i++)
-			pairs.add(new Pair<>(Values.fromLispTree(tree.child(i).child(0)), Values.fromLispTree(tree.child(i).child(1))));
+			_pairs.add(new Pair<>(Values.fromLispTree(tree.child(i).child(0)), Values.fromLispTree(tree.child(i).child(1))));
 	}
 
 	public PairListValue(final List<Pair<Value, Value>> pairs)
 	{
-		this.pairs = pairs;
+		_pairs = pairs;
 	}
 
 	protected static final LispTree NULL_LEAF = LispTree.proto.newLeaf(null);
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("pairs");
-		for (final Pair<Value, Value> pair : pairs)
+		for (final Pair<Value, Value> pair : _pairs)
 		{
 			final Value first = pair.getFirst(), second = pair.getSecond();
 			tree.addChild(LispTree.proto.newList(first == null ? NULL_LEAF : first.toLispTree(), second == null ? NULL_LEAF : second.toLispTree()));
@@ -42,9 +43,10 @@ public class PairListValue extends Value
 		return tree;
 	}
 
+	@Override
 	public void log()
 	{
-		for (final Pair<Value, Value> pair : pairs)
+		for (final Pair<Value, Value> pair : _pairs)
 			LogInfo.logs("%s | %s", pair.getFirst(), pair.getSecond());
 	}
 
@@ -56,19 +58,19 @@ public class PairListValue extends Value
 		if (o == null || getClass() != o.getClass())
 			return false;
 		final PairListValue that = (PairListValue) o;
-		return pairs.equals(that.pairs);
+		return _pairs.equals(that._pairs);
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return pairs.hashCode();
+		return _pairs.hashCode();
 	}
 
 	// Sorted on string representation
 	public PairListValue getSorted()
 	{
-		final List<Pair<Value, Value>> sorted = new ArrayList<>(pairs);
+		final List<Pair<Value, Value>> sorted = new ArrayList<>(_pairs);
 		Collections.sort(sorted, (final Pair<Value, Value> p1, final Pair<Value, Value> p2) -> getQuickStringOfPair(p1).compareTo(getQuickStringOfPair(p2)));
 		return new PairListValue(sorted);
 	}

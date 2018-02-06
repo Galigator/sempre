@@ -14,11 +14,12 @@ public class FilterSpanLengthFn extends SemanticFn
 	{
 	}
 
-	public FilterSpanLengthFn(final int minLength)
+	public FilterSpanLengthFn(final int minLength_)
 	{
-		init(LispTree.proto.newList("FilterSpanLengthFn", "" + minLength));
+		init(LispTree.proto.newList("FilterSpanLengthFn", "" + minLength_));
 	}
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);

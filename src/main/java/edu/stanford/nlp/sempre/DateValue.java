@@ -57,7 +57,7 @@ public class DateValue extends Value
 		{
 			val = Integer.parseInt(i);
 		}
-		catch (final NumberFormatException ex)
+		catch (@SuppressWarnings("unused") final NumberFormatException ex) // Because the error come from outside user interaction.
 		{
 			val = -1;
 		}
@@ -73,11 +73,11 @@ public class DateValue extends Value
 		return new DateValue(year, month, day);
 	}
 
-	public DateValue(final int year, final int month, final int day)
+	public DateValue(final int year_, final int month_, final int day_)
 	{
-		this.year = year;
-		this.month = month;
-		this.day = day;
+		year = year_;
+		month = month_;
+		day = day_;
 	}
 
 	public DateValue(final LispTree tree)
@@ -87,6 +87,7 @@ public class DateValue extends Value
 		day = Integer.valueOf(tree.child(3).value);
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();

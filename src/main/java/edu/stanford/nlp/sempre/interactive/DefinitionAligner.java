@@ -66,8 +66,8 @@ public class DefinitionAligner
 			deriv = def;
 			this.start = start;
 			this.end = end;
-			deriv.grammarInfo.start = start;
-			deriv.grammarInfo.end = end;
+			deriv.grammarInfo._start = start;
+			deriv.grammarInfo._end = end;
 		}
 
 		Derivation deriv;

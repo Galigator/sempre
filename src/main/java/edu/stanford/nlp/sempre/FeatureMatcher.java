@@ -24,9 +24,9 @@ final class ExactFeatureMatcher implements FeatureMatcher
 {
 	private final String match;
 
-	public ExactFeatureMatcher(final String match)
+	public ExactFeatureMatcher(final String match_)
 	{
-		this.match = match;
+		match = match_;
 	}
 
 	@Override

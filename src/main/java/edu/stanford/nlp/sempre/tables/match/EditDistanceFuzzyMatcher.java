@@ -121,10 +121,10 @@ public class EditDistanceFuzzyMatcher extends FuzzyMatcher
 			{
 				final Formula partEntity = getEntityFormula(value);
 				allEntityFormulas.add(partEntity);
-				for (final String s : getAllCollapsedForms(value.description))
+				for (final String s : getAllCollapsedForms(value._description))
 					MapUtils.addToSet(phraseToEntityFormulas, s, partEntity);
 				if (opts.fuzzyMatchSubstring)
-					for (final String s : getAllSubstringCollapsedForms(value.description))
+					for (final String s : getAllSubstringCollapsedForms(value._description))
 						MapUtils.addToSet(substringToEntityFormulas, s, partEntity);
 			}
 		// debug print

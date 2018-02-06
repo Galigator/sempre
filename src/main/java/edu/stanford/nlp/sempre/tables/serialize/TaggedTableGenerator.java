@@ -108,7 +108,7 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 		final String[] fields = new String[FIELDS.length];
 		fields[0] = "-1";
 		fields[1] = "" + j;
-		fields[2] = serialize(column.relationNameValue.id);
+		fields[2] = serialize(column.relationNameValue._id);
 		fields[3] = serialize(column.originalString);
 		final LanguageInfo info = analyzer.analyze(column.originalString);
 		fields[4] = serialize(info.tokens);
@@ -125,7 +125,7 @@ public class TaggedTableGenerator extends TSVGenerator implements Runnable
 		final String[] fields = new String[FIELDS.length];
 		fields[0] = "" + i;
 		fields[1] = "" + j;
-		fields[2] = serialize(cell.properties.nameValue.id);
+		fields[2] = serialize(cell.properties.nameValue._id);
 		fields[3] = serialize(cell.properties.originalString);
 		final LanguageInfo info = analyzer.analyze(cell.properties.originalString);
 		fields[4] = serialize(info.tokens);

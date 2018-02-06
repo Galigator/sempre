@@ -13,8 +13,8 @@ public class NumberValue extends Value
 	public static final String unitless = "fb:en.unitless";
 	public static final String yearUnit = "fb:en.year";
 
-	public final double value;
-	public final String unit; // What measurement (e.g., "fb:en.meter" or unitless)
+	public final double _value;
+	public final String _unit; // What measurement (e.g., "fb:en.meter" or unitless)
 
 	public NumberValue(final double value)
 	{
@@ -23,42 +23,43 @@ public class NumberValue extends Value
 
 	public NumberValue(final double value, final String unit)
 	{
-		this.value = value;
-		this.unit = unit;
+		_value = value;
+		_unit = unit;
 	}
 
 	public NumberValue(final LispTree tree)
 	{
-		value = Double.parseDouble(tree.child(1).value);
-		unit = 2 < tree.children.size() ? tree.child(2).value : unitless;
+		_value = Double.parseDouble(tree.child(1).value);
+		_unit = 2 < tree.children.size() ? tree.child(2).value : unitless;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("number");
-		tree.addChild(Fmt.D(value));
-		if (!unit.equals(unitless))
-			tree.addChild(unit);
+		tree.addChild(Fmt.D(_value));
+		if (!_unit.equals(unitless))
+			tree.addChild(_unit);
 		return tree;
 	}
 
 	@Override
 	public String sortString()
 	{
-		return "" + value;
+		return "" + _value;
 	}
 
 	@Override
 	public String pureString()
 	{
-		return "" + value;
+		return "" + _value;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return Double.valueOf(value).hashCode();
+		return Double.valueOf(_value).hashCode();
 	}
 
 	@Override
@@ -69,9 +70,9 @@ public class NumberValue extends Value
 		if (o == null || getClass() != o.getClass())
 			return false;
 		final NumberValue that = (NumberValue) o;
-		if (value != that.value)
+		if (_value != that._value)
 			return false; // Warning: doing exact equality checking
-		if (!unit.equals(that.unit))
+		if (!_unit.equals(that._unit))
 			return false;
 		return true;
 	}

@@ -21,29 +21,29 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 	// Represent a triple (entity, relation, entity)
 	public static class KnowledgeGraphTriple
 	{
-		public final Value e1, r, e2;
+		public final Value _e1, _r, _e2;
 
 		public KnowledgeGraphTriple(final Value e1, final Value r, final Value e2)
 		{
-			this.e1 = e1;
-			this.r = r;
-			this.e2 = e2;
+			_e1 = e1;
+			_r = r;
+			_e2 = e2;
 		}
 
 		public KnowledgeGraphTriple(final String e1, final String r, final String e2)
 		{
-			this.e1 = new StringValue(e1);
-			this.r = new StringValue(r);
-			this.e2 = new StringValue(e2);
+			_e1 = new StringValue(e1);
+			_r = new StringValue(r);
+			_e2 = new StringValue(e2);
 		}
 
 		public KnowledgeGraphTriple(final LispTree tree)
 		{
 			if (tree.children.size() != 3)
 				throw new RuntimeException("Invalid triple size (" + tree.children.size() + " != 3): " + tree);
-			e1 = valueFromLispTree(tree.child(0));
-			r = valueFromLispTree(tree.child(1));
-			e2 = valueFromLispTree(tree.child(2));
+			_e1 = valueFromLispTree(tree.child(0));
+			_r = valueFromLispTree(tree.child(1));
+			_e2 = valueFromLispTree(tree.child(2));
 		}
 
 		protected static Value valueFromLispTree(final LispTree tree)
@@ -56,46 +56,46 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		public LispTree toLispTree()
 		{
 			final LispTree tree = LispTree.proto.newList();
-			tree.addChild(e1.toLispTree());
-			tree.addChild(r.toLispTree());
-			tree.addChild(e2.toLispTree());
+			tree.addChild(_e1.toLispTree());
+			tree.addChild(_r.toLispTree());
+			tree.addChild(_e2.toLispTree());
 			return tree;
 		}
 
 		@Override
 		public String toString()
 		{
-			return "<" + e1 + ", " + r + ", " + e2 + ">";
+			return "<" + _e1 + ", " + _r + ", " + _e2 + ">";
 		}
 	}
 
 	// Simplest graph representation: triples of values
-	public final List<KnowledgeGraphTriple> triples;
+	public final List<KnowledgeGraphTriple> _triples;
 
 	// ============================================================
 	// Constructor / Precomputation
 	// ============================================================
 
-	public Map<Value, List<KnowledgeGraphTriple>> relationToTriples;
-	public Map<Value, List<KnowledgeGraphTriple>> firstToTriples;
-	public Map<Value, List<KnowledgeGraphTriple>> secondToTriples;
+	public Map<Value, List<KnowledgeGraphTriple>> _relationToTriples;
+	public Map<Value, List<KnowledgeGraphTriple>> _firstToTriples;
+	public Map<Value, List<KnowledgeGraphTriple>> _secondToTriples;
 
 	public NaiveKnowledgeGraph(final Collection<KnowledgeGraphTriple> triples)
 	{
-		this.triples = new ArrayList<>(triples);
+		this._triples = new ArrayList<>(triples);
 		precomputeMappings();
 	}
 
 	public void precomputeMappings()
 	{
-		relationToTriples = new HashMap<>();
-		firstToTriples = new HashMap<>();
-		secondToTriples = new HashMap<>();
-		for (final KnowledgeGraphTriple triple : triples)
+		_relationToTriples = new HashMap<>();
+		_firstToTriples = new HashMap<>();
+		_secondToTriples = new HashMap<>();
+		for (final KnowledgeGraphTriple triple : _triples)
 		{
-			MapUtils.addToList(relationToTriples, triple.r, triple);
-			MapUtils.addToList(firstToTriples, triple.e1, triple);
-			MapUtils.addToList(secondToTriples, triple.e2, triple);
+			MapUtils.addToList(_relationToTriples, triple._r, triple);
+			MapUtils.addToList(_firstToTriples, triple._e1, triple);
+			MapUtils.addToList(_secondToTriples, triple._e2, triple);
 		}
 	}
 
@@ -109,11 +109,11 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		if (CanonicalNames.isReverseProperty(r))
 			return joinSecond(CanonicalNames.reverseProperty(r), firsts);
 		final List<Value> seconds = new ArrayList<>();
-		final List<KnowledgeGraphTriple> relationTriples = relationToTriples.get(r);
+		final List<KnowledgeGraphTriple> relationTriples = _relationToTriples.get(r);
 		if (relationTriples != null)
 			for (final KnowledgeGraphTriple triple : relationTriples)
-				if (firsts.contains(triple.e1))
-					seconds.add(triple.e2);
+				if (firsts.contains(triple._e1))
+					seconds.add(triple._e2);
 		return seconds;
 	}
 
@@ -123,11 +123,11 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		if (CanonicalNames.isReverseProperty(r))
 			return joinFirst(CanonicalNames.reverseProperty(r), seconds);
 		final List<Value> firsts = new ArrayList<>();
-		final List<KnowledgeGraphTriple> relationTriples = relationToTriples.get(r);
+		final List<KnowledgeGraphTriple> relationTriples = _relationToTriples.get(r);
 		if (relationTriples != null)
 			for (final KnowledgeGraphTriple triple : relationTriples)
-				if (seconds.contains(triple.e2))
-					firsts.add(triple.e1);
+				if (seconds.contains(triple._e2))
+					firsts.add(triple._e1);
 		return firsts;
 	}
 
@@ -137,11 +137,11 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		if (CanonicalNames.isReverseProperty(r))
 			return getReversedPairs(filterSecond(CanonicalNames.reverseProperty(r), firsts));
 		final List<Pair<Value, Value>> pairs = new ArrayList<>();
-		final List<KnowledgeGraphTriple> relationTriples = relationToTriples.get(r);
+		final List<KnowledgeGraphTriple> relationTriples = _relationToTriples.get(r);
 		if (relationTriples != null)
 			for (final KnowledgeGraphTriple triple : relationTriples)
-				if (firsts.contains(triple.e1))
-					pairs.add(new Pair<>(triple.e1, triple.e2));
+				if (firsts.contains(triple._e1))
+					pairs.add(new Pair<>(triple._e1, triple._e2));
 		return pairs;
 	}
 
@@ -151,11 +151,11 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		if (CanonicalNames.isReverseProperty(r))
 			return getReversedPairs(filterFirst(CanonicalNames.reverseProperty(r), seconds));
 		final List<Pair<Value, Value>> pairs = new ArrayList<>();
-		final List<KnowledgeGraphTriple> relationTriples = relationToTriples.get(r);
+		final List<KnowledgeGraphTriple> relationTriples = _relationToTriples.get(r);
 		if (relationTriples != null)
 			for (final KnowledgeGraphTriple triple : relationTriples)
-				if (seconds.contains(triple.e2))
-					pairs.add(new Pair<>(triple.e1, triple.e2));
+				if (seconds.contains(triple._e2))
+					pairs.add(new Pair<>(triple._e1, triple._e2));
 		return pairs;
 	}
 
@@ -186,7 +186,7 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("graph");
 		tree.addChild("NaiveKnowledgeGraph");
-		for (final KnowledgeGraphTriple triple : triples)
+		for (final KnowledgeGraphTriple triple : _triples)
 			tree.addChild(triple.toLispTree());
 		return tree;
 	}
@@ -194,7 +194,7 @@ public class NaiveKnowledgeGraph extends KnowledgeGraph
 	@Override
 	public LispTree toShortLispTree()
 	{
-		if (triples.size() > 1000)
+		if (_triples.size() > 1000)
 		{
 			final LispTree tree = LispTree.proto.newList();
 			tree.addChild("graph");

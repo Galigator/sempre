@@ -51,10 +51,10 @@ public class LanguageInfo implements MemUsage.Instrumented
 		public final int modifier; // Position of modifier
 
 		@JsonCreator
-		public DependencyEdge(@JsonProperty("label") final String label, @JsonProperty("modifier") final int modifier)
+		public DependencyEdge(@JsonProperty("label") final String label_, @JsonProperty("modifier") final int modifier_)
 		{
-			this.label = label;
-			this.modifier = modifier;
+			label = label_;
+			modifier = modifier_;
 		}
 
 		@Override
@@ -74,14 +74,16 @@ public class LanguageInfo implements MemUsage.Instrumented
 	}
 
 	@JsonCreator
-	public LanguageInfo(@JsonProperty("tokens") final List<String> tokens, @JsonProperty("lemmaTokens") final List<String> lemmaTokens, @JsonProperty("posTags") final List<String> posTags, @JsonProperty("nerTags") final List<String> nerTags, @JsonProperty("nerValues") final List<String> nerValues, @JsonProperty("dependencyChildren") final List<List<DependencyEdge>> dependencyChildren)
+	public LanguageInfo(@JsonProperty("tokens") final List<String> tokens_, @JsonProperty("lemmaTokens") final List<String> lemmaTokens_, //
+			@JsonProperty("posTags") final List<String> posTags_, @JsonProperty("nerTags") final List<String> nerTags_, //
+			@JsonProperty("nerValues") final List<String> nerValues_, @JsonProperty("dependencyChildren") final List<List<DependencyEdge>> dependencyChildren_)
 	{
-		this.tokens = tokens;
-		this.lemmaTokens = lemmaTokens;
-		this.posTags = posTags;
-		this.nerTags = nerTags;
-		this.nerValues = nerValues;
-		this.dependencyChildren = dependencyChildren;
+		tokens = tokens_;
+		lemmaTokens = lemmaTokens_;
+		posTags = posTags_;
+		nerTags = nerTags_;
+		nerValues = nerValues_;
+		dependencyChildren = dependencyChildren_;
 	}
 
 	// Return a string representing the tokens between start and end.
@@ -260,9 +262,7 @@ public class LanguageInfo implements MemUsage.Instrumented
 	}
 
 	/**
-	 * returns spans of named entities
-	 * 
-	 * @return
+	 * @return spans of named entities
 	 */
 	public Set<IntPair> getNamedEntitySpans()
 	{
@@ -296,9 +296,7 @@ public class LanguageInfo implements MemUsage.Instrumented
 	}
 
 	/**
-	 * returns spans of named entities
-	 * 
-	 * @return
+	 * @return spans of named entities
 	 */
 	public Set<IntPair> getProperNounSpans()
 	{
@@ -508,15 +506,16 @@ public class LanguageInfo implements MemUsage.Instrumented
 		public final String nerTag;
 		public final String nerValue;
 
-		public WordInfo(final String token, final String lemma, final String pos, final String nerTag, final String nerValue)
+		public WordInfo(final String token_, final String lemma_, final String pos_, final String nerTag_, final String nerValue_)
 		{
-			this.token = token;
-			this.lemma = lemma;
-			this.pos = pos;
-			this.nerTag = nerTag;
-			this.nerValue = nerValue;
+			token = token_;
+			lemma = lemma_;
+			pos = pos_;
+			nerTag = nerTag_;
+			nerValue = nerValue_;
 		}
 
+		@Override
 		public String toString()
 		{
 			return toLispTree().toString();

@@ -16,17 +16,18 @@ public class JoinFormula extends Formula
 	public final Formula relation;
 	public final Formula child;
 
-	public JoinFormula(final String relation, final Formula child)
+	public JoinFormula(final String relation_, final Formula child_)
 	{
-		this(Formulas.newNameFormula(relation), child);
+		this(Formulas.newNameFormula(relation_), child_);
 	}
 
-	public JoinFormula(final Formula relation, final Formula child)
+	public JoinFormula(final Formula relation_, final Formula child_)
 	{
-		this.relation = relation;
-		this.child = child;
+		relation = relation_;
+		child = child_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -64,7 +65,6 @@ public class JoinFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -78,6 +78,7 @@ public class JoinFormula extends Formula
 		return true;
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

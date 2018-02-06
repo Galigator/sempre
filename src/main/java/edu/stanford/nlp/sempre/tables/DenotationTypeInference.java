@@ -106,10 +106,10 @@ public class DenotationTypeInference
 											if (value instanceof PairListValue)
 											{
 												final PairListValue pairListValue = (PairListValue) value;
-												if (pairListValue.pairs.isEmpty())
+												if (pairListValue._pairs.isEmpty())
 													return "EMPTY";
 												String commonType = null;
-												for (final Pair<Value, Value> pair : pairListValue.pairs)
+												for (final Pair<Value, Value> pair : pairListValue._pairs)
 												{
 													final String type = getValueType(pair.getSecond());
 													if (commonType == null)
@@ -141,7 +141,7 @@ public class DenotationTypeInference
 			if (value instanceof PairListValue)
 			{
 				String commonType = null;
-				for (final Pair<Value, Value> pair : ((PairListValue) value).pairs)
+				for (final Pair<Value, Value> pair : ((PairListValue) value)._pairs)
 				{
 					final String type = getValueType(pair.getFirst());
 					if (commonType == null)
@@ -166,7 +166,7 @@ public class DenotationTypeInference
 	 */
 	public static SemType getNameValueSemType(final NameValue value)
 	{
-		final String id = value.id;
+		final String id = value._id;
 		final TypeLookup typeLookup = TypeInference.getTypeLookup();
 		if (CanonicalNames.isUnary(id))
 		{ // Unary

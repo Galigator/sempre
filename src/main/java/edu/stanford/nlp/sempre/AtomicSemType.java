@@ -7,18 +7,20 @@ public class AtomicSemType extends SemType
 {
 	public final String name;
 
-	public AtomicSemType(final String name)
+	public AtomicSemType(final String name_)
 	{
-		if (name == null)
-			throw new RuntimeException("Null name");
-		this.name = name;
+		if (name_ == null)
+			throw new SempreError("Null name");
+		name = name_;
 	}
 
+	@Override
 	public boolean isValid()
 	{
 		return true;
 	}
 
+	@Override
 	public SemType meet(final SemType that)
 	{
 		if (that instanceof TopSemType)
@@ -40,16 +42,19 @@ public class AtomicSemType extends SemType
 		return SemType.bottomType;
 	}
 
+	@Override
 	public SemType apply(final SemType that)
 	{
 		return SemType.bottomType;
 	}
 
+	@Override
 	public SemType reverse()
 	{
 		return SemType.bottomType;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		return LispTree.proto.newLeaf(name);

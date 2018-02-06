@@ -70,8 +70,8 @@ public class Derivation implements SemanticFn.Callable, HasScore
 	{
 		public boolean anchored = false;
 		public boolean matched = false;
-		public int start = -1, end = -1;
-		public Formula formula;
+		public int _start = -1, _end = -1;
+		public Formula _formula;
 		public List<Derivation> matches = new ArrayList<>();
 	}
 
@@ -153,101 +153,101 @@ public class Derivation implements SemanticFn.Callable, HasScore
 		private double prob = Double.NaN;
 		private String canonicalUtterance = "";
 
-		public Builder cat(final String cat)
+		public Builder cat(final String cat_)
 		{
-			this.cat = cat;
+			cat = cat_;
 			return this;
 		}
 
-		public Builder start(final int start)
+		public Builder start(final int start_)
 		{
-			this.start = start;
+			start = start_;
 			return this;
 		}
 
-		public Builder end(final int end)
+		public Builder end(final int end_)
 		{
-			this.end = end;
+			end = end_;
 			return this;
 		}
 
-		public Builder rule(final Rule rule)
+		public Builder rule(final Rule rule_)
 		{
-			this.rule = rule;
+			rule = rule_;
 			return this;
 		}
 
-		public Builder children(final List<Derivation> children)
+		public Builder children(final List<Derivation> children_)
 		{
-			this.children = children;
+			children = children_;
 			return this;
 		}
 
-		public Builder formula(final Formula formula)
+		public Builder formula(final Formula formula_)
 		{
-			this.formula = formula;
+			formula = formula_;
 			return this;
 		}
 
-		public Builder type(final SemType type)
+		public Builder type(final SemType type_)
 		{
-			this.type = type;
+			type = type_;
 			return this;
 		}
 
-		public Builder localFeatureVector(final FeatureVector localFeatureVector)
+		public Builder localFeatureVector(final FeatureVector localFeatureVector_)
 		{
-			this.localFeatureVector = localFeatureVector;
+			localFeatureVector = localFeatureVector_;
 			return this;
 		}
 
-		public Builder score(final double score)
+		public Builder score(final double score_)
 		{
-			this.score = score;
+			score = score_;
 			return this;
 		}
 
-		public Builder value(final Value value)
+		public Builder value(final Value value_)
 		{
-			this.value = value;
+			value = value_;
 			return this;
 		}
 
-		public Builder executorStats(final Evaluation executorStats)
+		public Builder executorStats(final Evaluation executorStats_)
 		{
-			this.executorStats = executorStats;
+			executorStats = executorStats_;
 			return this;
 		}
 
-		public Builder compatibility(final double compatibility)
+		public Builder compatibility(final double compatibility_)
 		{
-			this.compatibility = compatibility;
+			compatibility = compatibility_;
 			return this;
 		}
 
-		public Builder prob(final double prob)
+		public Builder prob(final double prob_)
 		{
-			this.prob = prob;
+			prob = prob_;
 			return this;
 		}
 
-		public Builder canonicalUtterance(final String canonicalUtterance)
+		public Builder canonicalUtterance(final String canonicalUtterance_)
 		{
-			this.canonicalUtterance = canonicalUtterance;
+			canonicalUtterance = canonicalUtterance_;
 			return this;
 		}
 
-		public Builder withStringFormulaFrom(final String value)
+		public Builder withStringFormulaFrom(final String value_)
 		{
-			formula = new ValueFormula<>(new StringValue(value));
+			formula = new ValueFormula<>(new StringValue(value_));
 			type = SemType.stringType;
 			return this;
 		}
 
-		public Builder withFormulaFrom(final Derivation deriv)
+		public Builder withFormulaFrom(final Derivation deriv_)
 		{
-			formula = deriv.formula;
-			type = deriv.type;
+			formula = deriv_.formula;
+			type = deriv_.type;
 			return this;
 		}
 
@@ -286,22 +286,25 @@ public class Derivation implements SemanticFn.Callable, HasScore
 		}
 	}
 
-	Derivation(final String cat, final int start, final int end, final Rule rule, final List<Derivation> children, final Formula formula, final SemType type, final FeatureVector localFeatureVector, final double score, final Value value, final Evaluation executorStats, final double compatibility, final double prob, final String canonicalUtterance)
+	Derivation(final String cat_, final int start_, final int end_, final Rule rule_, final List<Derivation> children_, //
+			final Formula formula_, final SemType type_, final FeatureVector localFeatureVector_, final double score_, //
+			final Value value_, final Evaluation executorStats_, final double compatibility_, final double prob_, //
+			final String canonicalUtterance_)
 	{
-		this.cat = cat;
-		this.start = start;
-		this.end = end;
-		this.rule = rule;
-		this.children = children;
-		this.formula = formula;
-		this.type = type;
-		this.localFeatureVector = localFeatureVector;
-		this.score = score;
-		this.value = value;
-		this.executorStats = executorStats;
-		this.compatibility = compatibility;
-		this.prob = prob;
-		this.canonicalUtterance = canonicalUtterance;
+		cat = cat_;
+		start = start_;
+		end = end_;
+		rule = rule_;
+		children = children_;
+		formula = formula_;
+		type = type_;
+		localFeatureVector = localFeatureVector_;
+		score = score_;
+		value = value_;
+		executorStats = executorStats_;
+		compatibility = compatibility_;
+		prob = prob_;
+		canonicalUtterance = canonicalUtterance_;
 		creationIndex = numCreated++;
 	}
 
@@ -421,19 +424,19 @@ public class Derivation implements SemanticFn.Callable, HasScore
 		addFeature(domain, name, 1);
 	}
 
-	public void addFeature(final String domain, final String name, final double value)
+	public void addFeature(final String domain, final String name, final double value_)
 	{
-		localFeatureVector.add(domain, name, value);
+		localFeatureVector.add(domain, name, value_);
 	}
 
-	public void addHistogramFeature(final String domain, final String name, final double value, final int initBinSize, final int numBins, final boolean exp)
+	public void addHistogramFeature(final String domain, final String name, final double value_, final int initBinSize, final int numBins, final boolean exp)
 	{
-		localFeatureVector.addHistogram(domain, name, value, initBinSize, numBins, exp);
+		localFeatureVector.addHistogram(domain, name, value_, initBinSize, numBins, exp);
 	}
 
-	public void addFeatureWithBias(final String domain, final String name, final double value)
+	public void addFeatureWithBias(final String domain, final String name, final double value_)
 	{
-		localFeatureVector.addWithBias(domain, name, value);
+		localFeatureVector.addWithBias(domain, name, value_);
 	}
 
 	public void addFeatures(final FeatureVector fv)
@@ -782,10 +785,10 @@ public class Derivation implements SemanticFn.Callable, HasScore
 	 */
 	public boolean[] getAnchoredTokens()
 	{
-		final int[] numAnchors = getNumAnchors();
-		final boolean[] anchoredTokens = new boolean[numAnchors.length];
-		for (int i = 0; i < numAnchors.length; i++)
-			anchoredTokens[i] = numAnchors[i] > 0;
+		final int[] numAnchors_ = getNumAnchors();
+		final boolean[] anchoredTokens = new boolean[numAnchors_.length];
+		for (int i = 0; i < numAnchors_.length; i++)
+			anchoredTokens[i] = numAnchors_[i] > 0;
 		return anchoredTokens;
 	}
 

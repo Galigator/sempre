@@ -101,7 +101,7 @@ public class DALExecutor extends Executor
 		{
 			// use reflection to call primitive stuff
 			final Value method = ((ValueFormula) f.args.get(0)).value;
-			final String id = ((NameValue) method).id;
+			final String id = ((NameValue) method)._id;
 			// all actions takes a fixed set as argument
 			invoke(id, world, f.args.subList(1, f.args.size()).stream().map(x -> processSetFormula(x, world)).toArray());
 			world.merge();
@@ -118,7 +118,7 @@ public class DALExecutor extends Executor
 						throw new RuntimeException("repeat has to take a single number");
 					int times;
 					if (!opts.convertNumberValues)
-						times = (int) ((NumberValue) arg.iterator().next()).value;
+						times = (int) ((NumberValue) arg.iterator().next())._value;
 					else
 						times = (int) arg.iterator().next();
 
@@ -285,7 +285,7 @@ public class DALExecutor extends Executor
 			// special unary
 			if (v instanceof NameValue)
 			{
-				final String id = ((NameValue) v).id;
+				final String id = ((NameValue) v)._id;
 				// LogInfo.logs("%s : this %s, all: %s", id,
 				// world.selected().toString(), world.allitems.toString());
 				if (id.equals(SpecialSets.All))
@@ -307,7 +307,7 @@ public class DALExecutor extends Executor
 			final JoinFormula joinFormula = (JoinFormula) formula;
 			if (joinFormula.relation instanceof ValueFormula)
 			{
-				final String rel = ((ValueFormula<NameValue>) joinFormula.relation).value.id;
+				final String rel = ((ValueFormula<NameValue>) joinFormula.relation).value._id;
 				final Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
 				return world.has(rel, unary);
 			}
@@ -315,7 +315,7 @@ public class DALExecutor extends Executor
 				if (joinFormula.relation instanceof ReverseFormula)
 				{
 					final ReverseFormula reverse = (ReverseFormula) joinFormula.relation;
-					final String rel = ((ValueFormula<NameValue>) reverse.child).value.id;
+					final String rel = ((ValueFormula<NameValue>) reverse.child).value._id;
 					final Set<Object> unary = toSet(processSetFormula(joinFormula.child, world));
 					return world.get(rel, toItemSet(unary));
 				}
@@ -352,9 +352,9 @@ public class DALExecutor extends Executor
 			if (mode == AggregateFormula.Mode.count)
 				return Sets.newHashSet(set.size());
 			if (mode == AggregateFormula.Mode.max)
-				return Sets.newHashSet(set.stream().max((s, t) -> ((NumberValue) s).value > ((NumberValue) t).value ? 1 : -1));
+				return Sets.newHashSet(set.stream().max((s, t) -> ((NumberValue) s)._value > ((NumberValue) t)._value ? 1 : -1));
 			if (mode == AggregateFormula.Mode.min)
-				return Sets.newHashSet(set.stream().max((s, t) -> ((NumberValue) s).value < ((NumberValue) t).value ? 1 : -1));
+				return Sets.newHashSet(set.stream().max((s, t) -> ((NumberValue) s)._value < ((NumberValue) t)._value ? 1 : -1));
 		}
 
 		if (formula instanceof ArithmeticFormula)
@@ -378,7 +378,7 @@ public class DALExecutor extends Executor
 			final CallFormula callFormula = (CallFormula) formula;
 			@SuppressWarnings("rawtypes")
 			final Value method = ((ValueFormula) callFormula.func).value;
-			final String id = ((NameValue) method).id;
+			final String id = ((NameValue) method)._id;
 			// all actions takes a fixed set as argument
 			return invoke(id, world, callFormula.args.stream().map(x -> processSetFormula(x, world)).toArray());
 		}
@@ -498,7 +498,7 @@ public class DALExecutor extends Executor
 		{
 			// Unfortunately, NumberValues don't make a distinction between ints and
 			// doubles, so this is a hack.
-			final double x = ((NumberValue) value).value;
+			final double x = ((NumberValue) value)._value;
 			if (x == (int) x)
 				return new Integer((int) x);
 			return new Double(x);
@@ -506,7 +506,7 @@ public class DALExecutor extends Executor
 		else
 			if (value instanceof NameValue && opts.convertNameValues)
 			{
-				final String id = ((NameValue) value).id;
+				final String id = ((NameValue) value)._id;
 				return id;
 			}
 			else

@@ -45,9 +45,9 @@ public class FeatureExtractor
 	private final Executor executor;
 	private final List<FeatureComputer> featureComputers = new ArrayList<>();
 
-	public FeatureExtractor(final Executor executor)
+	public FeatureExtractor(final Executor executor_)
 	{
-		this.executor = executor;
+		executor = executor_;
 		for (final String featureComputer : opts.featureComputers)
 			featureComputers.add((FeatureComputer) Utils.newInstanceHard(SempreUtils.resolveClassName(featureComputer)));
 	}
@@ -145,7 +145,7 @@ public class FeatureExtractor
 	int getNumber(final Value value)
 	{
 		if (value instanceof NumberValue)
-			return (int) ((NumberValue) value).value;
+			return (int) ((NumberValue) value)._value;
 		if (value instanceof ListValue)
 			return getNumber(((ListValue) value).values.get(0));
 		throw new RuntimeException("Can't extract number from " + value);
@@ -239,20 +239,6 @@ public class FeatureExtractor
 			for (final String nonEntityLemma : nonEntityLemmas)
 				deriv.addFeature("lemmaAndBinaries", "nonEntitylemmas=" + nonEntityLemma + ",binaries=" + binariesStr);
 		}
-	}
-
-	// Extract the utterance that the derivation generates (not necessarily the
-	// one in the input utterance).
-	private void extractUtterance(final Derivation deriv, final List<String> utterance)
-	{
-		if (deriv.rule == Rule.nullRule)
-			return;
-		int c = 0; // Index into children
-		for (final String item : deriv.rule.rhs)
-			if (Rule.isCat(item))
-				extractUtterance(deriv.children.get(c++), utterance);
-			else
-				utterance.add(item);
 	}
 
 	//Used in Berant et., EMNLP 2013, and in the agenda RL parser

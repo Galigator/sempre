@@ -191,7 +191,7 @@ public class PredicateInfo
 				{
 					final NumberValue number = (NumberValue) value;
 					predicates.add(new PredicateInfo("number", context));
-					predicates.add(new PredicateInfo(Fmt.D(number.value), context));
+					predicates.add(new PredicateInfo(Fmt.D(number._value), context));
 
 				}
 				else
@@ -217,7 +217,7 @@ public class PredicateInfo
 							if (value instanceof NameValue)
 							{
 								final NameValue name = (NameValue) value;
-								final String id = name.id;
+								final String id = name._id;
 								predicates.add(new PredicateInfo(id, context));
 							}
 
@@ -236,7 +236,7 @@ public class PredicateInfo
 						final ReverseFormula reverse = (ReverseFormula) formula;
 						if (reverse.child instanceof ValueFormula<?> && ((ValueFormula<?>) reverse.child).value instanceof NameValue)
 						{
-							String id = ((NameValue) ((ValueFormula<?>) reverse.child).value).id;
+							String id = ((NameValue) ((ValueFormula<?>) reverse.child).value)._id;
 							id = id.startsWith("!") ? id.substring(1) : "!" + id;
 							traverse(new ValueFormula<>(new NameValue(id)));
 						}

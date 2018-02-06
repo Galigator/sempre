@@ -223,7 +223,7 @@ public class JavaExecutor extends Executor
 				return (String) x;
 			else
 				if (x instanceof Value)
-					return x instanceof NameValue ? ((NameValue) x).id : ((StringValue) x).value;
+					return x instanceof NameValue ? ((NameValue) x)._id : ((StringValue) x).value;
 				else
 					return null;
 		}
@@ -324,7 +324,7 @@ public class JavaExecutor extends Executor
 			if (!(func instanceof NameValue))
 				throw new RuntimeException("Invalid func: " + call.func + " => " + func);
 
-			String id = ((NameValue) func).id;
+			String id = ((NameValue) func)._id;
 			if (id.indexOf(opts.contextPrefix) != -1)
 			{
 				args.add(context);
@@ -378,7 +378,7 @@ public class JavaExecutor extends Executor
 		{
 			// Unfortunately, NumberValues don't make a distinction between ints and
 			// doubles, so this is a hack.
-			final double x = ((NumberValue) value).value;
+			final double x = ((NumberValue) value)._value;
 			if (x == (int) x)
 				return new Integer((int) x);
 			return new Double(x);

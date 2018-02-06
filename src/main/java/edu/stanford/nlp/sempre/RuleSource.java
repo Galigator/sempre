@@ -34,11 +34,11 @@ public class RuleSource
 	@JsonProperty
 	public String alignInfo = "";
 
-	public RuleSource(final String uid, final String head, final List<String> body)
+	public RuleSource(final String uid_, final String head_, final List<String> body_)
 	{
-		this.uid = uid;
-		this.head = head;
-		this.body = body;
+		uid = uid_;
+		head = head_;
+		body = body_;
 		time = LocalDateTime.now();
 	}
 

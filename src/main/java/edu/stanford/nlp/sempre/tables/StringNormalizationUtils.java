@@ -365,7 +365,7 @@ public final class StringNormalizationUtils
 				return new NumberValue(date.year);
 		}
 		if (value instanceof NameValue)
-			return toNumberValue(((NameValue) value).description);
+			return toNumberValue(((NameValue) value)._description);
 		if (value instanceof DescriptionValue)
 			return toNumberValue(((DescriptionValue) value).value);
 		return null;

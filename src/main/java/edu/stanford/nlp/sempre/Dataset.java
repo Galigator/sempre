@@ -83,10 +83,10 @@ public class Dataset
 		String path; // Optional, used if this was read from a path.
 
 		@JsonCreator
-		public GroupInfo(@JsonProperty("group") final String group, @JsonProperty("examples") final List<Example> examples)
+		public GroupInfo(@JsonProperty("group") final String group_, @JsonProperty("examples") final List<Example> examples_)
 		{
-			this.group = group;
-			this.examples = examples;
+			group = group_;
+			examples = examples_;
 		}
 	}
 

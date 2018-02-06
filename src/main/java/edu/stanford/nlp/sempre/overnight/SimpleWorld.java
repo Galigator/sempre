@@ -71,7 +71,7 @@ public final class SimpleWorld
 	{
 		if (v instanceof NumberValue)
 		{
-			final String unit = ((NumberValue) v).unit;
+			final String unit = ((NumberValue) v)._unit;
 			return unit + "_number"; // So we can quickly tell if something is a number or not
 		}
 		else
@@ -85,7 +85,7 @@ public final class SimpleWorld
 						return "en.boolean";
 					else
 						if (v instanceof NameValue)
-							return extractType(((NameValue) v).id);
+							return extractType(((NameValue) v)._id);
 						else
 							if (v instanceof ListValue)
 								return getType(((ListValue) v).values.get(0));
@@ -273,7 +273,7 @@ public final class SimpleWorld
 	{
 		if (!(v instanceof NumberValue))
 			throw new RuntimeException("Not a number: " + v);
-		return ((NumberValue) v).value;
+		return ((NumberValue) v)._value;
 	}
 
 	// Degree is used to compare (either take the max or min).
@@ -311,7 +311,7 @@ public final class SimpleWorld
 			}
 			else
 				if (value instanceof NumberValue)
-					return ((NumberValue) value).value;
+					return ((NumberValue) value)._value;
 				else
 					throw new RuntimeException("Can't get degree from " + value);
 	}
@@ -484,7 +484,7 @@ public final class SimpleWorld
 			default:
 				throw new RuntimeException("Bad mode: " + mode);
 		}
-		return Collections.singletonList(new NumberValue(result, ((NumberValue) values.get(0)).unit));
+		return Collections.singletonList(new NumberValue(result, ((NumberValue) values.get(0))._unit));
 	}
 
 	// Return the properties of the entities (database join).

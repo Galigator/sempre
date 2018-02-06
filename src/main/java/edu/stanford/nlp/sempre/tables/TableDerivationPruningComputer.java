@@ -58,7 +58,7 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 		return Arrays.asList(lambdaDCSError, emptyDenotation, badSummarizerHead, sameMark, forwardBackward, doubleNext, doubleCompares, emptyJoin, subsetMerge, typeRowMerge, aggregateInfinite, aggregateUncomparable, aggregateVariable, superlativeIdentity);
 	}
 
-	private static final String NEXT = TableTypeSystem.ROW_NEXT_VALUE.id, PREV = "!" + NEXT;
+	private static final String NEXT = TableTypeSystem.ROW_NEXT_VALUE._id, PREV = "!" + NEXT;
 	private static final ValueFormula<Value> STAR = new ValueFormula<>(new NameValue("*"));
 	private final Formula TYPE_ROW = Formula.fromString("(fb:type.object.type fb:type.row)");
 	private final Formula IDENTITY = Formula.fromString("(reverse (lambda x (var x)))");
@@ -77,12 +77,12 @@ public class TableDerivationPruningComputer extends DerivationPruningComputer
 		if (containsStrategy(emptyDenotation))
 		{
 			deriv.ensureExecuted(parser.executor, ex.context);
-			if (deriv.value instanceof PairListValue && ((PairListValue) deriv.value).pairs.isEmpty())
+			if (deriv.value instanceof PairListValue && ((PairListValue) deriv.value)._pairs.isEmpty())
 				return emptyDenotation;
 			if (deriv.value instanceof ScopedValue)
 			{
 				final Value head = ((ScopedValue) deriv.value).head, relation = ((ScopedValue) deriv.value).relation;
-				if (head instanceof ListValue && ((ListValue) head).values.isEmpty() || relation instanceof PairListValue && ((PairListValue) relation).pairs.isEmpty())
+				if (head instanceof ListValue && ((ListValue) head).values.isEmpty() || relation instanceof PairListValue && ((PairListValue) relation)._pairs.isEmpty())
 					return emptyDenotation;
 			}
 		}

@@ -34,6 +34,7 @@ public class NumberFn extends SemanticFn
 		return requests == null || requests.contains(req);
 	}
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -46,10 +47,12 @@ public class NumberFn extends SemanticFn
 	}
 
 	// TODO(pliang): handle measurements too (e.g., 3cm)
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()
 		{
+			@Override
 			public Derivation createDerivation()
 			{
 				// Test using NER span
@@ -65,10 +68,10 @@ public class NumberFn extends SemanticFn
 						try
 						{
 							final NumberValue numberValue = new NumberValue(Double.parseDouble(value));
-							final SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
+							final SemType type = numberValue._value == (int) numberValue._value ? SemType.intType : SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (final NumberFormatException e)
+						catch (@SuppressWarnings("unused") final NumberFormatException e)
 						{
 							// Don't issue warnings; most spans are not numbers
 						}
@@ -98,16 +101,16 @@ public class NumberFn extends SemanticFn
 						{
 							final NumberValue numberValue = new NumberValue(Double.parseDouble(value));
 							if (opts.allowedRange != null)
-								if (numberValue.value < opts.allowedRange.get(0) || numberValue.value > opts.allowedRange.get(1))
+								if (numberValue._value < opts.allowedRange.get(0) || numberValue._value > opts.allowedRange.get(1))
 								{
-									LogInfo.warnings("NumberFn: %f is outside of the allowed range %s", numberValue.value, opts.allowedRange);
+									LogInfo.warnings("NumberFn: %f is outside of the allowed range %s", numberValue._value, opts.allowedRange);
 									return null;
 								}
 
-							final SemType type = numberValue.value == (int) numberValue.value ? SemType.intType : SemType.floatType;
+							final SemType type = numberValue._value == (int) numberValue._value ? SemType.intType : SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (final NumberFormatException e)
+						catch (@SuppressWarnings("unused") final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
@@ -124,7 +127,7 @@ public class NumberFn extends SemanticFn
 							final SemType type = SemType.intType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (final NumberFormatException e)
+						catch (@SuppressWarnings("unused") final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
@@ -141,7 +144,7 @@ public class NumberFn extends SemanticFn
 							final SemType type = SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (final NumberFormatException e)
+						catch (@SuppressWarnings("unused") final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}
@@ -158,7 +161,7 @@ public class NumberFn extends SemanticFn
 							final SemType type = SemType.floatType;
 							return new Derivation.Builder().withCallable(c).formula(new ValueFormula<>(numberValue)).type(type).createDerivation();
 						}
-						catch (final NumberFormatException e)
+						catch (@SuppressWarnings("unused") final NumberFormatException e)
 						{
 							LogInfo.warnings("NumberFn: Cannot convert NerSpan \"%s\" to a number", value);
 						}

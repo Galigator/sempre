@@ -22,13 +22,13 @@ public class LearnerParallelProcessor implements Parallelizer.Processor<Example>
 	private final Params params; // this is common to threads and should be synchronized
 	private final Evaluation evaluation; // this is common to threads and should be synchronized
 
-	public LearnerParallelProcessor(final Parser parser, final Params params, final String prefix, final boolean computeExpectedCounts, final Evaluation evaluation)
+	public LearnerParallelProcessor(final Parser parser_, final Params params_, final String prefix_, final boolean computeExpectedCounts_, final Evaluation evaluation_)
 	{
-		this.prefix = prefix;
-		this.parser = parser;
-		this.computeExpectedCounts = computeExpectedCounts;
-		this.params = params;
-		this.evaluation = evaluation;
+		prefix = prefix_;
+		parser = parser_;
+		computeExpectedCounts = computeExpectedCounts_;
+		params = params_;
+		evaluation = evaluation_;
 	}
 
 	@Override

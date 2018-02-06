@@ -83,7 +83,7 @@ public class PhraseInfo
 			{
 				final Value value = ((ValueFormula<?>) formula).value;
 				if (value instanceof NameValue)
-					matchedPredicates.add(((NameValue) value).id);
+					matchedPredicates.add(((NameValue) value)._id);
 			}
 		return matchedPredicates;
 	}

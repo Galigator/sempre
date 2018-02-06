@@ -58,13 +58,13 @@ public class Params
 		LAZY, NONLAZY, NONE;
 	}
 
-	private L1Reg parseReg(final String l1Reg)
+	private L1Reg parseReg(final String l1Reg_)
 	{
-		if ("lazy".equals(l1Reg))
+		if ("lazy".equals(l1Reg_))
 			return L1Reg.LAZY;
-		if ("nonlazy".equals(l1Reg))
+		if ("nonlazy".equals(l1Reg_))
 			return L1Reg.NONLAZY;
-		if ("none".equals(l1Reg))
+		if ("none".equals(l1Reg_))
 			return L1Reg.NONE;
 		throw new RuntimeException("not legal l1reg");
 	}
@@ -101,18 +101,19 @@ public class Params
 		LogInfo.begin_track("Reading parameters from %s", path);
 		try
 		{
-			final BufferedReader in = IOUtils.openIn(path);
-			String line;
-			while ((line = in.readLine()) != null)
+			try (final BufferedReader in = IOUtils.openIn(path))
 			{
-				final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
-				weights.put(pair[0], Double.parseDouble(pair[1]));
+				String line;
+				while ((line = in.readLine()) != null)
+				{
+					final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
+					weights.put(pair[0], Double.parseDouble(pair[1]));
+				}
 			}
-			in.close();
 		}
 		catch (final IOException e)
 		{
-			throw new RuntimeException(e);
+			throw new SempreError(e);
 		}
 		LogInfo.logs("Read %s weights", weights.size());
 		LogInfo.end_track();
@@ -124,19 +125,20 @@ public class Params
 		LogInfo.begin_track("Reading parameters from %s", path);
 		try
 		{
-			final BufferedReader in = IOUtils.openIn(path);
-			String line;
-			while ((line = in.readLine()) != null)
+			try (final BufferedReader in = IOUtils.openIn(path))
 			{
-				final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
-				weights.put(pair[0], Double.parseDouble(pair[1]));
-				weights.put(prefix + pair[0], Double.parseDouble(pair[1]));
+				String line;
+				while ((line = in.readLine()) != null)
+				{
+					final String[] pair = Lists.newArrayList(Splitter.on('\t').split(line)).toArray(new String[2]);
+					weights.put(pair[0], Double.parseDouble(pair[1]));
+					weights.put(prefix + pair[0], Double.parseDouble(pair[1]));
+				}
 			}
-			in.close();
 		}
 		catch (final IOException e)
 		{
-			throw new RuntimeException(e);
+			throw new SempreError(e);
 		}
 		LogInfo.logs("Read %s weights", weights.size());
 		LogInfo.end_track();
@@ -241,7 +243,7 @@ public class Params
 		if (numOfIter == 0)
 			return;
 		if (numOfIter < 0)
-			throw new RuntimeException("l1UpdateTimeMap is out of sync.");
+			throw new SempreError("l1UpdateTimeMap is out of sync.");
 
 		final double stepSize = numOfIter * opts.initStepSize / Math.sqrt(sumSquaredGradients.get(f) + 1);
 		final double update = -opts.l1RegCoeff * Math.signum(MapUtils.getDouble(weights, f, 0.0));
@@ -287,9 +289,10 @@ public class Params
 	public void write(final String path)
 	{
 		LogInfo.begin_track("Params.write(%s)", path);
-		final PrintWriter out = IOUtils.openOutHard(path);
-		write(out);
-		out.close();
+		try (final PrintWriter out = IOUtils.openOutHard(path))
+		{
+			write(out);
+		}
 		LogInfo.end_track();
 	}
 

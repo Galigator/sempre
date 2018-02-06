@@ -16,11 +16,12 @@ public class DescriptionValue extends Value
 		this(tree.child(1).value);
 	}
 
-	public DescriptionValue(final String value)
+	public DescriptionValue(final String value_)
 	{
-		this.value = value;
+		value = value_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();

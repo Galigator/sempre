@@ -257,9 +257,9 @@ public abstract class Formulas
 			if (value instanceof StringValue)
 				return ((StringValue) value).value;
 			if (value instanceof NameValue)
-				return ((NameValue) value).id;
+				return ((NameValue) value)._id;
 			if (value instanceof NumberValue)
-				return ((NumberValue) value).value + "";
+				return ((NumberValue) value)._value + "";
 		}
 		else
 			if (formula instanceof VariableFormula)
@@ -273,7 +273,7 @@ public abstract class Formulas
 		{
 			final Value value = ((ValueFormula) formula).value;
 			if (value instanceof NameValue)
-				return ((NameValue) value).id;
+				return ((NameValue) value)._id;
 		}
 		return null;
 	}
@@ -284,7 +284,7 @@ public abstract class Formulas
 		{
 			final Value value = ((ValueFormula) formula).value;
 			if (value instanceof NumberValue)
-				return ((NumberValue) value).value;
+				return ((NumberValue) value)._value;
 		}
 		return Double.NaN;
 	}
@@ -312,7 +312,7 @@ public abstract class Formulas
 			{
 				final Value v = ((ValueFormula<?>) formula).value;
 				if (v instanceof NameValue)
-					return ((NameValue) v).id;
+					return ((NameValue) v)._id;
 			}
 		return null;
 	}
@@ -456,7 +456,7 @@ public abstract class Formulas
 	// !fb:people.person.place_of_birth <=> fb:people.person.place_of_birth
 	private static ValueFormula<NameValue> reverseNameFormula(final ValueFormula<NameValue> formula)
 	{
-		final String id = formula.value.id;
+		final String id = formula.value._id;
 		return new ValueFormula<>(new NameValue(CanonicalNames.reverseProperty(id)));
 	}
 

@@ -64,17 +64,17 @@ public class GrammarInducer
 	{
 		// grammarInfo start and end is used to indicate partial, when using aligner
 		boolean allHead = false;
-		if (def.grammarInfo.start == -1)
+		if (def.grammarInfo._start == -1)
 		{
-			def.grammarInfo.start = 0;
-			def.grammarInfo.end = headTokens.size();
+			def.grammarInfo._start = 0;
+			def.grammarInfo._end = headTokens.size();
 			allHead = true;
 		}
 
 		// dont want weird cat unary rules with strange semantics
 		if (headTokens == null || headTokens.isEmpty())
 			throw new RuntimeException("The head is empty, refusing to define.");
-		chartList.removeIf(d -> d.start == def.grammarInfo.start && d.end == def.grammarInfo.end);
+		chartList.removeIf(d -> d.start == def.grammarInfo._start && d.end == def.grammarInfo._end);
 		this.def = def;
 
 		this.headTokens = headTokens;
@@ -199,7 +199,7 @@ public class GrammarInducer
 
 	private String varName(final Derivation anchored)
 	{
-		final int s = def.grammarInfo.start;
+		final int s = def.grammarInfo._start;
 		return getNormalCat(anchored) + (anchored.start - s) + "_" + (anchored.end - s);
 	}
 
@@ -337,11 +337,11 @@ public class GrammarInducer
 		{
 			// LogInfo.logs("Found match %s, %s, %s", catFormulaKey(deriv),
 			// replaceMap, deriv);
-			deriv.grammarInfo.formula = new VariableFormula(replaceMap.get(catFormulaKey(deriv)));
+			deriv.grammarInfo._formula = new VariableFormula(replaceMap.get(catFormulaKey(deriv)));
 			return;
 		}
 		if (deriv.children.size() == 0)
-			deriv.grammarInfo.formula = deriv.formula;
+			deriv.grammarInfo._formula = deriv.formula;
 
 		for (final Derivation c : deriv.children)
 			buildFormula(c, replaceMap);
@@ -354,7 +354,7 @@ public class GrammarInducer
 
 		// cant use the standard DerivationStream because formula is final
 		if (rule == null || rule.sem == null)
-			deriv.grammarInfo.formula = deriv.formula;
+			deriv.grammarInfo._formula = deriv.formula;
 		else
 			if (rule.sem instanceof ApplyFn)
 			{
@@ -365,18 +365,18 @@ public class GrammarInducer
 						throw new RuntimeException("Expected LambdaFormula, but got " + f);
 					final Formula after = renameBoundVars(f, new HashSet<>());
 					// LogInfo.logs("renameBoundVar %s === %s", after, f);
-					f = Formulas.lambdaApply((LambdaFormula) after, arg.grammarInfo.formula);
+					f = Formulas.lambdaApply((LambdaFormula) after, arg.grammarInfo._formula);
 				}
-				deriv.grammarInfo.formula = f;
+				deriv.grammarInfo._formula = f;
 			}
 			else
 				if (rule.sem instanceof IdentityFn)
-					deriv.grammarInfo.formula = args.get(0).grammarInfo.formula;
+					deriv.grammarInfo._formula = args.get(0).grammarInfo._formula;
 				else
 					if (rule.sem instanceof BlockFn)
-						deriv.grammarInfo.formula = new ActionFormula(((BlockFn) rule.sem).mode, args.stream().map(d -> d.grammarInfo.formula).collect(Collectors.toList()));
+						deriv.grammarInfo._formula = new ActionFormula(((BlockFn) rule.sem).mode, args.stream().map(d -> d.grammarInfo._formula).collect(Collectors.toList()));
 					else
-						deriv.grammarInfo.formula = deriv.formula;
+						deriv.grammarInfo._formula = deriv.formula;
 	}
 
 	private String newName(final String s)
@@ -412,7 +412,7 @@ public class GrammarInducer
 
 	private SemanticFn getSemantics(final Derivation def, final List<Derivation> packings)
 	{
-		Formula baseFormula = def.grammarInfo.formula;
+		Formula baseFormula = def.grammarInfo._formula;
 		if (opts.verbose > 0)
 			LogInfo.logs("getSemantics %s", baseFormula);
 		if (packings.size() == 0)
@@ -446,7 +446,7 @@ public class GrammarInducer
 			for (int i = deriv.start + 1; i < deriv.end; i++)
 				rhs.set(i, null);
 		}
-		return rhs.subList(def.grammarInfo.start, def.grammarInfo.end).stream().filter(s -> s != null).collect(Collectors.toList());
+		return rhs.subList(def.grammarInfo._start, def.grammarInfo._end).stream().filter(s -> s != null).collect(Collectors.toList());
 	}
 
 	public static enum ParseStatus

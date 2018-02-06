@@ -12,12 +12,13 @@ public class LambdaFormula extends Formula
 	public final String var;
 	public final Formula body;
 
-	public LambdaFormula(final String var, final Formula body)
+	public LambdaFormula(final String var_, final Formula body_)
 	{
-		this.var = var;
-		this.body = body;
+		var = var_;
+		body = body_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -50,7 +51,6 @@ public class LambdaFormula extends Formula
 		return res;
 	}
 
-	@SuppressWarnings({ "equalshashcode" })
 	@Override
 	public boolean equals(final Object thatObj)
 	{
@@ -60,6 +60,7 @@ public class LambdaFormula extends Formula
 		return var.equals(that.var) && body.equals(that.body);
 	}
 
+	@Override
 	public int computeHashCode()
 	{
 		int hash = 0x7ed55d16;

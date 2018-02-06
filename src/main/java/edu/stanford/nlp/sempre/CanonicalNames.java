@@ -85,7 +85,7 @@ public final class CanonicalNames
 
 	public static boolean isUnary(final Value value)
 	{
-		return value instanceof NameValue && isUnary(((NameValue) value).id);
+		return value instanceof NameValue && isUnary(((NameValue) value)._id);
 	}
 
 	// Binary: fb:domain.type.property [contains two periods]
@@ -106,7 +106,7 @@ public final class CanonicalNames
 
 	public static boolean isBinary(final Value value)
 	{
-		return value instanceof NameValue && isBinary(((NameValue) value).id);
+		return value instanceof NameValue && isBinary(((NameValue) value)._id);
 	}
 
 	// Return whether |property| is the name of a reverse property.
@@ -118,7 +118,7 @@ public final class CanonicalNames
 
 	public static boolean isReverseProperty(final Value value)
 	{
-		return value instanceof NameValue && isReverseProperty(((NameValue) value).id);
+		return value instanceof NameValue && isReverseProperty(((NameValue) value)._id);
 	}
 
 	// Return the reverse property as a String
@@ -136,7 +136,7 @@ public final class CanonicalNames
 	{
 		if (!(value instanceof NameValue))
 			throw new RuntimeException("Cannot call reverseProperty on " + value);
-		return new NameValue(reverseProperty(((NameValue) value).id));
+		return new NameValue(reverseProperty(((NameValue) value)._id));
 	}
 
 }

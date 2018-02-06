@@ -10,17 +10,17 @@ import fig.basic.LogInfo;
  */
 public class NameValue extends Value
 {
-	public final String id; // Identifier (e.g., "fb:en.barack_obama")
-	public final String description; // Readable description (e.g., "Barack Obama")
+	public final String _id; // Identifier (e.g., "fb:en.barack_obama")
+	public final String _description; // Readable description (e.g., "Barack Obama")
 
 	public NameValue(final LispTree tree)
 	{
-		id = tree.child(1).value;
+		_id = tree.child(1).value;
 		if (tree.children.size() > 2)
-			description = tree.child(2).value;
+			_description = tree.child(2).value;
 		else
-			description = null;
-		assert id != null : tree;
+			_description = null;
+		assert _id != null : tree;
 	}
 
 	public NameValue(final String id)
@@ -35,36 +35,37 @@ public class NameValue extends Value
 			LogInfo.errors("Got null id, description is %s", description);
 			id = "fb:en.null";
 		}
-		this.id = id;
-		this.description = description;
+		_id = id;
+		_description = description;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
 		tree.addChild("name");
-		tree.addChild(id);
-		if (description != null)
-			tree.addChild(description);
+		tree.addChild(_id);
+		if (_description != null)
+			tree.addChild(_description);
 		return tree;
 	}
 
 	@Override
 	public String sortString()
 	{
-		return id;
+		return _id;
 	}
 
 	@Override
 	public String pureString()
 	{
-		return description == null ? id : description;
+		return _description == null ? _id : _description;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return id.hashCode();
+		return _id.hashCode();
 	}
 
 	@Override
@@ -76,6 +77,6 @@ public class NameValue extends Value
 			return false;
 		final NameValue that = (NameValue) o;
 		// Note: only check id, not description
-		return id.equals(that.id);
+		return _id.equals(that._id);
 	}
 }

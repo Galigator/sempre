@@ -117,17 +117,17 @@ public abstract class TableTypeSystem
 
 	public static boolean isRowProperty(final Value r)
 	{
-		return r instanceof NameValue && ((NameValue) r).id.startsWith(ROW_PROPERTY_NAME_PREFIX);
+		return r instanceof NameValue && ((NameValue) r)._id.startsWith(ROW_PROPERTY_NAME_PREFIX);
 	}
 
 	public static boolean isRowConsecutiveProperty(final Value r)
 	{
-		return r instanceof NameValue && ((NameValue) r).id.startsWith(ROW_CONSECUTIVE_PROPERTY_NAME_PREFIX);
+		return r instanceof NameValue && ((NameValue) r)._id.startsWith(ROW_CONSECUTIVE_PROPERTY_NAME_PREFIX);
 	}
 
 	public static boolean isCellProperty(final Value r)
 	{
-		return r instanceof NameValue && ((NameValue) r).id.startsWith(CELL_PROPERTY_NAME_PREFIX);
+		return r instanceof NameValue && ((NameValue) r)._id.startsWith(CELL_PROPERTY_NAME_PREFIX);
 	}
 
 	// ============================================================

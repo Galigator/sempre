@@ -48,12 +48,14 @@ public class BeamParser extends Parser
 			chartFillOut = IOUtils.openOutAppendEasy(Execution.getFile("chartfill"));
 	}
 
+	@Override
 	public synchronized void addRule(final Rule rule)
 	{
 		if (!rule.isCatUnary())
 			trie.add(rule);
 	}
 
+	@Override
 	public ParserState newParserState(final Params params, final Example ex, final boolean computeExpectedCounts)
 	{
 		BeamParserState coarseState = null;
@@ -90,14 +92,15 @@ class BeamParserState extends ChartParserState
 	private final BeamParser parser;
 	private final BeamParserState coarseState; // Used to prune
 
-	public BeamParserState(final BeamParser parser, final Params params, final Example ex, final boolean computeExpectedCounts, final Mode mode, final BeamParserState coarseState)
+	public BeamParserState(final BeamParser parser_, final Params params_, final Example ex, final boolean computeExpectedCounts_, final Mode mode_, final BeamParserState coarseState_)
 	{
-		super(parser, params, ex, computeExpectedCounts);
-		this.parser = parser;
-		this.mode = mode;
-		this.coarseState = coarseState;
+		super(parser_, params_, ex, computeExpectedCounts_);
+		parser = parser_;
+		mode = mode_;
+		coarseState = coarseState_;
 	}
 
+	@Override
 	public void infer()
 	{
 		if (numTokens == 0)

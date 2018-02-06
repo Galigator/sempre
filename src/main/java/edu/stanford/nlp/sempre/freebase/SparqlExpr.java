@@ -42,7 +42,7 @@ class SparqlBlock implements SparqlExpr
 		final Value value = ((ValueFormula) formula).value;
 		if (!(value instanceof NameValue))
 			return null;
-		return ((NameValue) value).id;
+		return ((NameValue) value)._id;
 	}
 
 	private boolean isPrimitiveType(final String id)
@@ -313,9 +313,9 @@ final class SparqlUtils
 			return "\"" + s.replaceAll("\"", "\\\\\"") + "\"" + (s.equals("en") ? "" : "@en");
 		}
 		if (value instanceof NameValue)
-			return ((NameValue) value).id;
+			return ((NameValue) value)._id;
 		if (value instanceof NumberValue)
-			return ((NumberValue) value).value + "";
+			return ((NumberValue) value)._value + "";
 		if (value instanceof DateValue)
 		{
 			final DateValue date = (DateValue) value;

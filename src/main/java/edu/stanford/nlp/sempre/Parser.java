@@ -86,12 +86,12 @@ public abstract class Parser
 		public final Executor executor;
 		public final ValueEvaluator valueEvaluator;
 
-		public Spec(final Grammar grammar, final FeatureExtractor extractor, final Executor executor, final ValueEvaluator valueEvaluator)
+		public Spec(final Grammar grammar_, final FeatureExtractor extractor_, final Executor executor_, final ValueEvaluator valueEvaluator_)
 		{
-			this.grammar = grammar;
-			this.extractor = extractor;
-			this.executor = executor;
-			this.valueEvaluator = valueEvaluator;
+			grammar = grammar_;
+			extractor = extractor_;
+			executor = executor_;
+			valueEvaluator = valueEvaluator_;
 		}
 	}
 
@@ -146,7 +146,7 @@ public abstract class Parser
 	}
 
 	// Helper function for transitive closure of unary rules.
-	protected void traverse(final List<Rule> catUnaryRules, final String node, final Map<String, List<Rule>> graph, final Map<String, Boolean> done)
+	protected void traverse(final List<Rule> catUnaryRules_, final String node, final Map<String, List<Rule>> graph, final Map<String, Boolean> done)
 	{
 		final Boolean d = done.get(node);
 		if (Boolean.TRUE.equals(d))
@@ -156,8 +156,8 @@ public abstract class Parser
 		done.put(node, false);
 		for (final Rule rule : MapUtils.getList(graph, node))
 		{
-			traverse(catUnaryRules, rule.rhs.get(0), graph, done);
-			catUnaryRules.add(rule);
+			traverse(catUnaryRules_, rule.rhs.get(0), graph, done);
+			catUnaryRules_.add(rule);
 		}
 		done.put(node, true);
 	}

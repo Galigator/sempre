@@ -28,10 +28,10 @@ public class DateRangeFn extends SemanticFn
 		int index = 0;
 		List<Formula> formulas;
 
-		public LazyDateRangeFnDerivs(final Example ex, final Callable c)
+		public LazyDateRangeFnDerivs(final Example ex_, final Callable c_)
 		{
-			this.ex = ex;
-			this.c = c;
+			ex = ex_;
+			c = c_;
 		}
 
 		@Override

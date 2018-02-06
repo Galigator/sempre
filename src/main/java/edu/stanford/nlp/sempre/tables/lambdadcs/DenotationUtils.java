@@ -40,7 +40,7 @@ public final class DenotationUtils
 	public static int convertToInteger(final Value value)
 	{
 		if (value instanceof NumberValue)
-			return (int) ((NumberValue) value).value;
+			return (int) ((NumberValue) value)._value;
 		else
 			throw new LambdaDCSException(Type.typeMismatch, "Cannot convert %s to number", value);
 	}
@@ -51,7 +51,7 @@ public final class DenotationUtils
 	public static double convertToNumber(final Value value)
 	{
 		if (value instanceof NumberValue)
-			return ((NumberValue) value).value;
+			return ((NumberValue) value)._value;
 		else
 			throw new LambdaDCSException(Type.typeMismatch, "Cannot convert %s to number", value);
 	}
@@ -441,7 +441,7 @@ public final class DenotationUtils
 		@Override
 		public int compareValues(final Value v1, final Value v2)
 		{
-			final double x1 = ((NumberValue) v1).value, x2 = ((NumberValue) v2).value;
+			final double x1 = ((NumberValue) v1)._value, x2 = ((NumberValue) v2)._value;
 			return x1 > x2 ? 1 : x1 < x2 ? -1 : 0;
 		}
 
@@ -450,7 +450,7 @@ public final class DenotationUtils
 		{
 			double sum = 0;
 			for (final Value value : values)
-				sum += ((NumberValue) value).value;
+				sum += ((NumberValue) value)._value;
 			return new NumberValue(sum);
 		}
 
@@ -459,32 +459,32 @@ public final class DenotationUtils
 		{
 			double sum = 0;
 			for (final Value value : values)
-				sum += ((NumberValue) value).value;
+				sum += ((NumberValue) value)._value;
 			return new NumberValue(sum / values.size());
 		}
 
 		@Override
 		public Value add(final Value v1, final Value v2)
 		{
-			return new NumberValue(((NumberValue) v1).value + ((NumberValue) v2).value);
+			return new NumberValue(((NumberValue) v1)._value + ((NumberValue) v2)._value);
 		}
 
 		@Override
 		public Value sub(final Value v1, final Value v2)
 		{
-			return new NumberValue(((NumberValue) v1).value - ((NumberValue) v2).value);
+			return new NumberValue(((NumberValue) v1)._value - ((NumberValue) v2)._value);
 		}
 
 		@Override
 		public Value mul(final Value v1, final Value v2)
 		{
-			return new NumberValue(((NumberValue) v1).value * ((NumberValue) v2).value);
+			return new NumberValue(((NumberValue) v1)._value * ((NumberValue) v2)._value);
 		}
 
 		@Override
 		public Value div(final Value v1, final Value v2)
 		{
-			return new NumberValue(((NumberValue) v1).value / ((NumberValue) v2).value);
+			return new NumberValue(((NumberValue) v1)._value / ((NumberValue) v2)._value);
 		}
 	}
 

@@ -11,9 +11,9 @@ public class BooleanValue extends Value
 {
 	public final boolean value;
 
-	public BooleanValue(final boolean value)
+	public BooleanValue(final boolean value_)
 	{
-		this.value = value;
+		value = value_;
 	}
 
 	public BooleanValue(final LispTree tree)
@@ -21,6 +21,7 @@ public class BooleanValue extends Value
 		value = Boolean.parseBoolean(tree.child(1).value);
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();

@@ -16,6 +16,7 @@ public class FilterPosTagFn extends SemanticFn
 	String mode;
 	boolean reverse;
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -35,6 +36,7 @@ public class FilterPosTagFn extends SemanticFn
 		}
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

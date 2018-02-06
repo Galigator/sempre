@@ -654,7 +654,7 @@ public class SparqlExecutor extends Executor
 			if (value instanceof BooleanValue)
 				return FreebaseInfo.BOOLEAN;
 			if (value instanceof NumberValue)
-				return ((NumberValue) value).unit;
+				return ((NumberValue) value)._unit;
 			if (value instanceof StringValue)
 				return FreebaseInfo.TEXT;
 			if (value instanceof DateValue)
@@ -692,7 +692,7 @@ public class SparqlExecutor extends Executor
 					if (modifier.value == null)
 						modifier.value = newVar();
 					// Deal with primitive reverses (!fb:people.person.date_of_birth)
-					String property = ((NameValue) formula.value).id;
+					String property = ((NameValue) formula.value)._id;
 					PrimitiveFormula arg1, arg2;
 					if (FreebaseInfo.isReverseProperty(property))
 					{

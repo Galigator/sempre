@@ -63,12 +63,12 @@ public abstract class ParserState
 	public int totalGeneratedDerivs; // Total number of derivations produced
 	public int numOfFeaturizedDerivs = 0; // Number of derivations featured
 
-	public ParserState(final Parser parser, final Params params, final Example ex, final boolean computeExpectedCounts)
+	public ParserState(final Parser parser_, final Params params_, final Example ex_, final boolean computeExpectedCounts_)
 	{
-		this.parser = parser;
-		this.params = params;
-		this.ex = ex;
-		this.computeExpectedCounts = computeExpectedCounts;
+		parser = parser_;
+		params = params_;
+		ex = ex_;
+		computeExpectedCounts = computeExpectedCounts_;
 		numTokens = ex.numTokens();
 	}
 

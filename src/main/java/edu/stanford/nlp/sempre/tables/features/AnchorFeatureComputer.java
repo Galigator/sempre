@@ -63,7 +63,7 @@ public class AnchorFeatureComputer implements FeatureComputer
 			for (final TableCell cell : column.children)
 			{
 				final String s = StringNormalizationUtils.simpleNormalize(cell.properties.originalString).toLowerCase();
-				if (s.contains(phrase) && !cell.properties.id.equals(predicate.id))
+				if (s.contains(phrase) && !cell.properties.id.equals(predicate._id))
 					matches.add(s);
 			}
 		//LogInfo.logs(">> %s", matches);

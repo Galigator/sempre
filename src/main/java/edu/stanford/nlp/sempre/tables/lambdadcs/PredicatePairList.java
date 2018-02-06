@@ -44,7 +44,7 @@ public class PredicatePairList implements PairList
 	public PredicatePairList(final Value predicate, final KnowledgeGraph graph)
 	{
 		this.predicate = predicate;
-		predicateId = predicate instanceof NameValue ? ((NameValue) predicate).id : null;
+		predicateId = predicate instanceof NameValue ? ((NameValue) predicate)._id : null;
 		this.graph = graph;
 		if ("=".equals(predicateId))
 			type = PredicateType.EQUAL;

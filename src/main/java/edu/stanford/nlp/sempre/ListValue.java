@@ -18,11 +18,12 @@ public class ListValue extends Value
 			values.add(Values.fromLispTree(tree.child(i)));
 	}
 
-	public ListValue(final List<Value> values)
+	public ListValue(final List<Value> values_)
 	{
-		this.values = values;
+		values = values_;
 	}
 
+	@Override
 	public LispTree toLispTree()
 	{
 		final LispTree tree = LispTree.proto.newList();
@@ -32,6 +33,7 @@ public class ListValue extends Value
 		return tree;
 	}
 
+	@Override
 	public void log()
 	{
 		for (final Value value : values)

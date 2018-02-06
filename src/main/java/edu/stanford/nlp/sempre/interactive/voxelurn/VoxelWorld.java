@@ -33,7 +33,7 @@ public class VoxelWorld extends World
 		if (context == null || context.graph == null)
 			return fromJSON("[[3,3,1,\"gray\",[\"S\"]],[4,4,1,\"blue\",[]]]");
 		final NaiveKnowledgeGraph graph = (NaiveKnowledgeGraph) context.graph;
-		final String wallString = ((StringValue) graph.triples.get(0).e1).value;
+		final String wallString = ((StringValue) graph._triples.get(0)._e1).value;
 		return fromJSON(wallString);
 	}
 

@@ -1244,7 +1244,7 @@ class DPDParserState extends ParserState
 					sb.append("|htype=").append(DenotationTypeInference.getKeyType(denotation));
 					// Relation
 					int relationSize = 0;
-					for (final Pair<Value, Value> pair : relation.pairs)
+					for (final Pair<Value, Value> pair : relation._pairs)
 						if (pair.getSecond() instanceof ListValue)
 							relationSize = Math.max(relationSize, ((ListValue) pair.getSecond()).values.size());
 						else

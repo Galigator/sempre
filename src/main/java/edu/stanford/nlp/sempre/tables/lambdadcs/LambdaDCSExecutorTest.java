@@ -39,7 +39,7 @@ public class LambdaDCSExecutorTest
 				checkList(new HashSet<>(((ListValue) value).values));
 			else
 				if (value instanceof PairListValue)
-					checkPairList(new HashSet<>(((PairListValue) value).pairs));
+					checkPairList(new HashSet<>(((PairListValue) value)._pairs));
 				else
 					throw new RuntimeException("The answer is not a ListValue or a PairListValue.");
 		}

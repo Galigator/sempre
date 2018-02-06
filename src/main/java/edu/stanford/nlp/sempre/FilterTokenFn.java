@@ -14,6 +14,7 @@ public class FilterTokenFn extends SemanticFn
 	List<String> acceptableTokens = new ArrayList<>();
 	String mode;
 
+	@Override
 	public void init(final LispTree tree)
 	{
 		super.init(tree);
@@ -24,6 +25,7 @@ public class FilterTokenFn extends SemanticFn
 			acceptableTokens.add(tree.child(j).value);
 	}
 
+	@Override
 	public DerivationStream call(final Example ex, final Callable c)
 	{
 		return new SingleDerivationStream()

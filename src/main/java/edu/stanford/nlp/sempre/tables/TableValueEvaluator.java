@@ -86,7 +86,7 @@ public class TableValueEvaluator implements ValueEvaluator
 			if (pred instanceof NameValue || pred instanceof DescriptionValue)
 			{
 				// Just has to match the description
-				String predText = pred instanceof NameValue ? ((NameValue) pred).description : ((DescriptionValue) pred).value;
+				String predText = pred instanceof NameValue ? ((NameValue) pred)._description : ((DescriptionValue) pred).value;
 				if (predText == null)
 					predText = "";
 				if (opts.allowNormalizedStringMatch)
@@ -125,7 +125,7 @@ public class TableValueEvaluator implements ValueEvaluator
 					{
 						// Assume year
 						final DateValue date = (DateValue) pred;
-						return date.year == targetNumber.value && date.month == -1 && date.day == -1;
+						return date.year == targetNumber._value && date.month == -1 && date.day == -1;
 					}
 					else
 						if (pred instanceof NameValue || pred instanceof DescriptionValue)
@@ -151,7 +151,7 @@ public class TableValueEvaluator implements ValueEvaluator
 	protected boolean compareNumberValues(final NumberValue target, final NumberValue pred)
 	{
 		if (opts.ignoreNumberValueUnits)
-			return Math.abs(target.value - pred.value) < 1e-6;
+			return Math.abs(target._value - pred._value) < 1e-6;
 		else
 			return target.equals(pred);
 	}

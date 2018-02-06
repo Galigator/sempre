@@ -72,7 +72,7 @@ public class TableBaselineFeatureComputer implements FeatureComputer
 			LogInfo.logs("%s", values);
 		final List<String> predictedEntities = new ArrayList<>();
 		for (final Value value : values)
-			predictedEntities.add(((NameValue) value).id);
+			predictedEntities.add(((NameValue) value)._id);
 		// Define features
 		for (final String predicted : predictedEntities)
 		{

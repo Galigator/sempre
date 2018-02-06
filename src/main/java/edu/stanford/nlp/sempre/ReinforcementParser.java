@@ -146,33 +146,33 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 		private String samplingStrategy = null;
 		private boolean computeExpectedCounts;
 
-		public StateBuilder parser(final ReinforcementParser parser)
+		public StateBuilder parser(final ReinforcementParser parser_)
 		{
-			this.parser = parser;
+			parser = parser_;
 			return this;
 		}
 
-		public StateBuilder params(final Params params)
+		public StateBuilder params(final Params params_)
 		{
-			this.params = params;
+			params = params_;
 			return this;
 		}
 
-		public StateBuilder example(final Example example)
+		public StateBuilder example(final Example example_)
 		{
-			this.example = example;
+			example = example_;
 			return this;
 		}
 
-		public StateBuilder samplingStrategy(final String samplingStrategy)
+		public StateBuilder samplingStrategy(final String samplingStrategy_)
 		{
-			this.samplingStrategy = samplingStrategy;
+			samplingStrategy = samplingStrategy_;
 			return this;
 		}
 
-		public StateBuilder computeExpectedCounts(final boolean computeExpectedCounts)
+		public StateBuilder computeExpectedCounts(final boolean computeExpectedCounts_)
 		{
-			this.computeExpectedCounts = computeExpectedCounts;
+			computeExpectedCounts = computeExpectedCounts_;
 			return this;
 		}
 
@@ -183,26 +183,15 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 	}
 
 	// note that the sampler has a pointer to the fields of the state where they were created
-	private ReinforcementParserState(final ReinforcementParser parser, final Params params, final Example ex, final boolean computeExpectedCounts, final String samplingStrategy)
+	private ReinforcementParserState(final ReinforcementParser parser_, final Params params_, final Example ex_, final boolean computeExpectedCounts_, final String samplingStrategy_)
 	{
-		super(parser, params, ex, computeExpectedCounts);
-		this.samplingStrategy = samplingStrategy;
+		super(parser_, params_, ex_, computeExpectedCounts_);
+		samplingStrategy = samplingStrategy_;
 		backpointerList = new HashMap<>();
 		agenda = samplingStrategy.equals("max") ? new QueueParserAgenda() : new ListParserAgenda();
 	}
 
-	private void clearState()
-	{
-		agenda.clear();
-		clearChart();
-		completeDerivationsPushed = 0;
-		firstCorrectItem = -1;
-		correctDerivations.clear();
-		stateSequenceExpectedCounts.clear();
-		backpointerList.clear();
-		numItemsSampled = 0;
-	}
-
+	@Override
 	protected void addToAgenda(final DerivationStream derivationStream)
 	{
 		addToAgenda(derivationStream, 0d);
@@ -237,6 +226,7 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 
 	// we need to override the method because parameters are prefixed with "search_"
 	// this means that the score will not be the dot product and features and weights
+	@Override
 	protected void featurizeAndScoreDerivation(final Derivation deriv)
 	{
 		if (deriv.isFeaturizedAndScored())
@@ -281,6 +271,7 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 		return chart[0][numTokens].get(Rule.rootCat) == null || chart[0][numTokens].get(Rule.rootCat).size() < getBeamSize();
 	}
 
+	@Override
 	public void infer()
 	{
 		if (numTokens == 0)
@@ -469,17 +460,6 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 		return firstItemLogProb + upperBound > LOG_SMALL_PROB;
 	}
 
-	private boolean isHighProbStream(final DerivationStream derivStream, final double maxScore, final int estimatedSize)
-	{
-		final Derivation deriv = derivStream.peek();
-		final double gapFromMax = deriv.score - maxScore;
-		final double threshold = LOG_SMALL_PROB - Math.log(estimatedSize);
-		if (_parser.verbose(3))
-			LogInfo.logs("isHighProbStream(): gapFromMax=%s, threshold=%s, deriv=%s(%s,%s) %s |stream|=%s", gapFromMax, threshold, deriv.cat, deriv.start, deriv.end, deriv.formula, derivStream.estimatedSize());
-
-		return gapFromMax > threshold;
-	}
-
 	// recompute score using dot product of features and re-ranking feature weights
 	private void rerankRootDerivations()
 	{
@@ -630,6 +610,7 @@ final class ReinforcementParserState extends AbstractReinforcementParserState
 		}
 	}
 
+	@Override
 	public void setEvaluation()
 	{
 		LogInfo.begin_track_printAll("ReinforcementParserParserState.setEvaluation");
@@ -1006,11 +987,11 @@ class PrioritizedDerivationStream implements Comparable<PrioritizedDerivationStr
 	public final double priority;
 	public double probSum;
 
-	PrioritizedDerivationStream(final DerivationStream derivStream, final double priority, final double probSum)
+	PrioritizedDerivationStream(final DerivationStream derivStream_, final double priority_, final double probSum_)
 	{
-		this.derivStream = derivStream;
-		this.priority = priority;
-		this.probSum = probSum;
+		derivStream = derivStream_;
+		priority = priority_;
+		probSum = probSum_;
 	}
 
 	@Override
@@ -1023,6 +1004,7 @@ class PrioritizedDerivationStream implements Comparable<PrioritizedDerivationStr
 		return 0;
 	}
 
+	@Override
 	public double getScore()
 	{
 		return derivStream.peek().score;
@@ -1042,13 +1024,13 @@ class DerivInfo
 	public final Formula formula;
 	public final Rule rule;
 
-	DerivInfo(final String cat, final int start, final int end, final Formula formula, final Rule rule)
+	DerivInfo(final String cat_, final int start_, final int end_, final Formula formula_, final Rule rule_)
 	{
-		this.cat = cat;
-		this.start = start;
-		this.end = end;
-		this.formula = formula;
-		this.rule = rule;
+		cat = cat_;
+		start = start_;
+		end = end_;
+		formula = formula_;
+		rule = rule_;
 	}
 
 	@Override
@@ -1084,6 +1066,7 @@ class DerivInfo
 		return result;
 	}
 
+	@Override
 	public String toString()
 	{
 		return cat + "(" + start + "," + end + ") " + formula.toString();

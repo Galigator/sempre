@@ -57,7 +57,7 @@ public class OvernightDerivationPruningComputer extends DerivationPruningCompute
 					return true;
 				// NaN
 				if (values.size() == 1 && values.get(0) instanceof NumberValue)
-					if (Double.isNaN(((NumberValue) values.get(0)).value))
+					if (Double.isNaN(((NumberValue) values.get(0))._value))
 						return true;
 				// If we are supposed to get a number but we get a string (some sparql weirdness)
 				if (deriv.type.equals(SemType.numberType) && values.size() == 1 && !(values.get(0) instanceof NumberValue))

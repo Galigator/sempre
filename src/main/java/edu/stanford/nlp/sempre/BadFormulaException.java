@@ -6,9 +6,9 @@ public class BadFormulaException extends RuntimeException
 
 	String message;
 
-	public BadFormulaException(final String message)
+	public BadFormulaException(final String message_)
 	{
-		this.message = message;
+		message = message_;
 	}
 
 	// Combine multiple exceptions

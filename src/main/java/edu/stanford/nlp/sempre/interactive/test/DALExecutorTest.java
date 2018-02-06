@@ -36,7 +36,7 @@ public class DALExecutorTest
 		final Executor.Response response = executor.execute(Formulas.fromLispTree(LispTree.proto.parseFromString(formula)), context);
 
 		final NaiveKnowledgeGraph graph = (NaiveKnowledgeGraph) context.graph;
-		final String wallString = ((StringValue) graph.triples.get(0).e1).value;
+		final String wallString = ((StringValue) graph._triples.get(0)._e1).value;
 		final String jsonStr = ((StringValue) response.value).value;
 		LogInfo.logs("Start:\t%s", wallString);
 		LogInfo.logs("Result:\t%s", jsonStr);
