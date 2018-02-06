@@ -8,6 +8,8 @@
 				<exclude name="edu.stanford.nlp.sempre.interactive.test"></exclude>
 			</package>
     </packages>
+    </test>
+    <test name="GrammarTests">
     <groups>
       <run>
         <exclude name="grammar" />
